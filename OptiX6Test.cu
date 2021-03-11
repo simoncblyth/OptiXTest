@@ -6,7 +6,7 @@ rtDeclareVariable(float3,        eye, , );
 rtDeclareVariable(float3,        U, , );
 rtDeclareVariable(float3,        V, , );
 rtDeclareVariable(float3,        W, , );
-rtDeclareVariable(float,         scene_epsilon, , );
+rtDeclareVariable(float,         tmin, , );
 rtDeclareVariable(unsigned,     radiance_ray_type, , );
 
 rtDeclareVariable(uint2, launch_index, rtLaunchIndex, );
@@ -45,6 +45,8 @@ rtDeclareVariable(unsigned, identity,  ,);
 
 rtDeclareVariable(rtObject,      top_object, , );
 
+rtBuffer<float4> shape_buffer;
+
 
 RT_PROGRAM void raygen()
 {
@@ -54,7 +56,7 @@ RT_PROGRAM void raygen()
 
     float2 d = make_float2(launch_index) / make_float2(launch_dim) * 2.f - 1.f ;
 
-    optix::Ray ray = optix::make_Ray( eye, normalize(d.x*U + d.y*V + W), radiance_ray_type, scene_epsilon, RT_DEFAULT_MAX) ; 
+    optix::Ray ray = optix::make_Ray( eye, normalize(d.x*U + d.y*V + W), radiance_ray_type, tmin, RT_DEFAULT_MAX) ; 
     rtTrace(top_object, ray, prd);
 
     pixels_buffer[launch_index] = make_color( prd.result ) ; 
@@ -66,12 +68,13 @@ RT_PROGRAM void miss()
     prd.result = make_float3(1.f, 1.f, 1.f) ;
 }
 
-RT_PROGRAM void intersect(int)
+RT_PROGRAM void intersect(int primIdx)
 {
-    const float  radius = 15.f ; 
-    const float  t_min = 0.1f ; 
+    const float4& shape = shape_buffer[primIdx] ; 
+    const float  radius = shape.w ; 
+    const float  t_min = ray.tmin ; 
 
-    const float3 center = {0.f, 0.f, 0.f};
+    const float3 center = make_float3( shape.x, shape.y, shape.z) ;
     const float3 O      = ray.origin - center;
     const float3 D      = ray.direction ; 
  
@@ -100,10 +103,11 @@ RT_PROGRAM void intersect(int)
     }
 }
 
-RT_PROGRAM void bounds (int, float result[6])
+RT_PROGRAM void bounds (int primIdx, float result[6])
 {
+    const float4& shape = shape_buffer[primIdx] ; 
+    const float  radius = shape.w ; 
     optix::Aabb* aabb = (optix::Aabb*)result;
-    const float  radius = 15.f ; 
     float3 mn = make_float3( -radius, -radius, -radius ); 
     float3 mx = make_float3(  radius,  radius,  radius ); 
     aabb->set(mn, mx);

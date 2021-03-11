@@ -22,9 +22,7 @@ OptiXTest
 #include "Params.h"
 
 #if OPTIX_VERSION < 70000
-#include <optixu/optixpp_namespace.h>
-#include "SPPM.h" 
-#include "NP.hh"
+#include "Six.h"
 #else
 #include "Ctx.h"
 #include "CUDA_CHECK.h"   
@@ -81,58 +79,11 @@ int main(int argc, char** argv)
 
 
 #if OPTIX_VERSION < 70000
-    optix::Context context = optix::Context::create();
-    context->setRayTypeCount(1);
-    context->setPrintEnabled(true);
-    context->setPrintBufferSize(4096);
-    context->setEntryPointCount(1);
-    unsigned entry_point_index = 0u ;
-    context->setRayGenerationProgram( entry_point_index, context->createProgramFromPTXFile( ptx_path , "raygen" ));
-    context->setMissProgram(   entry_point_index, context->createProgramFromPTXFile( ptx_path , "miss" ));
 
-    optix::Geometry sphere = context->createGeometry();
-    sphere->setPrimitiveCount( 1u );
-    sphere->setBoundingBoxProgram( context->createProgramFromPTXFile( ptx_path , "bounds" ) );
-    sphere->setIntersectionProgram( context->createProgramFromPTXFile( ptx_path , "intersect" ) ) ; 
-
-    optix::Material mat = context->createMaterial();
-    mat->setClosestHitProgram( entry_point_index, context->createProgramFromPTXFile( ptx_path, "closest_hit" ));
-
-    unsigned identity = 42u ; 
-    optix::GeometryInstance pergi = context->createGeometryInstance() ;
-    pergi->setMaterialCount(1);
-    pergi->setMaterial(0, mat );
-    pergi->setGeometry(sphere);
-    pergi["identity"]->setUint(identity);
-
-    optix::GeometryGroup gg = context->createGeometryGroup();
-    gg->setChildCount(1);
-    gg->setChild( 0, pergi );
-    gg->setAcceleration( context->createAcceleration("Trbvh") );
-
-    context["top_object"]->set( gg );
-
-    float near = 0.1f ; 
-    context[ "scene_epsilon"]->setFloat( near );  
-    context[ "eye"]->setFloat( params.eye.x, params.eye.y, params.eye.z  );  
-    context[ "U"  ]->setFloat( params.U.x, params.U.y, params.U.z  );  
-    context[ "V"  ]->setFloat( params.V.x, params.V.y, params.V.z  );  
-    context[ "W"  ]->setFloat( params.W.x, params.W.y, params.W.z  );  
-    context[ "radiance_ray_type"   ]->setUint( 0u );  
-
-    optix::Buffer pixels_buffer = context->createBuffer( RT_BUFFER_OUTPUT, RT_FORMAT_UNSIGNED_BYTE4, params.width, params.height);
-    context["pixels_buffer"]->set( pixels_buffer );
-    optix::Buffer posi_buffer = context->createBuffer( RT_BUFFER_OUTPUT, RT_FORMAT_FLOAT4, params.width, params.height);
-    context["posi_buffer"]->set( posi_buffer );
-
-    context->launch( entry_point_index , params.width, params.height  );  
-
-    int channels = 4 ; 
-    SPPM_write(outdir, "pixels.ppm",  (unsigned char*)pixels_buffer->map(), channels,  width, height, true );
-    pixels_buffer->unmap(); 
-
-    NP::Write(outdir, "posi.npy",  (float*)posi_buffer->map(), height, width, 4 );
-    posi_buffer->unmap(); 
+    Six six(ptx_path, &params); 
+    six.setGeo(&geo); 
+    six.launch(); 
+    six.save(outdir); 
 
 #else
     Ctx ctx(&params) ;

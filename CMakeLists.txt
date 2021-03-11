@@ -80,6 +80,11 @@ if(OptiX_VERSION_ GREATER_EQUAL 70000)
         SBT.cc 
     )
 else()
+
+   list(APPEND SOURCES  
+        Six.cc 
+   )
+
    list(APPEND CU_SOURCES OptiX6Test.cu)
 endif()
 
