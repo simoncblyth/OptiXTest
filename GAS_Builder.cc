@@ -8,8 +8,9 @@
 
 #include <cuda_runtime.h>
 #include "sutil_vec_math.h"    // roundUp
-#include "sutil_Exception.h"   // CUDA_CHECK OPTIX_CHECK
 
+#include "CUDA_CHECK.h"
+#include "OPTIX_CHECK.h"
 
 #include "Ctx.h"
 #include "Shape.h"

@@ -16,8 +16,6 @@ struct Ctx
 
     Ctx(Params* params_); 
 
-    void setTop(const AS* top);
-
     void uploadParams();
 
 };

@@ -8,6 +8,32 @@ set(CMAKE_CXX_STANDARD_REQUIRED YES)
 find_package(CUDA REQUIRED)   
 find_package(OptiX REQUIRED)   
 
+message(STATUS "OptiX_FOUND   : ${OptiX_FOUND} ")
+message(STATUS "OptiX_VERSION : ${OptiX_VERSION} ")
+message(STATUS "OptiX_INCLUDE : ${OptiX_INCLUDE} ")
+
+set(OptiX_VERSION_ 0)
+if(OptiX_INCLUDE)
+   file(READ "${OptiX_INCLUDE}/optix.h" _contents)
+   string(REGEX REPLACE "\n" ";" _contents "${_contents}")
+   foreach(_line ${_contents})
+        if (_line MATCHES "#define OPTIX_VERSION ([0-9]+)")
+            set(OptiX_VERSION_ ${CMAKE_MATCH_1} )
+        endif()
+   endforeach()
+endif()
+
+message(STATUS "OptiX_VERSION_ : ${OptiX_VERSION_} ")
+
+
+
+add_library(ImpOptiX INTERFACE IMPORTED) 
+set_target_properties(ImpOptiX PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${OptiX_INCLUDE}")
+if(OptiX_VERSION_ LESS 70000)
+set_target_properties(ImpOptiX PROPERTIES INTERFACE_LINK_LIBRARIES "optix;optixu;optix_prime")
+endif()
+
+
 include_directories(
     ${CUDA_INCLUDE_DIRS}
     ${OptiX_INCLUDE}
@@ -16,7 +42,7 @@ include_directories(
 )
 
 
-set(COMPUTE_CAPABILITY 70)
+set(COMPUTE_CAPABILITY 30)
 
 set(CUDA_NVCC_FLAGS)
 list(APPEND CUDA_NVCC_FLAGS "-Xcompiler -fPIC")
@@ -26,33 +52,39 @@ list(APPEND CUDA_NVCC_FLAGS "--use_fast_math")
 list(APPEND CUDA_NVCC_FLAGS "-std=c++11")
 
 
+set(SOURCES)
+set(CU_SOURCES)
 
-set(SOURCES
-    ${name}.cc
 
+list(APPEND SOURCES
+    OptiXTest.cc
     Sys.cc
     Shape.cc
     Grid.cc
     Geo.cc
-
     Util.cc 
-    Ctx.cc 
     Frame.cc 
-    GAS.cc 
-    GAS_Builder.cc 
-    PIP.cc 
-    IAS.cc 
-    IAS_Builder.cc 
-    SBT.cc 
     Params.cc 
-
 )
 
-set(OPTIX_SOURCES
-    ${name}.cu
-)
+if(OptiX_VERSION_ GREATER_EQUAL 70000)
+   list(APPEND CU_SOURCES OptiX7Test.cu)
 
-CUDA_WRAP_SRCS( ${name} PTX _generated_PTX_files ${OPTIX_SOURCES} )
+   list(APPEND SOURCES  
+        Ctx.cc 
+        GAS.cc 
+        GAS_Builder.cc 
+        PIP.cc 
+        IAS.cc 
+        IAS_Builder.cc 
+        SBT.cc 
+    )
+else()
+   list(APPEND CU_SOURCES OptiX6Test.cu)
+endif()
+
+
+CUDA_WRAP_SRCS( ${name} PTX _generated_PTX_files ${CU_SOURCES} )
 CUDA_WRAP_SRCS( ${name} OBJ _generated_OBJ_files ${SOURCES} )
 
 message(STATUS "_generated_OBJ_files ${_generated_OBJ_files}") 
@@ -65,6 +97,7 @@ add_executable( ${name} ${_generated_OBJ_files} ${_generated_PTX_files} ${SOURCE
 target_link_libraries(${name} 
      PUBLIC 
          ${CUDA_LIBRARIES}
+         ImpOptiX
 )
 install(TARGETS ${name}               DESTINATION bin)
 install(FILES ${_generated_PTX_files} DESTINATION ptx)

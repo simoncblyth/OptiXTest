@@ -9,7 +9,7 @@
 
 #include <cuda_runtime.h>
 #include "sutil_vec_math.h"    // roundUp
-#include "sutil_Exception.h"   // CUDA_CHECK OPTIX_CHECK
+#include "OPTIX_CHECK.h"
 
 #include "Ctx.h"
 #include "Geo.h"

@@ -28,7 +28,11 @@ struct Params
     float      tmin ; 
     float      tmax ; 
 
-    OptixTraversableHandle handle;
+#if OPTIX_VERSION < 70000
+    void*                   handle ;  
+#else
+    OptixTraversableHandle  handle ; 
+#endif
 
 #ifndef __CUDACC__
     void setView(const glm::vec3& eye_, const glm::vec3& U_, const glm::vec3& V_, const glm::vec3& W_, float tmin_, float tmax_, unsigned cameratype );

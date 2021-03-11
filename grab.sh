@@ -54,9 +54,7 @@ elif [ "$1" == "npy" ]; then
 elif [ "$1" == "all" ]; then
    all_
 else
-   all_
+   jpg_
 fi 
-
-
 
 

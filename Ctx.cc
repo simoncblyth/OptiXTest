@@ -11,7 +11,8 @@
 #include <optix_function_table_definition.h>
 #include <cuda_runtime.h>
 
-#include "sutil_Exception.h"   // CUDA_CHECK OPTIX_CHECK
+#include "CUDA_CHECK.h"
+#include "OPTIX_CHECK.h"
 
 OptixDeviceContext Ctx::context = nullptr ;
 
@@ -34,11 +35,6 @@ Ctx::Ctx(Params* params_)
     options.logCallbackFunction       = &Ctx::context_log_cb;
     options.logCallbackLevel          = 4;
     OPTIX_CHECK( optixDeviceContextCreate( cuCtx, &options, &context ) );
-}
-
-void Ctx::setTop(const AS* top)
-{
-    params->handle = top->handle ; 
 }
 
 void Ctx::uploadParams()

@@ -3,7 +3,7 @@
 #include <sstream>
 #include <iostream>
 
-static void SPPM_write( const char* dir, const char* name, const uchar4* image, int width, int height, bool yflip )
+static void SPPM_write( const char* dir, const char* name, const unsigned char* image, int ncomp, int width, int height, bool yflip )
 {
     std::stringstream ss ; 
     ss << dir << "/" << name ; 
@@ -24,9 +24,9 @@ static void SPPM_write( const char* dir, const char* name, const uchar4* image, 
 
         for( int x=0; x < width ; ++x ) 
         {
-            *(data + (y*width+x)*3+0) = image[(h*width+x)].x ;   
-            *(data + (y*width+x)*3+1) = image[(h*width+x)].y ;   
-            *(data + (y*width+x)*3+2) = image[(h*width+x)].z ;   
+            *(data + (y*width+x)*3+0) = image[(h*width+x)*ncomp+0] ;   
+            *(data + (y*width+x)*3+1) = image[(h*width+x)*ncomp+1] ;   
+            *(data + (y*width+x)*3+2) = image[(h*width+x)*ncomp+2] ;   
         }
     }   
     fwrite(data, sizeof(unsigned char)*size, 1, fp);

@@ -1,12 +1,8 @@
 #include <iostream>
 #include <iomanip>
 
-#include <optix.h>
-#include <optix_stubs.h>
-
 #include <cuda_runtime.h>
-#include "sutil_Exception.h"   // CUDA_CHECK OPTIX_CHECK
-
+#include "CUDA_CHECK.h"
 
 #include "NP.hh"
 #include "Util.h"
@@ -15,7 +11,6 @@
 
 #define SIMG_IMPLEMENTATION 1 
 #include "SIMG.hh"
-
 
 Frame::Frame(unsigned width_, unsigned height_, unsigned depth_)
     :
@@ -107,7 +102,9 @@ void Frame::write(const char* outdir) const
 void Frame::writePPM(const char* dir, const char* name, bool yflip ) const 
 {
     std::cout << "Frame::writePPM " << dir << "/" << name << std::endl ; 
-    SPPM_write( dir, name, pixels.data(), width, height, yflip );
+    int channels = 4 ; 
+    const unsigned char* data = (const unsigned char*)pixels.data();  
+    SPPM_write( dir, name, data, channels, width, height, yflip );
 }
 void Frame::writePNG(const char* dir, const char* name) const 
 {
