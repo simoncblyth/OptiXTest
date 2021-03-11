@@ -107,6 +107,8 @@ RT_PROGRAM void bounds (int primIdx, float result[6])
 {
     const float4& shape = shape_buffer[primIdx] ; 
     const float  radius = shape.w ; 
+    rtPrintf("// bounds primIdx %d radius %10.3f \n", primIdx, radius ); 
+
     optix::Aabb* aabb = (optix::Aabb*)result;
     float3 mn = make_float3( -radius, -radius, -radius ); 
     float3 mx = make_float3(  radius,  radius,  radius ); 

@@ -28,6 +28,7 @@ void Six::initContext()
     context->setRayTypeCount(1);
     context->setPrintEnabled(true);
     context->setPrintBufferSize(4096);
+    context->setPrintLaunchIndex(0); 
     context->setEntryPointCount(1);
 
     context[ "tmin"]->setFloat( params->tmin );  
@@ -59,9 +60,33 @@ void Six::setGeo(const Geo* geo)
 
     //optix::GeometryGroup gg = createSimple(geo); 
     createGrids(geo); 
-    optix::Group grp = assemblies[0]; 
 
-    context["top_object"]->set( grp );
+    const char* spec = geo->top ;  
+    char c = spec[0]; 
+    assert( c == 'i' || c == 'g' );  
+    int idx = atoi( spec + 1 );  
+
+    std::cout << "Six::setGeo spec " << spec << std::endl ; 
+    if( c == 'i' )
+    {
+        assert( idx < assemblies.size() ); 
+        optix::Group grp = assemblies[idx]; 
+        context["top_object"]->set( grp );
+    }
+    else if( c == 'g' )
+    {
+        assert( idx < shapes.size() ); 
+
+        optix::GeometryGroup gg = context->createGeometryGroup();
+        gg->setChildCount(1);
+     
+        unsigned identity = 1u + idx ;  
+        optix::GeometryInstance pergi = createGeometryInstance(idx, identity); 
+        gg->setChild( 0, pergi );
+        gg->setAcceleration( context->createAcceleration("Trbvh") );
+
+        context["top_object"]->set( gg );
+    }
 }
 
 void Six::createShapes(const Geo* geo)
@@ -102,7 +127,6 @@ void Six::createGrids(const Geo* geo)
         assemblies.push_back(assembly); 
     }
 }
-
 
 optix::Group Six::convertGrid(const Grid* gr)
 {
@@ -176,6 +200,7 @@ optix::Geometry Six::createGeometry(const Shape* sh)
 
     std::vector<float> shape_array ; 
 
+    std::cout << "Six::createGeometry sh.num " << sh->num << " sizes: " ; 
     for(unsigned i=0 ; i < sh->num ; i++)
     {
         float size = sh->get_size(i); 
@@ -183,7 +208,11 @@ optix::Geometry Six::createGeometry(const Shape* sh)
         shape_array.push_back( 0.f ); 
         shape_array.push_back( 0.f ); 
         shape_array.push_back( size );
+
+        std::cout << size << " " ; 
     }
+    std::cout << std::endl ;  
+
     unsigned num_prim = sh->num ; 
     shape->setPrimitiveCount( num_prim );
 

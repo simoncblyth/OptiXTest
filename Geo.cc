@@ -136,10 +136,33 @@ float Geo::getTopExtent() const
 {
     return top_extent ; 
 }
+
+/**
+
+::
+
+    In [1]: a = np.arange(10) ; a 
+    Out[1]: array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+    In [2]: 100/(a+1)
+    Out[2]: array([100,  50,  33,  25,  20,  16,  14,  12,  11,  10])
+
+    In [3]: 100*((1.+a[::-1])/10.)
+    Out[3]: array([100,  90,  80,  70,  60,  50,  40,  30,  20,  10])
+
+**/
+
 void Geo::addShape(const char* typs, float outer_extent, unsigned layers)
 {
     std::vector<float> extents ;
-    for(unsigned i=0 ; i < layers ; i++) extents.push_back(outer_extent/float(i+1));  
+
+    //for(unsigned i=0 ; i < layers ; i++) extents.push_back(outer_extent/float(i+1));  
+    for(unsigned i=0 ; i < layers ; i++) 
+    {
+        float f = float(layers-i)/float(layers) ; 
+        extents.push_back(outer_extent*f);  
+    }
+
     addShape(typs, extents); 
 }
 void Geo::addShape(const char* typs, const std::vector<float>& extents)

@@ -10,8 +10,16 @@ mkdir -p $OUTDIR
 
 echo $0 
 
-#gdb -ex r --args $BIN $spec
-$BIN $spec
+if [ -n "$DEBUG" ]; then 
+    if [ "$(uname)" == "Linux" ]; then
+       gdb -ex r --args $BIN $spec
+    elif [ "$(uname)" == "Darwin" ]; then
+       lldb_ $BIN $spec
+    fi
+else
+    $BIN $spec
+fi 
+
 [ $? -ne 0 ] && echo $0 : run  FAIL && exit 3
 
 ppm=$OUTDIR/pixels.ppm
@@ -31,6 +39,7 @@ echo md5  : $dig
 echo npy  : $npy
 ls -l $ppm $npy 
 
+open $ppm
 
 exit 0
 

@@ -8,11 +8,12 @@ export PATH=$PREFIX/bin:$PATH
 export BIN=$(which $name)
 
 #tmin=2.0
-tmin=0.5
+tmin=1.0
+#tmin=0.5
 #tmin=0.1
 
-#geometry=sphere
-geometry=sphere_containing_grid_of_spheres
+geometry=sphere
+#geometry=sphere_containing_grid_of_spheres
 
 gridspec=-10:11:2,-10:11:2,-10:11:2
 #gridspec=-40:41:4,-40:41:4,-40:41:4
@@ -22,16 +23,17 @@ gridspec=-10:11:2,-10:11:2,-10:11:2
 eye=-0.5,-0.5,0.5
 #eye=-1.0,-1.0,1.0
 
-#fudge=1
-fudge=2
+fudge=1
+#fudge=2
 #fudge=5
 
 cameratype=0
 
 # number of concentric layers in compound shapes
-layers=1     
+#layers=1     
 #layers=2
 #layers=3
+layers=20
 
 modulo=0,1
 single=2
