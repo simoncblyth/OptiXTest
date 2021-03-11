@@ -11,6 +11,9 @@
 #include "sutil_vec_math.h"    // roundUp
 #include "sutil_Exception.h"   // CUDA_CHECK OPTIX_CHECK
 
+#include <glm/glm.hpp>
+
+
 #include "Geo.h"
 #include "Shape.h"
 #include "Binding.h"

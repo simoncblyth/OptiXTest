@@ -44,6 +44,8 @@ set(SOURCES
     IAS.cc 
     IAS_Builder.cc 
     SBT.cc 
+    Params.cc 
+
 )
 
 set(OPTIX_SOURCES

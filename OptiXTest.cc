@@ -1,6 +1,6 @@
 /**
-UseOptiX7GeometryInstancedGASCompDyn
-======================================
+OptiXTest
+==========
 
 **/
 #include <iostream>
@@ -50,11 +50,12 @@ int main(int argc, char** argv)
     glm::vec3 eye,U,V,W  ;
     Util::GetEyeUVW( eye_model, ce, width, height, eye, U, V, W ); 
 
-    Ctx ctx ; 
-    ctx.setView(eye, U, V, W, geo.tmin, geo.tmax, cameratype ); 
-    ctx.setSize(width, height, depth); 
+    Params params ; 
+    params.setView(eye, U, V, W, geo.tmin, geo.tmax, cameratype ); 
+    params.setSize(width, height, depth); 
 
 
+    Ctx ctx(&params) ;
 
     PIP pip(ptx_path); 
     SBT sbt(&pip);
@@ -63,21 +64,19 @@ int main(int argc, char** argv)
     AS* top = sbt.getTop(); 
     ctx.setTop(top); 
 
-    Frame frame(ctx.params); 
+    Frame frame(params.width, params.height, params.depth); 
+    params.pixels = frame.getDevicePixels(); 
+    params.isect  = frame.getDeviceIsect(); 
+
 
     CUstream stream;
     CUDA_CHECK( cudaStreamCreate( &stream ) );
     ctx.uploadParams();  
-    OPTIX_CHECK( optixLaunch( pip.pipeline, stream, ctx.d_param, sizeof( Params ), &(sbt.sbt), ctx.params->width, ctx.params->height, ctx.params->depth ) );
+    OPTIX_CHECK( optixLaunch( pip.pipeline, stream, ctx.d_param, sizeof( Params ), &(sbt.sbt), frame.width, frame.height, frame.depth ) );
     CUDA_SYNC_CHECK();
 
     frame.download(); 
-
-    bool yflip = false ; 
-    frame.writePPM(outdir, "pixels.ppm", yflip );  
-    int quality = Util::GetEValue<int>("QUALITY", 50); 
-    frame.writeJPG(outdir, "pixels.jpg", quality);  
-    frame.writeNP(  outdir, "posi.npy" );
+    frame.write(outdir);  
 
     return 0 ; 
 }

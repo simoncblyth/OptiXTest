@@ -20,7 +20,10 @@ Standalone Building
 Depends only on NVIDIA OptiX 7.0::
 
     export OPTIX_PREFIX=/usr/local/OptiX_700    # (might need to put this in .bashrc/.bash_profile)
+
     git clone https://github.com/simoncblyth/OptiXTest 
+    git clone git@github.com:simoncblyth/OptiXTest.git     # ssh clone for easy key based committing 
+
     cd OptiXTest
     ./go.sh # gets glm, builds, runs -> ppm image file    
      

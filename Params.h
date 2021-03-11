@@ -3,6 +3,10 @@
 #include <optix.h>
 #include <vector_types.h>
 
+#ifndef __CUDACC__
+#include <glm/glm.hpp>
+#endif
+
 
 struct Params
 {
@@ -25,6 +29,12 @@ struct Params
     float      tmax ; 
 
     OptixTraversableHandle handle;
+
+#ifndef __CUDACC__
+    void setView(const glm::vec3& eye_, const glm::vec3& U_, const glm::vec3& V_, const glm::vec3& W_, float tmin_, float tmax_, unsigned cameratype );
+    void setSize(unsigned width_, unsigned height_, unsigned depth_ );
+#endif
+
 
 };
 
