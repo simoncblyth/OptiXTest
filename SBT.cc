@@ -45,7 +45,9 @@ SBT::SBT(const PIP* pip_)
     pip(pip_),
     raygen(nullptr),
     miss(nullptr),
-    hitgroup(nullptr)
+    hitgroup(nullptr),
+    check(nullptr),
+    geo(nullptr)
 {
     init(); 
 }
@@ -60,14 +62,16 @@ void SBT::init()
     updateMiss(); 
 }
 
-void SBT::setGeo(const Geo* geo)
+void SBT::setGeo(const Geo* geo_)
 {
+    geo = geo_ ; 
+
     createGAS(geo); 
     createIAS(geo); 
     setTop(geo->top); 
 
     createHitgroup(geo); 
-    checkHitgroup(); 
+    checkHitgroup(geo); 
 }
 
 
@@ -127,71 +131,6 @@ void SBT::updateRaygen()
 }
 
 
-
-unsigned SBT::getNumBI() const // total 
-{
-    unsigned tot = 0 ; 
-    for(unsigned i=0 ; i < nbis.size() ; i++) tot += nbis[i] ; 
-    return tot ; 
-}
-unsigned SBT::getNumBI(unsigned shape_idx) const 
-{
-    assert( shape_idx < nbis.size()); 
-    return nbis[shape_idx] ; 
-}
-void SBT::dumpOffsetBI() const 
-{
-    unsigned num_shape = vgas.size() ; 
-    std::cout << "SBT::dumpOffsetBI  num_shape " << num_shape << std::endl ; 
-    for(unsigned shape_idx=0 ; shape_idx < num_shape ; shape_idx++)
-    {
-        unsigned num_bi = getNumBI(shape_idx); 
-        unsigned offset_bi = getOffsetBI(shape_idx); 
-        std::cout 
-            << " shape_idx " << std::setw(6) << shape_idx  
-            << " num_bi " << std::setw(6) << num_bi
-            << " offset_bi " << std::setw(6) << offset_bi
-            << std::endl
-            ;
-    }
-}
-
-
-
-unsigned SBT::getOffsetBI(unsigned shape_idx) const 
-{
-    assert( shape_idx < nbis.size()); 
-    unsigned offset = 0 ; 
-    for(unsigned i=0 ; i < nbis.size() ; i++) 
-    {
-        if( i == shape_idx ) break ; 
-        offset += nbis[i]; 
-    }
-    return offset ;     
-} 
-
-
-/**
-Geo::getOffsetBI
-------------------
-
-Example::
-
-    GAS_0            --> 0 
-        BI_0 
-        BI_1
-    GAS_1            --> 2 
-        BI_0 
-        BI_1
-    GAS_2            --> 4 
-        BI_0 
-
-Simply by keeping count of build inputs (BI) used for each GAS.
-
-**/
-
-
-
 void SBT::createGAS(const Geo* geo)
 {
     unsigned num_shape = geo->getNumShape(); 
@@ -201,8 +140,6 @@ void SBT::createGAS(const Geo* geo)
         GAS gas = {} ;  
         GAS_Builder::Build(gas, sh );
         vgas.push_back(gas);  
-        unsigned num_bi = gas.bis.size() ;
-        nbis.push_back(num_bi); 
     }
 }
 
@@ -274,102 +211,202 @@ AS* SBT::getAS(const char* spec) const
    return a ; 
 }
 
+unsigned SBT::getOffsetSBT(unsigned shape_idx_ , unsigned layer_idx_ ) const 
+{
+    assert( geo ); 
+    bool is_1NN = geo->gas_bi_aabb == 0u ;  
+    bool is_11N = geo->gas_bi_aabb == 1u ; 
+    assert( is_1NN || is_11N  ); 
+
+    unsigned num_gas = vgas.size(); 
+    unsigned num_shape = geo->getNumShape(); 
+    assert( num_gas == num_shape ); 
+
+    unsigned offset_sbt = _getOffsetSBT(shape_idx_, layer_idx_ ); 
+ 
+    std::cout 
+        << "SBT::getOffsetSBT"
+        << " num_gas " <<  num_gas
+        << " shape_idx_ " << shape_idx_
+        << " layer_idx_ " << layer_idx_
+        << " offset_sbt " << offset_sbt 
+        << std::endl
+        ;
+
+    return offset_sbt ; 
+}
+
+unsigned SBT::_getOffsetSBT(unsigned shape_idx_ , unsigned layer_idx_ ) const 
+{
+    unsigned offset_sbt = 0 ; 
+    bool is_1NN = geo->gas_bi_aabb == 0u ;  
+    for(unsigned i=0 ; i < vgas.size() ; i++)
+    {
+        const GAS& gas = vgas[i] ;    
+        unsigned num_bi = gas.bis.size(); 
+
+        for(unsigned j=0 ; j < num_bi ; j++)
+        { 
+            const BI& bi = gas.bis[j] ; 
+            const OptixBuildInputCustomPrimitiveArray& buildInputCPA = bi.buildInput.aabbArray ;
+            unsigned num_sbt = buildInputCPA.numSbtRecords ; 
+            if(is_1NN) assert( num_sbt == 1 );  
+
+            for( unsigned k=0 ; k < num_sbt ; k++)
+            { 
+                unsigned layer_idx = is_1NN ? j : k ;  
+                if( shape_idx_ == i && layer_idx_ == layer_idx ) return offset_sbt ;
+                offset_sbt += 1 ; 
+            }
+        }         
+    }
+    std::cout << "SBT::_getOffsetSBT WARNING : did not find targetted shape " << std::endl ; 
+    assert(0); 
+    return offset_sbt ;  
+}
 
 
+unsigned SBT::getTotalSBT() const 
+{
+    bool is_1NN = geo->gas_bi_aabb == 0u ;  
+    unsigned tot_bi = 0 ; 
+    unsigned tot_sbt = 0 ; 
+    for(unsigned i=0 ; i < vgas.size() ; i++)
+    {
+        const GAS& gas = vgas[i] ;    
+        unsigned num_bi = gas.bis.size(); 
+        tot_bi += num_bi ; 
+        for(unsigned j=0 ; j < num_bi ; j++)
+        { 
+            const BI& bi = gas.bis[j] ; 
+            const OptixBuildInputCustomPrimitiveArray& buildInputCPA = bi.buildInput.aabbArray ;
+            unsigned num_sbt = buildInputCPA.numSbtRecords ; 
+            if(is_1NN) assert( num_sbt == 1 );  
+            tot_sbt += num_sbt ; 
+        }         
+    }
+    assert( tot_bi > 0 && tot_sbt > 0 );  
+    if(is_1NN) assert( tot_bi == tot_sbt );  
+    return tot_sbt ;  
+}
 
 
 void SBT::createHitgroup(const Geo* geo)
 {
+    bool is_1NN = geo->gas_bi_aabb == 0u ;  
+    bool is_11N = geo->gas_bi_aabb == 1u ; 
+    assert( is_1NN || is_11N  ); 
+
     unsigned num_shape = geo->getNumShape(); 
     unsigned num_gas = vgas.size(); 
     assert( num_gas == num_shape ); 
+    unsigned tot_sbt = getTotalSBT(); 
 
-    unsigned tot_bi = 0 ; 
-    for(unsigned i=0 ; i < num_gas ; i++)
-    {
-        const GAS& gas = vgas[i] ;    
-        tot_bi += gas.bis.size() ;  
-    }
-    assert( tot_bi > 0 );  
     std::cout 
         << "SBT::createHitgroup"
         << " num_shape " << num_shape 
         << " num_gas " << num_gas 
-        << " tot_bi " << tot_bi 
+        << " tot_sbt " << tot_sbt 
         << std::endl 
         ; 
 
-    hitgroup = new HitGroup[tot_bi] ; 
+    hitgroup = new HitGroup[tot_sbt] ; 
     HitGroup* hg = hitgroup ; 
-    unsigned  tot_bi2 = 0 ; 
 
-    for(unsigned i=0 ; i < tot_bi ; i++)   // pack headers CPU side
+    for(unsigned i=0 ; i < tot_sbt ; i++)   // pack headers CPU side
          OPTIX_CHECK( optixSbtRecordPackHeader( pip->hitgroup_pg, hitgroup + i ) ); 
     
+    unsigned sbt_offset = 0 ; 
     for(unsigned i=0 ; i < num_gas ; i++)
     {
+        unsigned shape_idx = i ;    
         const GAS& gas = vgas[i] ;    
         unsigned num_bi = gas.bis.size(); 
         const Shape* sh = gas.sh ; 
-  
+
         std::cout << "SBT::createHitgroup gas_idx " << i << " num_bi " << num_bi << std::endl ; 
 
         for(unsigned j=0 ; j < num_bi ; j++)
         { 
             const BI& bi = gas.bis[j] ; 
+            const OptixBuildInputCustomPrimitiveArray& buildInputCPA = bi.buildInput.aabbArray ;
+            unsigned num_sbt = buildInputCPA.numSbtRecords ; 
+            if(is_1NN) assert( num_sbt == 1 ); 
 
-            //const float* aabb = sh->get_aabb(j) ; 
-            //const float* param = sh->get_param(j) ; 
-            // how to organize generalization by primitive OR CSG tree type ?
-            float radius = sh->get_size(j); 
+            for( unsigned k=0 ; k < num_sbt ; k++)
+            { 
+                unsigned layer_idx = is_1NN ? j : k ;   
+                unsigned check_sbt_offset = getOffsetSBT(shape_idx, layer_idx ); 
+                bool expected_sbt_offset = check_sbt_offset == sbt_offset  ;
 
-            unsigned num_items = 1 ; 
-            float* values = new float[num_items]; 
-            values[0] = radius  ;  
-            float* d_values = UploadArray<float>(values, num_items) ; 
-            delete [] values ; 
-     
-            hg->data.values = d_values ; // set device pointer into CPU struct about to be copied to device
-            hg->data.bindex = j ;  
+                std::cout 
+                    << "SBT::createHitgroup "
+                    << " gas(i) " << i 
+                    << " bi(j) " << j
+                    << " sbt(k) " << k 
+                    << " shape_idx " << shape_idx 
+                    << " layer_idx " << layer_idx 
+                    << " check_sbt_offset " << check_sbt_offset
+                    << " sbt_offset " << sbt_offset
+                    << std::endl 
+                    ; 
 
-            hg++ ; 
-            tot_bi2++ ; 
+                if(!expected_sbt_offset) 
+                   std::cout 
+                      << "SBT::createHitgroup FATAL "
+                      << " sbt_offset " << sbt_offset 
+                      << " check_sbt_offset " << check_sbt_offset 
+                      << std::endl
+                      ;
+                assert( expected_sbt_offset ); 
+
+                float radius = sh->get_size(layer_idx); 
+
+                unsigned num_items = 1 ; 
+                float* values = new float[num_items]; 
+                values[0] = radius  ;  
+                float* d_values = UploadArray<float>(values, num_items) ; 
+                delete [] values ; 
+         
+                hg->data.values = d_values ; // set device pointer into CPU struct about to be copied to device
+                hg->data.bindex = (1u+shape_idx)*1000u + (1u+layer_idx) ;  
+
+                hg++ ; 
+                sbt_offset++ ; 
+            }
         }
     }
-    assert( tot_bi == tot_bi2 );  
 
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_hitgroup ), sizeof(HitGroup)*tot_bi ) );
+    CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &d_hitgroup ), sizeof(HitGroup)*tot_sbt ));
+    CUDA_CHECK( cudaMemcpy(reinterpret_cast<void*>( d_hitgroup ), hitgroup, sizeof( HitGroup )*tot_sbt, cudaMemcpyHostToDevice ));
+
     sbt.hitgroupRecordBase  = d_hitgroup;
     sbt.hitgroupRecordStrideInBytes = sizeof(HitGroup);
-    sbt.hitgroupRecordCount = tot_bi ;
-
-    CUDA_CHECK( cudaMemcpy(   
-                reinterpret_cast<void*>( d_hitgroup ),
-                hitgroup,
-                sizeof( HitGroup )*tot_bi,
-                cudaMemcpyHostToDevice
-                ) );
+    sbt.hitgroupRecordCount = tot_sbt ;
 }
 
 
-void SBT::checkHitgroup()
+
+void SBT::checkHitgroup(const Geo* geo)
 {
+    unsigned tot_sbt = sbt.hitgroupRecordCount ;
     std::cout 
         << "SBT::checkHitgroup" 
-        << " sbt.hitgroupRecordCount " << sbt.hitgroupRecordCount
+        << " tot_sbt " << tot_sbt
         << std::endl 
         ; 
+    assert( geo->gas_bi_aabb == 0u || geo->gas_bi_aabb == 1u ); 
 
-    check = new HitGroup[sbt.hitgroupRecordCount] ; 
+    check = new HitGroup[tot_sbt] ; 
 
     CUDA_CHECK( cudaMemcpy(   
                 check,
                 reinterpret_cast<void*>( sbt.hitgroupRecordBase ),
-                sizeof( HitGroup )*sbt.hitgroupRecordCount,
+                sizeof( HitGroup )*tot_sbt,
                 cudaMemcpyDeviceToHost
                 ) );
 
-    for(unsigned i=0 ; i < sbt.hitgroupRecordCount ; i++)
+    for(unsigned i=0 ; i < tot_sbt ; i++)
     {
         HitGroup* hg = check + i  ; 
         unsigned num_items = 1 ; 
@@ -381,6 +418,9 @@ void SBT::checkHitgroup()
         std::cout << std::endl ; 
     }
 }
+
+
+
 
 
 template <typename T>

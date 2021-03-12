@@ -8,6 +8,16 @@ echo RM OUTDIR $OUTDIR
 rm -rf $OUTDIR
 mkdir -p $OUTDIR
 
+mkdir -p $OUTDIR/shape/0
+mkdir -p $OUTDIR/shape/1
+mkdir -p $OUTDIR/shape/2
+
+mkdir -p $OUTDIR/grid/0
+mkdir -p $OUTDIR/grid/1
+mkdir -p $OUTDIR/grid/2
+
+
+
 echo $0 
 
 if [ -n "$DEBUG" ]; then 

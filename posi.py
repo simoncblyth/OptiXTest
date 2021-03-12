@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import os, numpy as np, glob
+import os, numpy as np, glob, logging
 import matplotlib.pyplot as plt 
+log = logging.getLogger(__name__)
 
 try:
     import pyvista as pv
@@ -56,7 +57,12 @@ def identity( instance_id, primitive_id ):
 
 def pick_intersect_pixels( posi, pick_id ):
     sposi = np.where( posi[:,:,3].view(np.uint32) == pick_id )    
-    pick = np.zeros( (*posi.shape[:2], 1), dtype=np.float32 )  
+
+    height = posi.shape[0]
+    width = posi.shape[1]
+
+    #pick = np.zeros( (*posi.shape[:2], 1), dtype=np.float32 )  
+    pick = np.zeros( (height, width, 1), dtype=np.float32 )  
     pick[sposi] = 1 
     #pick_posi = posi[sposi]   
     return pick 
@@ -64,12 +70,19 @@ def pick_intersect_pixels( posi, pick_id ):
 
 class Geo(object):
     def __init__(self, base):
+        log.info("base:%s" % base)
+
+        ias_paths = sorted(glob.glob("%s/grid/*/grid.npy" % base)) 
+        log.info("ias_paths:\n%s" % "\n".join(ias_paths)) 
         ias = {}
-        for ias_idx, ias_path in enumerate(sorted(glob.glob("%s/ias_*.npy" % base))):
+        for ias_idx, ias_path in enumerate(ias_paths):
             ias[ias_idx] = load_(ias_path)
         pass
+
+        gas_paths = sorted(glob.glob("%s/shape/*/param.npy" % base))
+        log.info("gas_paths:\n%s" % "\n".join(gas_paths)) 
         gas = {}
-        for gas_idx, gas_path in enumerate(sorted(glob.glob("%s/gas_*.npy" % base))):
+        for gas_idx, gas_path in enumerate(gas_paths):
             gas[gas_idx] = load_(gas_path)
         pass
 
@@ -106,6 +119,7 @@ class Geo(object):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     base = dir_()
     print(base)
     geo = Geo(base)
@@ -128,7 +142,7 @@ if __name__ == '__main__':
     primitive_id  = ( pxid & 0x0000ff00 ) >> 8 
     buildinput_id = ( pxid & 0x000000ff ) >> 0 
 
-    assert np.all( primitive_id == buildinput_id ) 
+    #assert np.all( primitive_id == buildinput_id ) 
 
     # identities of all intersected pieces of geometry 
     upxid, upxid_counts = np.unique(pxid, return_counts=True) 
@@ -136,6 +150,7 @@ if __name__ == '__main__':
     ires = np.zeros( (len(upxid), 4), dtype=np.int32 )
     fres = np.zeros( (len(upxid), 4), dtype=np.float32 )
 
+if 0:
     # loop over all identified pieces of geometry with intersects
     for i in range(1,len(upxid)):
         zid = upxid[i] 
@@ -145,7 +160,7 @@ if __name__ == '__main__':
         zinstance_id = ( zid & 0xffff0000 ) >> 16 
         zprimitive_id  = ( zid & 0x0000ff00 ) >> 8
         zbuildinput_id = ( zid & 0x000000ff ) >> 0
-        assert zprimitive_id == zbuildinput_id 
+        #assert zprimitive_id == zbuildinput_id 
 
         zinstance_idx = zinstance_id - 1
         zprimitive_idx = zprimitive_id - 1

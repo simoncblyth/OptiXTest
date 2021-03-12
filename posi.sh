@@ -1,5 +1,5 @@
 #!/bin/bash -l 
-which ipython3
+which ipython
 source ./env.sh 
-ipython3 -i posi.py 
+ipython -i --pdb  posi.py 
 

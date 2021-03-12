@@ -219,7 +219,8 @@ extern "C" __global__ void __closesthit__ch()
     unsigned primitive_id = 1u + optixGetPrimitiveIndex() ;  // see GAS_Builder::MakeCustomPrimitivesBI 
     unsigned buildinput_id = 1u + bindex ;   // TODO: get rid of this, its the same as primitive_id
 
-    unsigned identity = ( instance_id << 16 ) | (primitive_id << 8) | ( buildinput_id << 0 )  ;
+    //unsigned identity = ( instance_id << 16 ) | (primitive_id << 8) | ( buildinput_id << 0 )  ;
+    unsigned identity = instance_id ; 
  
     float3 normal = normalize( optixTransformNormalFromObjectToWorldSpace( shading_normal ) ) * 0.5f + 0.5f ;  
 

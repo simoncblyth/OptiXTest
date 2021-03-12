@@ -3,7 +3,7 @@
 
 struct BI
 {
-    unsigned        num_sbt_records ; 
+    unsigned        mode ;   // 0: 1NN  1: 11N
     CUdeviceptr     d_aabb ;
     CUdeviceptr     d_sbt_index ;
     unsigned*       flags ;  

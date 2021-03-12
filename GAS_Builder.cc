@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>
+#include <iomanip>
 
 #include <optix.h>
 #include <optix_stubs.h>
@@ -16,8 +17,6 @@
 #include "Shape.h"
 #include "GAS.h"
 #include "GAS_Builder.h"
-
-
 
 /**
 GAS_Builder::Build
@@ -61,7 +60,7 @@ void GAS_Builder::Build_1NN( GAS& gas, const Shape* sh )
 
     for(unsigned i=0 ; i < sh->num ; i++)
     { 
-         BI bi = MakeCustomPrimitivesBI( sh,  i );  
+         BI bi = MakeCustomPrimitivesBI_1NN( sh,  i );  
          gas.bis.push_back(bi); 
     }
     std::cout << "GAS_Builder::Build bis.size " << gas.bis.size() << std::endl ; 
@@ -69,90 +68,36 @@ void GAS_Builder::Build_1NN( GAS& gas, const Shape* sh )
 }
 
 
-/**
-GAS_Builder::Build_11N GAS:BI:AABB  1:1:N  one BI with multiple AABB
------------------------------------------------------------------------------
-
-**/
-
-void GAS_Builder::Build_11N( GAS& gas, const Shape* sh )
+BI GAS_Builder::MakeCustomPrimitivesBI_1NN(const Shape* sh, unsigned i )
 {
-    std::cout << "GAS_Builder::Build_11N sh.num " << sh->num << std::endl ;  
-    gas.sh = sh ; 
-
-    assert(0); 
-}
-
-
-
-
-
-
-
-
-/**
-GAS_Builder::MakeCustomPrimitivesBI
---------------------------------------
-
-Have decided to have 1 bbox correspond to 1 BI (buildInput)
-although multiple are possible.  Doing this 
-because it feels simplest and as need to implement the CSG tree
-within that BI.
-
-700p17
-    Acceleration structures over custom primitives are supported by referencing an
-    array of primitive AABB (axis aligned bounding box) buffers in device memory,
-    with one buffer per motion key. The layout of an AABB is defined in the struct
-    OptixAabb. Here is an example of how to specify the build input for custom
-    primitives:
-
-700p18 
-    Each build input maps to one or more consecutive SBT records that control
-    program dispatch.
-    If multiple SBT records are required the application needs to provide a device buffer 
-    with per-primitive SBT record indices for that build input. 
-    If only a single SBT record is requested, 
-    all primitives reference this same unique SBT record. 
-
-**/
-
-
-BI GAS_Builder::MakeCustomPrimitivesBI(const Shape* sh, unsigned i )
-{
-    std::cout << "GAS_Builder::MakeCustomPrimitivesBI " << std::endl ; 
+    std::cout << "GAS_Builder::MakeCustomPrimitivesBI_1NN " << std::endl ; 
 
     unsigned primitiveIndexOffset = i ; 
     const float* aabb = sh->kludge_outer_aabb > 0  ? sh->aabb : sh->aabb + i*6u ; 
-    //const float* param = sh->param + i*4u ; 
 
+    unsigned num_sbt_records = 1 ; 
 
     BI bi = {} ; 
-
-    bi.num_sbt_records = 1 ;    //  SBT entries for each build input
-    bi.flags = new unsigned[bi.num_sbt_records];
-    bi.sbt_index = new unsigned[bi.num_sbt_records];
+    bi.mode = 0 ; 
+    bi.flags = new unsigned[num_sbt_records];
+    bi.sbt_index = new unsigned[num_sbt_records];
     bi.flags[0] = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT ; // p18: Each build input also specifies an array of OptixGeometryFlags, one for each SBT record.
     bi.sbt_index[0] = 0 ; 
 
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &bi.d_aabb ), 6*sizeof(float) ) );
+    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( bi.d_aabb ), aabb, 6*sizeof(float), cudaMemcpyHostToDevice ));
+
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &bi.d_sbt_index ), sizeof(unsigned)*num_sbt_records ) ); 
+    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( bi.d_sbt_index ), bi.sbt_index, sizeof(unsigned)*num_sbt_records, cudaMemcpyHostToDevice ) ); 
+
     bi.buildInput = {};
     bi.buildInput.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
-
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &bi.d_aabb ), 6*sizeof(float) ) );
-    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( bi.d_aabb ),
-                            aabb, 6*sizeof(float),
-                            cudaMemcpyHostToDevice ));
-
     OptixBuildInputCustomPrimitiveArray& buildInputCPA = bi.buildInput.aabbArray ;  
     buildInputCPA.aabbBuffers = &bi.d_aabb ;  
     buildInputCPA.numPrimitives = 1 ;   
-    buildInputCPA.numSbtRecords = bi.num_sbt_records ;  
+    buildInputCPA.strideInBytes = sizeof(float)*6  ; // stride between AABBs, 0-> sizeof(optixAabb)  
     buildInputCPA.flags = bi.flags;
-     
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &bi.d_sbt_index ), sizeof(unsigned)*bi.num_sbt_records ) ); 
-    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( bi.d_sbt_index ),
-                            bi.sbt_index, sizeof(unsigned)*bi.num_sbt_records, 
-                            cudaMemcpyHostToDevice ) ); 
-
+    buildInputCPA.numSbtRecords = num_sbt_records ;  
     buildInputCPA.sbtIndexOffsetBuffer  = bi.d_sbt_index ;
     buildInputCPA.sbtIndexOffsetSizeInBytes  = sizeof(unsigned);
     buildInputCPA.sbtIndexOffsetStrideInBytes = sizeof(unsigned);
@@ -161,6 +106,68 @@ BI GAS_Builder::MakeCustomPrimitivesBI(const Shape* sh, unsigned i )
 } 
 
 
+/**
+GAS_Builder::Build_11N GAS:BI:AABB  1:1:N  one BI with multiple AABB
+------------------------------------------------------------------------
+**/
+
+void GAS_Builder::Build_11N( GAS& gas, const Shape* sh )
+{
+    std::cout << "GAS_Builder::Build_11N sh.num " << sh->num << std::endl ;  
+    gas.sh = sh ; 
+
+    BI bi = MakeCustomPrimitivesBI_11N( sh );
+    gas.bis.push_back(bi); 
+
+    Build(gas); 
+}
+
+BI GAS_Builder::MakeCustomPrimitivesBI_11N(const Shape* sh)
+{
+    std::cout << "GAS_Builder::MakeCustomPrimitivesBI_11N " << std::endl ; 
+    
+    BI bi = {} ; 
+    bi.mode = 1 ; 
+    unsigned num = sh->num ; 
+
+    bi.flags = new unsigned[num];
+    bi.sbt_index = new unsigned[num];
+    for(unsigned i=0 ; i < num ; i++) bi.flags[i] = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT ; 
+    for(unsigned i=0 ; i < num ; i++) bi.sbt_index[i] = i ; 
+
+    unsigned primitiveIndexOffset = 0 ; 
+    const float* aabb = sh->aabb ; 
+
+    std::cout << "GAS_Builder::MakeCustomPrimitivesBI_11N dump aabb for layers: " << num << std::endl ; 
+    for(unsigned i=0 ; i < num ; i++)
+    { 
+        std::cout << std::setw(4) << i << " : " ; 
+        for(unsigned j=0 ; j < 6 ; j++)  
+           std::cout << std::setw(10) << std::fixed << std::setprecision(3) << *(aabb + i*6 + j ) << " "  ; 
+        std::cout << std::endl ; 
+    }
+
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>(&bi.d_aabb), 6*sizeof(float)*num ));
+    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>(bi.d_aabb), aabb, 6*sizeof(float)*num, cudaMemcpyHostToDevice ));
+
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &bi.d_sbt_index ), sizeof(unsigned)*num ) ); 
+    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( bi.d_sbt_index ), bi.sbt_index, sizeof(unsigned)*num, cudaMemcpyHostToDevice ) ); 
+
+    bi.buildInput = {};
+    bi.buildInput.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
+    OptixBuildInputCustomPrimitiveArray& buildInputCPA = bi.buildInput.aabbArray ;  
+    buildInputCPA.aabbBuffers = &bi.d_aabb ;  
+    buildInputCPA.numPrimitives = num  ;   
+    buildInputCPA.strideInBytes = sizeof(float)*6  ; // stride between AABBs, 0-> sizeof(optixAabb)  
+    buildInputCPA.flags = bi.flags;                  // flags per sbt record 
+    buildInputCPA.numSbtRecords = num ;              // number of sbt records available to sbt index offset override. 
+    buildInputCPA.sbtIndexOffsetBuffer  = bi.d_sbt_index ;   // Device pointer to per-primitive local sbt index offset buffer, Every entry must be in range [0,numSbtRecords-1]
+    buildInputCPA.sbtIndexOffsetSizeInBytes  = sizeof(unsigned);  // Size of type of the sbt index offset. Needs to be 0,     1, 2 or 4    
+    buildInputCPA.sbtIndexOffsetStrideInBytes = sizeof(unsigned); // Stride between the index offsets. If set to zero, the offsets are assumed to be tightly packed.
+    buildInputCPA.primitiveIndexOffset = primitiveIndexOffset ;  // Primitive index bias, applied in optixGetPrimitiveIndex()
+
+    return bi ; 
+} 
 
 
 void GAS_Builder::Build(GAS& gas)   // static 
@@ -256,3 +263,4 @@ void GAS_Builder::Build(GAS& gas)   // static
         gas.d_buffer = d_buffer_temp_output_gas_and_compacted_size;
     }
 }
+

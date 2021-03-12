@@ -42,13 +42,15 @@ void IAS_Builder::Build(IAS& ias, const Grid* gr, const SBT* sbt) // static
         memcpy( glm::value_ptr(idv), &imat[3], 4*sizeof(float) ); 
 
         unsigned instanceId = idv.x ;  
-        unsigned gasIdx = idv.y ;   
-        const GAS& gas = sbt->getGAS(gasIdx); 
+        unsigned shapeIdx = idv.y ;   
+        unsigned layerIdx = 0u ; 
+
+        const GAS& gas = sbt->getGAS(shapeIdx); 
 
         OptixInstance instance = {} ; 
         instance.flags = flags ;
-        instance.instanceId = instanceId ; // TODO: encode gasIdx into this
-        instance.sbtOffset = sbt->getOffsetBI(gasIdx);            
+        instance.instanceId = instanceId ; // TODO: encode (instanceIdx,shapeIdx, layerIdx) 
+        instance.sbtOffset = sbt->getOffsetSBT(shapeIdx, layerIdx );            
         instance.visibilityMask = 255;
         instance.traversableHandle = gas.handle ; 
         memcpy( instance.transform, glm::value_ptr(imat), 12*sizeof( float ) );

@@ -12,8 +12,12 @@ tmin=1.0
 #tmin=0.5
 #tmin=0.1
 
-geometry=sphere
-#geometry=sphere_containing_grid_of_spheres
+#geometry=sphere
+geometry=sphere_containing_grid_of_spheres
+
+modulo=0,1
+single=2
+#single=""
 
 gridspec=-10:11:2,-10:11:2,-10:11:2
 #gridspec=-40:41:4,-40:41:4,-40:41:4
@@ -23,14 +27,12 @@ gridspec=-10:11:2,-10:11:2,-10:11:2
 eye=-0.5,-0.5,0.5
 #eye=-1.0,-1.0,1.0
 
-# fudge currently does nothing 
-fudge=1
-#fudge=2
-#fudge=5
-
 # when non-zero repeats outer aabb for all layers of compound shape (optix 7 only)
 kludge_outer_aabb=0
 #kludge_outer_aabb=1
+
+#gas_bi_aabb=0  # 1NN : has bbox clipping issue for multi-layer GAS  
+gas_bi_aabb=1  # 11N  
 
 cameratype=0
 
@@ -40,14 +42,8 @@ layers=2
 #layers=3
 #layers=20
 
-modulo=0,1
-single=2
-#single=""
-
-
 # make sensitive to calling environment
 export GEOMETRY=${GEOMETRY:-$geometry}
-export FUDGE=${FUDGE:-$fudge}
 export TMIN=${TMIN:-$tmin}
 export CAMERATYPE=${CAMERATYPE:-$cameratype}
 export GRIDSPEC=${GRIDSPEC:-$gridspec}
@@ -56,22 +52,22 @@ export MODULO=${MODULO:-$modulo}
 export SINGLE=${SINGLE:-$single}
 export LAYERS=${LAYERS:-$layers}
 export KLUDGE_OUTER_AABB=${KLUDGE_OUTER_AABB:-$kludge_outer_aabb}
+export GAS_BI_AABB=${GAS_BI_AABB:-$gas_bi_aabb}
+export OUTDIR=$PREFIX/$GEOMETRY/TMIN_${TMIN}
 
-
-export OUTDIR=$PREFIX/$GEOMETRY/FUDGE_${FUDGE}_TMIN_${TMIN}
-
-echo name       : $name
-echo BIN        : $BIN
-echo FUDGE      : $FUDGE
-echo TMIN       : $TMIN
-echo CAMERATYPE : $CAMERATYPE
-echo GRIDSPEC   : $GRIDSPEC
-echo LAYERS     : $LAYERS
-echo KLUDGE_OUTER_AABB : $KLUDGE_OUTER_AABB
-echo EYE        : $EYE
-
-echo PREFIX   : $PREFIX
-echo GEOMETRY : $GEOMETRY
-echo OUTDIR   : $OUTDIR
-
+fmt="%-20s : %s \n"
+printf "$fmt" name $name
+printf "$fmt" PREFIX $PREFIX
+printf "$fmt" BIN $BIN
+printf "$fmt" GEOMETRY $GEOMETRY
+printf "$fmt" TMIN $TMIN
+printf "$fmt" CAMERATYPE $CAMERATYPE
+printf "$fmt" GRIDSPEC $GRIDSPEC
+printf "$fmt" EYE $EYE
+printf "$fmt" MODULO $MODULO
+printf "$fmt" SINGLE $SINGLE
+printf "$fmt" LAYERS $LAYERS
+printf "$fmt" KLUDGE_OUTER_AABB $KLUDGE_OUTER_AABB
+printf "$fmt" GAS_BI_AABB $GAS_BI_AABB
+printf "$fmt" OUTDIR $OUTDIR
 

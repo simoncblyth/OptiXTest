@@ -34,6 +34,7 @@ struct Geo
 
 
     int kludge_outer_aabb = 0 ; 
+    int gas_bi_aabb = 0 ; 
     float tmin = 0.f ; 
     float tmax = 1e16f ; 
     float top_extent = 100.f ; 

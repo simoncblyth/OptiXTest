@@ -17,7 +17,8 @@ Geo* Geo::fGeo = NULL ;
 Geo::Geo()
     :
     top("i0"),
-    kludge_outer_aabb(Util::GetEValue<int>("KLUDGE_OUTER_AABB", 0))
+    kludge_outer_aabb(Util::GetEValue<int>("KLUDGE_OUTER_AABB", 0)),
+    gas_bi_aabb(Util::GetEValue<int>("GAS_BI_AABB", 0))
 {
     fGeo = this ; 
     init();
@@ -29,8 +30,16 @@ void Geo::init()
     float tmaxf(10000.f) ; 
 
     std::string geometry = Util::GetEValue<std::string>("GEOMETRY", "sphere_containing_grid_of_spheres" ); 
-
     unsigned layers = Util::GetEValue<unsigned>("LAYERS", 1) ; 
+
+    std::cout
+        << "Geo::init"
+        << " geometry " << geometry
+        << " layers " << layers 
+        << " kludge_outer_aabb " << kludge_outer_aabb
+        << " gas_bi_aabb " << gas_bi_aabb
+        << std::endl 
+        ;    
 
     if(strcmp(geometry.c_str(), "sphere_containing_grid_of_spheres") == 0)
     {
@@ -170,6 +179,7 @@ void Geo::addShape(const char* typs, const std::vector<float>& extents)
 {
     Shape* sh = new Shape(typs, extents) ; 
     sh->kludge_outer_aabb = kludge_outer_aabb ; 
+    sh->gas_bi_aabb = gas_bi_aabb ; 
     shapes.push_back(sh); 
     std::cout << "Geo::addShape " << std::endl << sh->desc() << std::endl ;
 }

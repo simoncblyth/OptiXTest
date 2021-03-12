@@ -558,6 +558,7 @@ inline void NP::save_header(const char* path)
     update_headers(); 
     std::ofstream stream(path, std::ios::out|std::ios::binary);
     stream << _hdr ; 
+    if(stream.bad()) std::cout << "NP::save_header FAILED for " << path << std::endl ; 
 }
 
 inline void NP::save(const char* path)
@@ -566,6 +567,7 @@ inline void NP::save(const char* path)
     std::ofstream stream(path, std::ios::out|std::ios::binary);
     stream << _hdr ; 
     stream.write( bytes(), arr_bytes() );
+    if(stream.bad()) std::cout << "NP::save FAILED for " << path << std::endl ; 
 }
 
 inline void NP::save(const char* dir, const char* name)

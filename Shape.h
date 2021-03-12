@@ -4,7 +4,7 @@
 
 struct Shape
 {
-    enum { GBA_1NN=1, GBA_11N=2 } ; 
+    enum { GBA_1NN=0, GBA_11N=1 } ; 
     enum { ZERO=0, SPHERE=1, BOX=2 };
     static unsigned Type(char typ);
 
@@ -12,13 +12,12 @@ struct Shape
     char*  typs ; 
     float* param ;  // 4*num
     float* aabb ;   // 6*num 
-    unsigned gba ;   
-    bool kludge_outer_aabb ; 
 
-    bool is1NN() const ; // GAS:BI:AABB
-    bool is11N() const ;
-    void set1NN() ; 
-    void set11N() ; 
+    int kludge_outer_aabb ; 
+    int gas_bi_aabb ; 
+
+    bool is1NN() const ; 
+    bool is11N() const ; 
 
     Shape(const char typ, float sz);
     Shape(const char* typs, const std::vector<float>& szs);
