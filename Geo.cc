@@ -16,7 +16,8 @@ Geo* Geo::fGeo = NULL ;
 
 Geo::Geo()
     :
-    top("i0")
+    top("i0"),
+    kludge_outer_aabb(Util::GetEValue<int>("KLUDGE_OUTER_AABB", 0))
 {
     fGeo = this ; 
     init();
@@ -168,7 +169,9 @@ void Geo::addShape(const char* typs, float outer_extent, unsigned layers)
 void Geo::addShape(const char* typs, const std::vector<float>& extents)
 {
     Shape* sh = new Shape(typs, extents) ; 
+    sh->kludge_outer_aabb = kludge_outer_aabb ; 
     shapes.push_back(sh); 
+    std::cout << "Geo::addShape " << std::endl << sh->desc() << std::endl ;
 }
 void Geo::addGrid(const Grid* grid)
 {

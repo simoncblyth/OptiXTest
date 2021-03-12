@@ -23,17 +23,22 @@ gridspec=-10:11:2,-10:11:2,-10:11:2
 eye=-0.5,-0.5,0.5
 #eye=-1.0,-1.0,1.0
 
+# fudge currently does nothing 
 fudge=1
 #fudge=2
 #fudge=5
+
+# when non-zero repeats outer aabb for all layers of compound shape (optix 7 only)
+kludge_outer_aabb=0
+#kludge_outer_aabb=1
 
 cameratype=0
 
 # number of concentric layers in compound shapes
 #layers=1     
-#layers=2
+layers=2
 #layers=3
-layers=20
+#layers=20
 
 modulo=0,1
 single=2
@@ -50,6 +55,7 @@ export EYE=${EYE:-$eye}
 export MODULO=${MODULO:-$modulo}
 export SINGLE=${SINGLE:-$single}
 export LAYERS=${LAYERS:-$layers}
+export KLUDGE_OUTER_AABB=${KLUDGE_OUTER_AABB:-$kludge_outer_aabb}
 
 
 export OUTDIR=$PREFIX/$GEOMETRY/FUDGE_${FUDGE}_TMIN_${TMIN}
@@ -61,6 +67,7 @@ echo TMIN       : $TMIN
 echo CAMERATYPE : $CAMERATYPE
 echo GRIDSPEC   : $GRIDSPEC
 echo LAYERS     : $LAYERS
+echo KLUDGE_OUTER_AABB : $KLUDGE_OUTER_AABB
 echo EYE        : $EYE
 
 echo PREFIX   : $PREFIX

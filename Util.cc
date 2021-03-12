@@ -155,6 +155,7 @@ template float       Util::GetEValue<float>(const char* key, float fallback);
 template int         Util::GetEValue<int>(const char* key,   int  fallback); 
 template unsigned    Util::GetEValue<unsigned>(const char* key,   unsigned  fallback); 
 template std::string Util::GetEValue<std::string>(const char* key,  std::string  fallback); 
+template bool        Util::GetEValue<bool>(const char* key,  bool  fallback); 
 
 
 template void  Util::GetEVector<unsigned>(std::vector<unsigned>& vec, const char* key, const char* fallback  ); 

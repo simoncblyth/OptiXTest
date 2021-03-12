@@ -18,9 +18,45 @@
 #include "GAS_Builder.h"
 
 
+
+/**
+GAS_Builder::Build
+-------------------
+
+**/
+
 void GAS_Builder::Build(GAS& gas, const Shape* sh )  // static
 {
-    std::cout << "GAS_Builder::Build sh.num " << sh->num << std::endl ;  
+    if(sh->is1NN())
+    {
+        Build_1NN(gas, sh);  
+    }
+    else if(sh->is11N())
+    {
+        Build_11N(gas, sh);  
+    }
+    else
+    {
+        assert(0); 
+    }
+}
+
+/**
+GAS_Builder::Build_1NN GAS:BI:AABB  1:N:N  with a single AABB for each BI
+-----------------------------------------------------------------------------
+
+This way gets bbox chopped with 700, Driver 435.21
+
+**/
+
+void GAS_Builder::Build_1NN( GAS& gas, const Shape* sh )
+{
+    std::cout 
+        << "GAS_Builder::Build_1NN"
+        << " sh.num " << sh->num 
+        << " sh.kludge_outer_aabb " << sh->kludge_outer_aabb
+        << std::endl
+        ;  
     gas.sh = sh ; 
 
     for(unsigned i=0 ; i < sh->num ; i++)
@@ -31,6 +67,26 @@ void GAS_Builder::Build(GAS& gas, const Shape* sh )  // static
     std::cout << "GAS_Builder::Build bis.size " << gas.bis.size() << std::endl ; 
     Build(gas); 
 }
+
+
+/**
+GAS_Builder::Build_11N GAS:BI:AABB  1:1:N  one BI with multiple AABB
+-----------------------------------------------------------------------------
+
+**/
+
+void GAS_Builder::Build_11N( GAS& gas, const Shape* sh )
+{
+    std::cout << "GAS_Builder::Build_11N sh.num " << sh->num << std::endl ;  
+    gas.sh = sh ; 
+
+    assert(0); 
+}
+
+
+
+
+
 
 
 
@@ -63,11 +119,12 @@ within that BI.
 
 BI GAS_Builder::MakeCustomPrimitivesBI(const Shape* sh, unsigned i )
 {
+    std::cout << "GAS_Builder::MakeCustomPrimitivesBI " << std::endl ; 
+
     unsigned primitiveIndexOffset = i ; 
-    const float* aabb = sh->aabb + i*6u ; 
+    const float* aabb = sh->kludge_outer_aabb > 0  ? sh->aabb : sh->aabb + i*6u ; 
     //const float* param = sh->param + i*4u ; 
 
-    std::cout << "GAS_Builder::MakeCustomPrimitivesBI " << std::endl ; 
 
     BI bi = {} ; 
 

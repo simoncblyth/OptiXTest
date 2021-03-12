@@ -39,7 +39,8 @@ echo md5  : $dig
 echo npy  : $npy
 ls -l $ppm $npy 
 
-open $ppm
-
+if [ "$(uname)" == "Darwin" ]; then
+    open $ppm
+fi
 exit 0
 

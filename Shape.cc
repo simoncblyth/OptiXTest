@@ -15,12 +15,20 @@ unsigned Shape::Type(char typ)  // static
     return t ; 
 }
 
+bool Shape::is1NN() const { return gba == GBA_1NN ; }
+bool Shape::is11N() const { return gba == GBA_11N ; }
+
+void Shape::set1NN(){  gba = GBA_1NN ; }
+void Shape::set11N(){  gba = GBA_11N ; }
+
 Shape::Shape(const char typ, float sz)
     :
     num(1),
     typs(new char[num]),
     param(new float[4*num]),
-    aabb(new float[6*num])
+    aabb(new float[6*num]),
+    gba(GBA_1NN),
+    kludge_outer_aabb(0)
 {
     typs[0] = typ ; 
     std::vector<float> szs = { sz } ; 
@@ -32,7 +40,9 @@ Shape::Shape(const char* typs_, const std::vector<float>& szs)
     num(szs.size()),
     typs(new char[num]),
     param(new float[4*num]),
-    aabb(new float[6*num])
+    aabb(new float[6*num]),
+    gba(GBA_1NN),
+    kludge_outer_aabb(0)
 {
     size_t len = strlen(typs_); 
     for(unsigned i=0 ; i < num ; i++) typs[i] = i < len ? typs_[i] : typs_[0] ;    // duplicate the first typ, if run out 
@@ -96,6 +106,7 @@ std::string Shape::desc(unsigned idx) const
     std::stringstream ss ; 
     ss << " idx: " << idx  ;
     ss << " typ: " << get_type(idx)  ;
+    ss << " kludge_outer_aabb: " << kludge_outer_aabb ;  
     ss << " param: " ; 
     for(unsigned i=0 ; i < 4 ; i++) ss << param[i+4*idx] << " "  ; 
     ss << " aabb: " ; 

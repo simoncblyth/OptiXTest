@@ -32,6 +32,8 @@ struct Geo
     void setTopExtent(float top_extent_); 
     float getTopExtent() const ; 
 
+
+    int kludge_outer_aabb = 0 ; 
     float tmin = 0.f ; 
     float tmax = 1e16f ; 
     float top_extent = 100.f ; 
