@@ -56,10 +56,10 @@ struct SBT
     const GAS& getGAS(unsigned gas_idx) const ;
     const IAS& getIAS(unsigned ias_idx) const ;
 
-    unsigned getOffsetSBT(unsigned shape_idx_ , unsigned layer_idx_ ) const ; 
-    unsigned _getOffsetSBT(unsigned shape_idx_ , unsigned layer_idx_ ) const ;
+    unsigned getOffset(unsigned shape_idx_ , unsigned layer_idx_ ) const ; 
+    unsigned _getOffset(unsigned shape_idx_ , unsigned layer_idx_ ) const ;
 
-    unsigned getTotalSBT() const ;
+    unsigned getTotalRec() const ;
     void createHitgroup(const Geo* geo);
     void checkHitgroup(const Geo* geo); 
 

@@ -13,8 +13,8 @@ void test_scan()
     unsigned gas_idx_(0) ; 
     unsigned count(0) ; 
 
-    for(unsigned ias_idx=0 ; ias_idx <= 0xf    ; ias_idx++){
-    for(unsigned ins_idx=0 ; ins_idx <= 0xffff ; ins_idx++){
+    for(unsigned ias_idx=0 ; ias_idx <  0xf    ; ias_idx++){
+    for(unsigned ins_idx=0 ; ins_idx <  0xffff ; ins_idx++){
     for(unsigned gas_idx=0 ; gas_idx <  0xfff  ; gas_idx++){
 
        unsigned id = Identity::Encode(ias_idx, ins_idx, gas_idx ); 
@@ -64,7 +64,7 @@ void test_zero()
     assert( ias_idx_ == ias_idx ); 
     assert( ins_idx_ == ins_idx ); 
     assert( gas_idx_ == gas_idx ); 
-    assert( id == 1u );   
+    assert( id > 0u );   
 }
 
 int main(int argc, char** argv)

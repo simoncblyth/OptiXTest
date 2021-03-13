@@ -20,14 +20,14 @@ static __forceinline__ __device__ void trace(
     uint32_t p0, p1, p2, p3 ;
     uint32_t p4, p5, p6, p7 ;
 
-    p0 = float_as_int( normal->x );
-    p1 = float_as_int( normal->y );
-    p2 = float_as_int( normal->z );
-    p3 = float_as_int( *t );
+    p0 = float_as_uint( normal->x );
+    p1 = float_as_uint( normal->y );
+    p2 = float_as_uint( normal->z );
+    p3 = float_as_uint( *t );
 
-    p4 = float_as_int( position->x );
-    p5 = float_as_int( position->y );
-    p6 = float_as_int( position->z );
+    p4 = float_as_uint( position->x );
+    p5 = float_as_uint( position->y );
+    p6 = float_as_uint( position->z );
     p7 = *identity ;
  
     unsigned SBToffset = 0u ; 
@@ -51,28 +51,28 @@ static __forceinline__ __device__ void trace(
             p4, p5, p6, p7
             );
 
-    normal->x = int_as_float( p0 );
-    normal->y = int_as_float( p1 );
-    normal->z = int_as_float( p2 );
-    *t        = int_as_float( p3 ); 
+    normal->x = uint_as_float( p0 );
+    normal->y = uint_as_float( p1 );
+    normal->z = uint_as_float( p2 );
+    *t        = uint_as_float( p3 ); 
 
-    position->x = int_as_float( p4 );
-    position->y = int_as_float( p5 );
-    position->z = int_as_float( p6 );
+    position->x = uint_as_float( p4 );
+    position->y = uint_as_float( p5 );
+    position->z = uint_as_float( p6 );
     *identity   = p7 ; 
  
 }
 
 static __forceinline__ __device__ void setPayload( float3 normal, float t, float3 position, unsigned identity )
 {
-    optixSetPayload_0( float_as_int( normal.x ) );
-    optixSetPayload_1( float_as_int( normal.y ) );
-    optixSetPayload_2( float_as_int( normal.z ) );
-    optixSetPayload_3( float_as_int( t ) );
+    optixSetPayload_0( float_as_uint( normal.x ) );
+    optixSetPayload_1( float_as_uint( normal.y ) );
+    optixSetPayload_2( float_as_uint( normal.z ) );
+    optixSetPayload_3( float_as_uint( t ) );
 
-    optixSetPayload_4( float_as_int( position.x ) );
-    optixSetPayload_5( float_as_int( position.y ) );
-    optixSetPayload_6( float_as_int( position.z ) );
+    optixSetPayload_4( float_as_uint( position.x ) );
+    optixSetPayload_5( float_as_uint( position.y ) );
+    optixSetPayload_6( float_as_uint( position.z ) );
     optixSetPayload_7( identity );
 }
 
@@ -127,7 +127,7 @@ extern "C" __global__ void __raygen__rg()
     unsigned index = ( yflip ? dim.y - 1 - idx.y : idx.y ) * params.width + idx.x ;
 
     params.pixels[index] = color ; 
-    params.isect[index] = make_float4( position.x, position.y, position.z, int_as_float(identity)) ; 
+    params.isect[index] = make_float4( position.x, position.y, position.z, uint_as_float(identity)) ; 
 }
 
 extern "C" __global__ void __miss__ms()
@@ -175,14 +175,14 @@ extern "C" __global__ void __intersection__is()
         unsigned a0, a1, a2, a3;   // attribute registers
         unsigned a4, a5, a6, a7;
 
-        a0 = float_as_int( shading_normal.x );
-        a1 = float_as_int( shading_normal.y );
-        a2 = float_as_int( shading_normal.z );
-        a3 = float_as_int( t_cand ) ; 
+        a0 = float_as_uint( shading_normal.x );
+        a1 = float_as_uint( shading_normal.y );
+        a2 = float_as_uint( shading_normal.z );
+        a3 = float_as_uint( t_cand ) ; 
 
-        a4 = float_as_int( position.x );
-        a5 = float_as_int( position.y );
-        a6 = float_as_int( position.z );
+        a4 = float_as_uint( position.x );
+        a5 = float_as_uint( position.y );
+        a6 = float_as_uint( position.z );
         a7 = bindex ; 
 
         optixReportIntersection(
@@ -198,28 +198,26 @@ extern "C" __global__ void __closesthit__ch()
 {
     const float3 shading_normal =
         make_float3(
-                int_as_float( optixGetAttribute_0() ),
-                int_as_float( optixGetAttribute_1() ),
-                int_as_float( optixGetAttribute_2() )
+                uint_as_float( optixGetAttribute_0() ),
+                uint_as_float( optixGetAttribute_1() ),
+                uint_as_float( optixGetAttribute_2() )
                 );
 
     float t = int_as_float( optixGetAttribute_3() ) ; 
 
     const float3 position =
         make_float3(
-                int_as_float( optixGetAttribute_4() ),
-                int_as_float( optixGetAttribute_5() ),
-                int_as_float( optixGetAttribute_6() )
+                uint_as_float( optixGetAttribute_4() ),
+                uint_as_float( optixGetAttribute_5() ),
+                uint_as_float( optixGetAttribute_6() )
                 );
 
-    unsigned bindex = optixGetAttribute_7() ;
+    //unsigned bindex = optixGetAttribute_7() ;
+    //unsigned instanceIndex = optixGetInstanceIndex() ;    
 
-    //TODO: try optixGetInstanceId() to pass bitfield with gas_idx and transform_idx, NB ~0u for None 
-    unsigned instance_id = 1u + optixGetInstanceIndex() ;    // see IAS_Builder::Build
-    unsigned primitive_id = 1u + optixGetPrimitiveIndex() ;  // see GAS_Builder::MakeCustomPrimitivesBI 
-
-    // NB: primitive_id is the layer in the GAS, how to get gas_idx at this level without using an attribute 
-    unsigned identity = ( instance_id << 16 ) | (primitive_id << 8) | ( bindex << 0 )  ;
+    unsigned instance_id = optixGetInstanceId() ;        // see IAS_Builder::Build and InstanceId.h 
+    unsigned prim_id  = 1u + optixGetPrimitiveIndex() ;  // see GAS_Builder::MakeCustomPrimitivesBI 
+    unsigned identity = (( prim_id & 0xff ) << 24 ) | ( instance_id & 0x00ffffff ) ; 
  
     float3 normal = normalize( optixTransformNormalFromObjectToWorldSpace( shading_normal ) ) * 0.5f + 0.5f ;  
 

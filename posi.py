@@ -101,23 +101,26 @@ def make_mask(posi):
 
 
 
+
 class IAS(object):
     @classmethod
     def Path(cls, iasdir):
         return "%s/grid.npy" % iasdir
     @classmethod
-    def Make(cls, iasdir):
+    def Make(cls, iasdir, idn):
         path = cls.Path(iasdir)
-        return cls(path) if os.path.exists(path) else None
-    def __init__(self, path):
+        return cls(path, idn) if os.path.exists(path) else None
+    def __init__(self, path, idn):
         self.dir = os.path.dirname(path)
         raw = load_(path)
 
         # see Identity.h  all _idx are 0-based
         identity  = raw[:,0,3].view(np.uint32)  
-        ias_idx = (( 0xf0000000 & identity ) >> 28 ) ;  
-        ins_idx = (( 0x0ffff000 & identity ) >> 12 ) ; 
-        gas_idx = (( 0x00000fff & identity ) >>  0 ) - 1 ;  
+
+        ins_id = idn.ins_id(identity)
+        gas_id = idn.gas_id(identity)
+        ins_idx = ins_id - 1 
+        gas_idx = gas_id - 1 
 
         trs = raw.copy()
         trs[:,0,3] = 0.   # scrub the identity info 
@@ -164,15 +167,42 @@ class GAS(object):
         return d 
 
 
+class Identity(object):
+    def __init__(self, base):
+        log.info("base:%s" % base)
+        spec = load_("%s/spec.npy" % base)
+        ins_bits = spec[2]
+        gas_bits = spec[3]
+        ins_mask = ( 1 << ins_bits ) - 1 
+        gas_mask = ( 1 << gas_bits ) - 1 
+
+        self.spec = spec
+        self.ins_bits = ins_bits
+        self.gas_bits = gas_bits
+        self.ins_mask = ins_mask
+        self.gas_mask = gas_mask
+
+    def ins_id(self, pxid):
+        ins_mask = self.ins_mask
+        gas_bits = self.gas_bits  
+        return (( (ins_mask << gas_bits ) & pxid ) >> gas_bits ) 
+    def gas_id(self, pxid):
+        gas_bits = self.gas_bits  
+        gas_mask = self.gas_mask
+        return  ( gas_mask & pxid ) >>  0 
+    def prim_id(self, pxid):
+        return ( pxid & 0xff000000 ) >> 24
+
+
 class Geo(object):
     def __init__(self, base):
         log.info("base:%s" % base)
-
+        idn = Identity(base)
         ias_dirs = sorted(glob.glob("%s/grid/*" % base))
         log.info("ias_dirs:\n%s" % "\n".join(ias_dirs)) 
         ias = {}
         for ias_idx in range(len(ias_dirs)):
-            ias_ = IAS.Make(ias_dirs[ias_idx])
+            ias_ = IAS.Make(ias_dirs[ias_idx], idn)
             if ias_ is None: continue
             ias[ias_idx] = ias_
         pass
@@ -183,8 +213,16 @@ class Geo(object):
         for gas_idx in range(len(gas_dirs)):
             gas[gas_idx] = GAS(gas_dirs[gas_idx])
         pass
+        self.idn = idn
         self.ias = ias
         self.gas = gas
+
+    def ins_id(self, pxid):
+        return self.idn.ins_id(pxid)
+    def gas_id(self, pxid):
+        return self.idn.gas_id(pxid)
+    def prim_id(self, pxid):
+        return self.idn.prim_id(pxid)
 
 
 if __name__ == '__main__':
@@ -205,17 +243,12 @@ if __name__ == '__main__':
 
     pxid = posi[:,:,3].view(np.uint32)      # pixel identity 
 
-    # all _id are 1-based to distinguish from miss at zero
-    instance_id   = ( pxid & 0xffff0000 ) >> 16    
-    primitive_id  = ( pxid & 0x0000ff00 ) >> 8 
+    ins_id = geo.ins_id(pxid)
+    gas_id = geo.gas_id(pxid)
+    prim_id = geo.prim_id(pxid)
+  
 
-    bindex        = ( pxid & 0x000000ff ) >> 0 
-    shape_id      = ( pxid & 0x000000f0 ) >> 4    
-    layer_id      = ( pxid & 0x0000000f ) >> 0     
-
-    ## hg->data.bindex = ((1u+shape_idx) << 4 ) | ((1u+layer_idx) << 0 ) ;
-
-    assert np.all( layer_id == primitive_id )
+    #assert np.all( layer_id == primitive_id )
     #plot2d(shape_id) 
     #plot2d(layer_id) 
 
@@ -234,23 +267,22 @@ if 1:
         zid_count = upxid_counts[i]
         assert zid > 0, "must skip misses at i=0"     
 
-        zinstance_id   = ( zid & 0xffff0000 ) >> 16 
-        zprimitive_id  = ( zid & 0x0000ff00 ) >> 8
-        zshape_id      = ( zid & 0x000000f0 ) >> 4
-        zlayer_id      = ( zid & 0x0000000f ) >> 0
-        assert zprimitive_id == zlayer_id 
+        zins_id = geo.ins_id(zid)
+        zgas_id = geo.gas_id(zid)
+        zprim_id = geo.prim_id(zid)
 
-        zinstance_idx = zinstance_id - 1
-        zprimitive_idx = zprimitive_id - 1
-        zshape_idx = zshape_id - 1 
+        zgas_idx = zgas_id - 1 
+        zinstance_idx = zins_id - 1  
+        zprimitive_idx = zprim_id - 1 
 
         tr = geo.ias[0].trs[zinstance_idx]
         itr = geo.ias[0].itrs[zinstance_idx]
 
         gas_idx = geo.ias[0].gas_idx[zinstance_idx]   # lookup in the IAS the gas_idx for this instance
         ins_idx = geo.ias[0].ins_idx[zinstance_idx]   # lookup in the IAS the ins_idx for this instance  
+
         assert ins_idx == zinstance_idx  
-        assert gas_idx == zshape_idx 
+        assert gas_idx == zgas_idx 
 
         z = np.where(pxid == zid)   
 

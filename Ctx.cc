@@ -13,6 +13,7 @@
 
 #include "CUDA_CHECK.h"
 #include "OPTIX_CHECK.h"
+#include "Properties.h"
 
 OptixDeviceContext Ctx::context = nullptr ;
 
@@ -23,9 +24,12 @@ void Ctx::context_log_cb( unsigned int level, const char* tag, const char* messa
         << message << "\n";
 }
 
+
+
 Ctx::Ctx(Params* params_)
     :
-    params(params_)
+    params(params_),
+    props(nullptr)
 {
     CUDA_CHECK( cudaFree( 0 ) ); 
 
@@ -35,6 +39,8 @@ Ctx::Ctx(Params* params_)
     options.logCallbackFunction       = &Ctx::context_log_cb;
     options.logCallbackLevel          = 4;
     OPTIX_CHECK( optixDeviceContextCreate( cuCtx, &options, &context ) );
+
+    props = new Properties ; 
 }
 
 void Ctx::uploadParams()
@@ -46,5 +52,6 @@ void Ctx::uploadParams()
                 cudaMemcpyHostToDevice
                 ) );
 }
+
 
 

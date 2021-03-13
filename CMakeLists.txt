@@ -72,6 +72,7 @@ if(OptiX_VERSION_ GREATER_EQUAL 70000)
 
    list(APPEND SOURCES  
         Ctx.cc 
+        Properties.cc 
         GAS.cc 
         GAS_Builder.cc 
         PIP.cc 

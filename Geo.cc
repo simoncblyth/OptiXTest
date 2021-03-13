@@ -11,6 +11,7 @@
 #include "Geo.h"
 #include "Shape.h"
 #include "Grid.h"
+#include "InstanceId.h"
 
 Geo* Geo::fGeo = NULL ; 
 
@@ -214,6 +215,15 @@ const Grid* Geo::getGrid(int grid_idx_) const
 void Geo::write(const char* dir) const 
 {
     std::cout << "Geo::write " << dir << std::endl ;  
+
+    NP spec("<u4", 4); 
+    unsigned* v = spec.values<unsigned>() ; 
+    *(v+0) = getNumShape(); 
+    *(v+1) = getNumGrid(); 
+    *(v+2) = InstanceId::ins_bits ; 
+    *(v+3) = InstanceId::gas_bits ; 
+    spec.save(dir, "spec.npy"); 
+
     unsigned num_shape = getNumShape(); 
     for(unsigned i=0 ; i < num_shape ; i++) 
     {

@@ -15,7 +15,7 @@
 #include "Grid.h"
 #include "Ctx.h"
 
-#include "Identity.h"
+#include "InstanceId.h"
 #include "GAS.h"
 #include "IAS.h"
 #include "IAS_Builder.h"
@@ -42,20 +42,18 @@ void IAS_Builder::Build(IAS& ias, const Grid* gr, const SBT* sbt) // static
         memcpy( glm::value_ptr(idv), &imat[3], 4*sizeof(float) ); 
 
 
-        unsigned id = idv.x ; 
-        unsigned ias_idx ; 
+        unsigned identity = idv.x ; 
         unsigned ins_idx ; 
         unsigned gas_idx ; 
-        Identity::Decode( ias_idx, ins_idx, gas_idx, id );
-
+        InstanceId::Decode( ins_idx, gas_idx, identity );
         unsigned prim_idx = 0u ; 
 
         const GAS& gas = sbt->getGAS(gas_idx); 
 
         OptixInstance instance = {} ; 
         memcpy( instance.transform, glm::value_ptr(imat), 12*sizeof( float ) );
-        instance.instanceId = id ; 
-        instance.sbtOffset = sbt->getOffsetSBT(gas_idx, prim_idx );            
+        instance.instanceId = identity ; 
+        instance.sbtOffset = sbt->getOffset(gas_idx, prim_idx );            
         instance.visibilityMask = 255;
         instance.flags = flags ;
         instance.traversableHandle = gas.handle ; 

@@ -211,7 +211,7 @@ AS* SBT::getAS(const char* spec) const
    return a ; 
 }
 
-unsigned SBT::getOffsetSBT(unsigned shape_idx_ , unsigned layer_idx_ ) const 
+unsigned SBT::getOffset(unsigned shape_idx_ , unsigned layer_idx_ ) const 
 {
     assert( geo ); 
     bool is_1NN = geo->gas_bi_aabb == 0u ;  
@@ -222,10 +222,11 @@ unsigned SBT::getOffsetSBT(unsigned shape_idx_ , unsigned layer_idx_ ) const
     unsigned num_shape = geo->getNumShape(); 
     assert( num_gas == num_shape ); 
 
-    unsigned offset_sbt = _getOffsetSBT(shape_idx_, layer_idx_ ); 
+    unsigned offset_sbt = _getOffset(shape_idx_, layer_idx_ ); 
  
-    std::cout 
-        << "SBT::getOffsetSBT"
+    bool dump = false ; 
+    if(dump) std::cout 
+        << "SBT::getOffset"
         << " num_gas " <<  num_gas
         << " shape_idx_ " << shape_idx_
         << " layer_idx_ " << layer_idx_
@@ -236,7 +237,7 @@ unsigned SBT::getOffsetSBT(unsigned shape_idx_ , unsigned layer_idx_ ) const
     return offset_sbt ; 
 }
 
-unsigned SBT::_getOffsetSBT(unsigned shape_idx_ , unsigned layer_idx_ ) const 
+unsigned SBT::_getOffset(unsigned shape_idx_ , unsigned layer_idx_ ) const 
 {
     unsigned offset_sbt = 0 ; 
     bool is_1NN = geo->gas_bi_aabb == 0u ;  
@@ -266,11 +267,11 @@ unsigned SBT::_getOffsetSBT(unsigned shape_idx_ , unsigned layer_idx_ ) const
 }
 
 
-unsigned SBT::getTotalSBT() const 
+unsigned SBT::getTotalRec() const 
 {
     bool is_1NN = geo->gas_bi_aabb == 0u ;  
     unsigned tot_bi = 0 ; 
-    unsigned tot_sbt = 0 ; 
+    unsigned tot_rec = 0 ; 
     for(unsigned i=0 ; i < vgas.size() ; i++)
     {
         const GAS& gas = vgas[i] ;    
@@ -280,14 +281,14 @@ unsigned SBT::getTotalSBT() const
         { 
             const BI& bi = gas.bis[j] ; 
             const OptixBuildInputCustomPrimitiveArray& buildInputCPA = bi.buildInput.aabbArray ;
-            unsigned num_sbt = buildInputCPA.numSbtRecords ; 
-            if(is_1NN) assert( num_sbt == 1 );  
-            tot_sbt += num_sbt ; 
+            unsigned num_rec = buildInputCPA.numSbtRecords ; 
+            if(is_1NN) assert( num_rec == 1 );  
+            tot_rec += num_rec ; 
         }         
     }
-    assert( tot_bi > 0 && tot_sbt > 0 );  
-    if(is_1NN) assert( tot_bi == tot_sbt );  
-    return tot_sbt ;  
+    assert( tot_bi > 0 && tot_rec > 0 );  
+    if(is_1NN) assert( tot_bi == tot_rec );  
+    return tot_rec ;  
 }
 
 
@@ -300,20 +301,20 @@ void SBT::createHitgroup(const Geo* geo)
     unsigned num_shape = geo->getNumShape(); 
     unsigned num_gas = vgas.size(); 
     assert( num_gas == num_shape ); 
-    unsigned tot_sbt = getTotalSBT(); 
+    unsigned tot_rec = getTotalRec(); 
 
     std::cout 
         << "SBT::createHitgroup"
         << " num_shape " << num_shape 
         << " num_gas " << num_gas 
-        << " tot_sbt " << tot_sbt 
+        << " tot_rec " << tot_rec 
         << std::endl 
         ; 
 
-    hitgroup = new HitGroup[tot_sbt] ; 
+    hitgroup = new HitGroup[tot_rec] ; 
     HitGroup* hg = hitgroup ; 
 
-    for(unsigned i=0 ; i < tot_sbt ; i++)   // pack headers CPU side
+    for(unsigned i=0 ; i < tot_rec ; i++)   // pack headers CPU side
          OPTIX_CHECK( optixSbtRecordPackHeader( pip->hitgroup_pg, hitgroup + i ) ); 
     
     unsigned sbt_offset = 0 ; 
@@ -330,13 +331,13 @@ void SBT::createHitgroup(const Geo* geo)
         { 
             const BI& bi = gas.bis[j] ; 
             const OptixBuildInputCustomPrimitiveArray& buildInputCPA = bi.buildInput.aabbArray ;
-            unsigned num_sbt = buildInputCPA.numSbtRecords ; 
-            if(is_1NN) assert( num_sbt == 1 ); 
+            unsigned num_rec = buildInputCPA.numSbtRecords ; 
+            if(is_1NN) assert( num_rec == 1 ); 
 
-            for( unsigned k=0 ; k < num_sbt ; k++)
+            for( unsigned k=0 ; k < num_rec ; k++)
             { 
                 unsigned layer_idx = is_1NN ? j : k ;   
-                unsigned check_sbt_offset = getOffsetSBT(shape_idx, layer_idx ); 
+                unsigned check_sbt_offset = getOffset(shape_idx, layer_idx ); 
                 bool expected_sbt_offset = check_sbt_offset == sbt_offset  ;
 
                 std::cout 
@@ -377,12 +378,12 @@ void SBT::createHitgroup(const Geo* geo)
         }
     }
 
-    CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &d_hitgroup ), sizeof(HitGroup)*tot_sbt ));
-    CUDA_CHECK( cudaMemcpy(reinterpret_cast<void*>( d_hitgroup ), hitgroup, sizeof( HitGroup )*tot_sbt, cudaMemcpyHostToDevice ));
+    CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &d_hitgroup ), sizeof(HitGroup)*tot_rec ));
+    CUDA_CHECK( cudaMemcpy(reinterpret_cast<void*>( d_hitgroup ), hitgroup, sizeof(HitGroup)*tot_rec, cudaMemcpyHostToDevice ));
 
     sbt.hitgroupRecordBase  = d_hitgroup;
     sbt.hitgroupRecordStrideInBytes = sizeof(HitGroup);
-    sbt.hitgroupRecordCount = tot_sbt ;
+    sbt.hitgroupRecordCount = tot_rec ;
 }
 
 

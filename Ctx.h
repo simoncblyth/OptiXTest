@@ -4,11 +4,13 @@
 #include <optix.h>
 
 struct Params ; 
+struct Properties ; 
 struct AS ; 
 
 struct Ctx 
 {
     Params*     params ; 
+    Properties* props ; 
     CUdeviceptr d_param;
     static OptixDeviceContext context ;
 
