@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 
-import os, numpy as np, glob, logging
-import matplotlib.pyplot as plt 
+import os, glob, logging
 log = logging.getLogger(__name__)
 
+import numpy as np
+np.set_printoptions(suppress=True)
+
+try:
+    import matplotlib.pyplot as plt 
+except ImportError:
+    plt = None
+pass
 try:
     import pyvista as pv
 except ImportError:
@@ -17,8 +24,16 @@ def plot3d(pos):
     cp = pl.show()
     return cp
 
+def plot2d(img):
+    """
+    plot2d(pxid)
+    plot2d(bindex)
+    """
+    fig, axs = plt.subplots(1)
+    axs.imshow(img) 
+    fig.show()
 
-np.set_printoptions(suppress=True)
+
 
 dir_ = lambda:os.environ.get("OUTDIR", os.getcwd())
 path_ = lambda name:os.path.join(dir_(), name)
@@ -68,54 +83,105 @@ def pick_intersect_pixels( posi, pick_id ):
     return pick 
 
 
-class Geo(object):
-    def __init__(self, base):
-        log.info("base:%s" % base)
+def make_mask(posi):
+    height = posi.shape[0]
+    width = posi.shape[1]
 
-        ias_paths = sorted(glob.glob("%s/grid/*/grid.npy" % base)) 
-        log.info("ias_paths:\n%s" % "\n".join(ias_paths)) 
-        ias = {}
-        for ias_idx, ias_path in enumerate(ias_paths):
-            ias[ias_idx] = load_(ias_path)
-        pass
+    pxid = posi[:,:,3].view(np.uint32)      # pixel identity 
 
-        gas_paths = sorted(glob.glob("%s/shape/*/param.npy" % base))
-        log.info("gas_paths:\n%s" % "\n".join(gas_paths)) 
-        gas = {}
-        for gas_idx, gas_path in enumerate(gas_paths):
-            gas[gas_idx] = load_(gas_path)
-        pass
+    instance_id   = ( pxid & 0xffff0000 ) >> 16    # all three _id are 1-based to distinguish from miss at zero
+    primitive_id  = ( pxid & 0x0000ff00 ) >> 8 
+    bindex = ( pxid & 0x000000ff ) >> 0 
 
-        ias_ins_idx = ias[0][:,0,3].view(np.uint32)  
-        ias_gas_idx = ias[0][:,1,3].view(np.uint32)  
+    select = np.where( bindex == 45 )    
 
-        trs = ias[0].copy()
+    mask = np.zeros( (height, width), dtype=np.float32 )  
+    mask[select] = 1 
+    return mask 
+
+
+
+class IAS(object):
+    @classmethod
+    def Path(cls, iasdir):
+        return "%s/grid.npy" % iasdir
+    @classmethod
+    def Make(cls, iasdir):
+        path = cls.Path(iasdir)
+        return cls(path) if os.path.exists(path) else None
+    def __init__(self, path):
+        self.dir = os.path.dirname(path)
+        raw = load_(path)
+
+        ins_idx = raw[:,0,3].view(np.uint32)  
+        gas_idx = raw[:,1,3].view(np.uint32)   # 0-based
+
+        trs = raw.copy()
         trs[:,0,3] = 0.   # scrub the identity info 
         trs[:,1,3] = 0.
         trs[:,2,3] = 0.
         trs[:,3,3] = 1.
         itrs = np.linalg.inv(trs)  ## invert all the IAS transforms at once
 
+        self.raw = raw
         self.trs = trs
         self.itrs = itrs
-        self.ias = ias
-        self.gas = gas
-        self.ias_ins_idx = ias_ins_idx
-        self.ias_gas_idx = ias_gas_idx
+        self.ins_idx = ins_idx
+        self.gas_idx = gas_idx
+    pass
 
-    def radius(self, gas_idx, prim_idx):
-        """
-        grabbing radius from bbox : sphere specific
-        """
-        gas = self.gas[gas_idx]
-        bbox = gas[prim_idx] 
-        radius = bbox[1][0]   
-        return radius
 
-    def sdf(self, gas_idx, prim_idx, lpos):
-        radius = self.radius(gas_idx, prim_idx)
+
+class GAS(object):
+    def __init__(self, gasdir):
+        self.dir = gasdir
+        self.param = load_("%s/param.npy" % gasdir)
+        self.aabb = load_("%s/aabb.npy" % gasdir)
+    pass
+    def __repr__(self):
+        return "GAS %s param %s aabb %s " % (self.dir, str(self.param.shape), str(self.aabb.shape))
+
+    def par(self, prim_idx):
+        assert prim_idx < len(self.param)
+        return self.param[prim_idx]
+
+    def radius(self, prim_idx):
+        """
+        specific to sphere param layout 
+        """
+        p = self.par(prim_idx)
+        return p[0,0]
+
+    def sdf(self, prim_idx, lpos):
+        """
+        shapes need type codes and a switch statement to pick the right param and sdf functions  
+        """
+        radius = self.radius(prim_idx)
         d = sdf_sphere(lpos[:,:3], radius )  # sdf : distances to sphere surface 
         return d 
+
+
+class Geo(object):
+    def __init__(self, base):
+        log.info("base:%s" % base)
+
+        ias_dirs = sorted(glob.glob("%s/grid/*" % base))
+        log.info("ias_dirs:\n%s" % "\n".join(ias_dirs)) 
+        ias = {}
+        for ias_idx in range(len(ias_dirs)):
+            ias_ = IAS.Make(ias_dirs[ias_idx])
+            if ias_ is None: continue
+            ias[ias_idx] = ias_
+        pass
+
+        gas_dirs = sorted(glob.glob("%s/shape/*" % base))
+        log.info("gas_dirs:\n%s" % "\n".join(gas_dirs)) 
+        gas = {}
+        for gas_idx in range(len(gas_dirs)):
+            gas[gas_idx] = GAS(gas_dirs[gas_idx])
+        pass
+        self.ias = ias
+        self.gas = gas
 
 
 if __name__ == '__main__':
@@ -132,15 +198,21 @@ if __name__ == '__main__':
     #pick_id = identity( 500, 1 ) 
     #pick = pick_intersect_pixels(posi, pick_id )
 
-    #print(posi.shape)
-    #print(ias_[0].shape)
-    #print(posi.shape)
-
     pxid = posi[:,:,3].view(np.uint32)      # pixel identity 
 
-    instance_id   = ( pxid & 0xffff0000 ) >> 16    # all three _id are 1-based to distinguish from miss at zero
+    # all _id are 1-based to distinguish from miss at zero
+    instance_id   = ( pxid & 0xffff0000 ) >> 16    
     primitive_id  = ( pxid & 0x0000ff00 ) >> 8 
-    buildinput_id = ( pxid & 0x000000ff ) >> 0 
+
+    bindex        = ( pxid & 0x000000ff ) >> 0 
+    shape_id      = ( pxid & 0x000000f0 ) >> 4    
+    layer_id      = ( pxid & 0x0000000f ) >> 0     
+
+    ## hg->data.bindex = ((1u+shape_idx) << 4 ) | ((1u+layer_idx) << 0 ) ;
+
+    assert np.all( layer_id == primitive_id )
+    #plot2d(shape_id) 
+    #plot2d(layer_id) 
 
     #assert np.all( primitive_id == buildinput_id ) 
 
@@ -150,27 +222,30 @@ if __name__ == '__main__':
     ires = np.zeros( (len(upxid), 4), dtype=np.int32 )
     fres = np.zeros( (len(upxid), 4), dtype=np.float32 )
 
-if 0:
+if 1:
     # loop over all identified pieces of geometry with intersects
-    for i in range(1,len(upxid)):
+    for i in range(1,len(upxid)):   # NB zero is skipped : this assumes there are some misses 
         zid = upxid[i] 
         zid_count = upxid_counts[i]
-        assert zid > 0, "must skip misses at i=0"    # hmm this assumes there are some misses   
+        assert zid > 0, "must skip misses at i=0"     
 
-        zinstance_id = ( zid & 0xffff0000 ) >> 16 
+        zinstance_id   = ( zid & 0xffff0000 ) >> 16 
         zprimitive_id  = ( zid & 0x0000ff00 ) >> 8
-        zbuildinput_id = ( zid & 0x000000ff ) >> 0
-        #assert zprimitive_id == zbuildinput_id 
+        zshape_id      = ( zid & 0x000000f0 ) >> 4
+        zlayer_id      = ( zid & 0x0000000f ) >> 0
+        assert zprimitive_id == zlayer_id 
 
         zinstance_idx = zinstance_id - 1
         zprimitive_idx = zprimitive_id - 1
+        zshape_idx = zshape_id - 1 
 
-        tr = geo.trs[zinstance_idx]
-        itr = geo.itrs[zinstance_idx]
+        tr = geo.ias[0].trs[zinstance_idx]
+        itr = geo.ias[0].itrs[zinstance_idx]
 
-        gas_idx = geo.ias_gas_idx[zinstance_idx]   # lookup in the IAS the gas_idx for this instance
-        ins_idx = geo.ias_ins_idx[zinstance_idx]   # lookup in the IAS the ins_idx for this instance  
-        assert ins_idx == zinstance_idx  # check  
+        gas_idx = geo.ias[0].gas_idx[zinstance_idx]   # lookup in the IAS the gas_idx for this instance
+        ins_idx = geo.ias[0].ins_idx[zinstance_idx]   # lookup in the IAS the ins_idx for this instance  
+        assert ins_idx == zinstance_idx  
+        assert gas_idx == zshape_idx 
 
         z = np.where(pxid == zid)   
 
@@ -179,8 +254,10 @@ if 0:
         zposi[:,3] = 1.      # global 3d coords for intersect pixels, ready for transform
         zlpos = np.dot( zposi, itr ) # transform global positions into instance local ones 
 
-        radius = geo.radius(gas_idx, zprimitive_idx )  
-        d = geo.sdf(gas_idx, zprimitive_idx, zlpos[:,:3] )  
+        radius = geo.gas[gas_idx].radius(zprimitive_idx)  
+        d = geo.gas[gas_idx].sdf(zprimitive_idx, zlpos[:,:3] )  
+
+         
 
         print("i:%5d zid:%9d zid_count:%6d ins_idx:%4d gas_idx:%3d  d.min:%10s d.max:%10s radius:%s  "  % ( i, zid, zid_count, ins_idx, gas_idx, d.min(), d.max(), radius ))
         pass

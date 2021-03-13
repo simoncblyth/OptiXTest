@@ -369,7 +369,7 @@ void SBT::createHitgroup(const Geo* geo)
                 delete [] values ; 
          
                 hg->data.values = d_values ; // set device pointer into CPU struct about to be copied to device
-                hg->data.bindex = (1u+shape_idx)*1000u + (1u+layer_idx) ;  
+                hg->data.bindex = ((1u+shape_idx) << 4 ) | ((1u+layer_idx) << 0 ) ;  
 
                 hg++ ; 
                 sbt_offset++ ; 
