@@ -113,8 +113,11 @@ class IAS(object):
         self.dir = os.path.dirname(path)
         raw = load_(path)
 
-        ins_idx = raw[:,0,3].view(np.uint32)  
-        gas_idx = raw[:,1,3].view(np.uint32)   # 0-based
+        # see Identity.h  all _idx are 0-based
+        identity  = raw[:,0,3].view(np.uint32)  
+        ias_idx = (( 0xf0000000 & identity ) >> 28 ) ;  
+        ins_idx = (( 0x0ffff000 & identity ) >> 12 ) ; 
+        gas_idx = (( 0x00000fff & identity ) >>  0 ) - 1 ;  
 
         trs = raw.copy()
         trs[:,0,3] = 0.   # scrub the identity info 
@@ -189,6 +192,8 @@ if __name__ == '__main__':
     base = dir_()
     print(base)
     geo = Geo(base)
+
+    i0 = geo.ias[0]
 
     posi = load_("posi.npy")
     hposi = posi[posi[:,:,3] != 0 ]  

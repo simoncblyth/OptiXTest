@@ -96,7 +96,8 @@ void Geo::init_sphere_containing_grid_of_spheres(float& tminf, float& tmaxf, uns
 {
     std::cout << "Geo::init_sphere_containing_grid_of_spheres : layers " << layers << std::endl ; 
 
-    Grid* grid = new Grid(3) ; 
+    unsigned ias_idx = grids.size(); 
+    Grid* grid = new Grid(ias_idx, 3) ; 
     addGrid(grid); 
 
     float big_radius = float(grid->extent())*sqrtf(3.f) ;

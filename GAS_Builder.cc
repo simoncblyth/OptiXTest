@@ -136,6 +136,8 @@ BI GAS_Builder::MakeCustomPrimitivesBI_11N(const Shape* sh)
     for(unsigned i=0 ; i < num ; i++) bi.sbt_index[i] = i ; 
 
     unsigned primitiveIndexOffset = 0 ; // offsets the normal 0,1,2,... result of optixGetPrimitiveIndex()  
+    // TODO: use this to encode the gas_idx
+
     const float* aabb = sh->aabb ; 
 
     std::cout << "GAS_Builder::MakeCustomPrimitivesBI_11N dump aabb for layers: " << num << std::endl ; 

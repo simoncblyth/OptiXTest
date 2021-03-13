@@ -5,6 +5,8 @@
 #include "Sys.h"
 #include "Util.h"
 #include "Grid.h"
+#include "Identity.h"
+
 #include <glm/gtx/transform.hpp>
 
 
@@ -25,8 +27,9 @@ Currently a 3D grid of translate transforms with all available GAS repeated modu
 **/
 
 
-Grid::Grid( unsigned num_shape_ )
+Grid::Grid( unsigned ias_idx_, unsigned num_shape_ )
     :
+    ias_idx(ias_idx_),
     num_shape(num_shape_)
 {
     std::string gridspec = Util::GetEValue<std::string>("GRIDSPEC","-10:11,2,-10:11:2,-10:11,2") ; 
@@ -58,6 +61,7 @@ std::string Grid::desc() const
     return s; 
 }
 
+
 void Grid::init()
 {
     unsigned num_shape_modulo = shape_modulo.size() ; 
@@ -77,12 +81,13 @@ void Grid::init()
 
     for(int i=0 ; i < int(num_shape_single) ; i++)
     {
-        unsigned transform_idx = trs.size() ;  // 0-based index within the Grid
-        unsigned shape_idx = shape_single[i] ; 
+        unsigned ins_idx = trs.size() ;        // 0-based index within the Grid
+        unsigned gas_idx = shape_single[i] ;   // 0-based shape index
+        unsigned id = Identity::Encode( ias_idx, ins_idx, gas_idx ); 
 
         glm::mat4 tr(1.f) ;  // identity transform for the large sphere 
-        tr[0][3] = Sys::unsigned_as_float(transform_idx); 
-        tr[1][3] = Sys::unsigned_as_float(shape_idx) ;
+        tr[0][3] = Sys::unsigned_as_float(id); 
+        tr[1][3] = Sys::unsigned_as_float(0) ;
         tr[2][3] = Sys::unsigned_as_float(0) ;   
         tr[3][3] = Sys::unsigned_as_float(0) ;   
 
@@ -97,12 +102,13 @@ void Grid::init()
         glm::mat4 tr(1.f) ;
         tr = glm::translate(tr, tlat );
 
-        unsigned transform_idx = trs.size();   // 0-based instance index within the IAS
-        unsigned shape_modulo_idx = transform_idx % num_shape_modulo ; 
-        unsigned shape_idx = shape_modulo[shape_modulo_idx] ; 
+        unsigned ins_idx = trs.size() ;     
+        unsigned shape_modulo_idx = ins_idx % num_shape_modulo ; 
+        unsigned gas_idx = shape_modulo[shape_modulo_idx] ; 
+        unsigned id = Identity::Encode( ias_idx, ins_idx, gas_idx ); 
 
-        tr[0][3] = Sys::unsigned_as_float(transform_idx); 
-        tr[1][3] = Sys::unsigned_as_float(shape_idx) ;
+        tr[0][3] = Sys::unsigned_as_float(id); 
+        tr[1][3] = Sys::unsigned_as_float(0) ;
         tr[2][3] = Sys::unsigned_as_float(0) ;   
         tr[3][3] = Sys::unsigned_as_float(0) ;   
 

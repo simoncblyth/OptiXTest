@@ -15,7 +15,7 @@
 #include "Grid.h"
 #include "Ctx.h"
 
-
+#include "Identity.h"
 #include "GAS.h"
 #include "IAS.h"
 #include "IAS_Builder.h"
@@ -41,19 +41,24 @@ void IAS_Builder::Build(IAS& ias, const Grid* gr, const SBT* sbt) // static
         glm::uvec4 idv ; // after transposiing the last row contains the identity info 
         memcpy( glm::value_ptr(idv), &imat[3], 4*sizeof(float) ); 
 
-        unsigned instanceId = idv.x ;  
-        unsigned shapeIdx = idv.y ;   
-        unsigned layerIdx = 0u ; 
 
-        const GAS& gas = sbt->getGAS(shapeIdx); 
+        unsigned id = idv.x ; 
+        unsigned ias_idx ; 
+        unsigned ins_idx ; 
+        unsigned gas_idx ; 
+        Identity::Decode( ias_idx, ins_idx, gas_idx, id );
+
+        unsigned prim_idx = 0u ; 
+
+        const GAS& gas = sbt->getGAS(gas_idx); 
 
         OptixInstance instance = {} ; 
-        instance.flags = flags ;
-        instance.instanceId = instanceId ; // TODO: encode (instanceIdx,shapeIdx, layerIdx) 
-        instance.sbtOffset = sbt->getOffsetSBT(shapeIdx, layerIdx );            
-        instance.visibilityMask = 255;
-        instance.traversableHandle = gas.handle ; 
         memcpy( instance.transform, glm::value_ptr(imat), 12*sizeof( float ) );
+        instance.instanceId = id ; 
+        instance.sbtOffset = sbt->getOffsetSBT(gas_idx, prim_idx );            
+        instance.visibilityMask = 255;
+        instance.flags = flags ;
+        instance.traversableHandle = gas.handle ; 
     
         instances.push_back(instance); 
     }
