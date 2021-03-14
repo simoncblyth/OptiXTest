@@ -73,7 +73,7 @@ BI GAS_Builder::MakeCustomPrimitivesBI_1NN(const Shape* sh, unsigned i )
     std::cout << "GAS_Builder::MakeCustomPrimitivesBI_1NN " << std::endl ; 
 
     unsigned primitiveIndexOffset = i ;  // without this optixGetPrimitiveIndex() would always give zero in 1NN mode
-    const float* aabb = sh->kludge_outer_aabb > 0  ? sh->aabb : sh->aabb + i*6u ; 
+    const float* aabb = (float*)sh->aabb.data() + i*6u ; 
 
     unsigned num_sbt_records = 1 ; 
 
@@ -138,6 +138,9 @@ BI GAS_Builder::MakeCustomPrimitivesBI_11N(const Shape* sh)
     BI bi = {} ; 
     bi.mode = 1 ; 
     unsigned num = sh->num ; 
+    const std::vector<AABB>& aabb_ = sh->aabb ; 
+    assert( aabb_.size() == num ); 
+    const float* aabb = (float*)aabb_.data() ; 
 
     bi.flags = new unsigned[num];
     bi.sbt_index = new unsigned[num];
@@ -145,8 +148,6 @@ BI GAS_Builder::MakeCustomPrimitivesBI_11N(const Shape* sh)
     for(unsigned i=0 ; i < num ; i++) bi.sbt_index[i] = i ; 
 
     unsigned primitiveIndexOffset = 0 ; // offsets the normal 0,1,2,... result of optixGetPrimitiveIndex()  
-
-    const float* aabb = sh->aabb ; 
 
     std::cout << "GAS_Builder::MakeCustomPrimitivesBI_11N dump aabb for layers: " << num << std::endl ; 
     for(unsigned i=0 ; i < num ; i++)

@@ -422,7 +422,6 @@ void SBT::check_prim_data( const HitGroupData& data ) const
     Node::Dump( node, 1, "SBT::check_prim_data"); 
 }
 
-
 void SBT::checkHitgroup(const Geo* geo)
 {
     unsigned tot_sbt = sbt.hitgroupRecordCount ;

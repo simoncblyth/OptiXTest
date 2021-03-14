@@ -1,6 +1,7 @@
 #include <sstream>
 #include <vector_types.h>
 
+#include "OpticksCSG.h"
 #include "Sys.h"
 #include "Shape.h"
 #include "NP.hh"
@@ -9,11 +10,11 @@
 
 unsigned Shape::Type(char typ)  // static 
 {
-    unsigned t(ZERO) ;  
+    unsigned t(CSG_ZERO) ;  
     switch(typ)
     {
-       case 'S': t = SPHERE ; break ; 
-       case 'B': t = BOX    ; break ; 
+       case 'S': t = CSG_SPHERE ; break ; 
+       case 'B': t = CSG_BOX    ; break ; 
     }
     return t ; 
 }
@@ -26,8 +27,6 @@ Shape::Shape(const char typ, float sz)
     :
     num(1),
     typs(new char[num]),
-    param(new float[4*num]),
-    aabb(new float[6*num]),
     kludge_outer_aabb(0),
     gas_bi_aabb(GBA_1NN)
 {
@@ -40,8 +39,6 @@ Shape::Shape(const char* typs_, const std::vector<float>& szs)
     :
     num(szs.size()),
     typs(new char[num]),
-    param(new float[4*num]),
-    aabb(new float[6*num]),
     kludge_outer_aabb(0),
     gas_bi_aabb(GBA_1NN)
 {
@@ -53,52 +50,71 @@ Shape::Shape(const char* typs_, const std::vector<float>& szs)
 Shape::~Shape()
 {
     delete [] typs ; 
-    delete [] param ; 
-    delete [] aabb ; 
 }
 
 
 void Shape::init( const std::vector<float>& szs )
 {
     for(unsigned i=0 ; i < szs.size() ; i++) assert(szs[i] <= szs[0] ) ; 
-
     int ni = num ; 
-
     for(int i=0 ; i < ni ; i++)
     {
         float size = szs[i] ;  
         char type = typs[i] ; 
-
-        aabb[0+6*i] = -size ; 
-        aabb[1+6*i] = -size ; 
-        aabb[2+6*i] = -size ; 
-        aabb[3+6*i] =  size ; 
-        aabb[4+6*i] =  size ; 
-        aabb[5+6*i] =  size ; 
-
-        param[0+4*i] = size ; 
-        param[1+4*i] = 0.f ; 
-        param[2+4*i] = 0.f ; 
-        param[3+4*i] = Sys::unsigned_as_float(type) ; 
-    }
-
-    for(int i=0 ; i < ni ; i++)
-    {
-        float size = szs[i] ;  
-
-        Node nd ; 
-        nd.q0.f = {0.f, 0.f, 0.f, size} ; 
-        nd.q1.i = {0,0,0,0} ; 
-        nd.q2.i = {0,0,0,0} ; 
-        nd.q3.i = {0,0,0,0} ; 
-
-        int num_node = 1 ; 
-        add_prim( num_node );  
-
-        //Shape::Dump(nd); 
-        node.push_back(nd); 
+        switch(type)
+        {
+           case 'S': add_sphere(size)  ; break ; 
+           case 'Z': add_zsphere(size) ; break ; 
+        }
     }
 }
+
+void Shape::add_sphere(float radius)
+{
+    Node nd ; 
+    nd.q0.f = {0.f, 0.f, 0.f, radius} ; 
+    nd.q1.i = {0,0,0,0} ; 
+    nd.q2.u = {0,0,0,CSG_SPHERE} ; 
+    nd.q3.i = {0,0,0,0} ; 
+
+    node.push_back(nd); 
+
+    int num_node = 1 ; 
+    add_prim(num_node);  
+
+    AABB bb ; 
+    bb.mn = {-radius, -radius, -radius }; 
+    bb.mx = { radius,  radius,  radius }; 
+    aabb.push_back(bb); 
+}
+
+void Shape::add_zsphere(float radius)
+{
+    Node nd ; 
+
+    float3 center = {0.f, 0.f, 0.f } ;  
+    float2 zdelta = {-radius/2.f , +radius/2.f } ; 
+
+    const float zmax = center.z + zdelta.y ;
+    const float zmin = center.z + zdelta.x ;
+
+    nd.q0.f = { center.x, center.y, center.z, radius} ; 
+    nd.q1.f = { zdelta.x, zdelta.y, 0,0} ; 
+    nd.q2.u = {0,0,0, CSG_ZSPHERE} ; 
+    nd.q3.i = {0,0,0,0} ; 
+
+    node.push_back(nd); 
+
+    int num_node = 1 ; 
+    add_prim(num_node);  
+
+    AABB bb ; 
+    bb.mx = { center.x+radius, center.y+radius, zmax }; 
+    bb.mn = { center.x-radius, center.y-radius, zmin }; 
+    aabb.push_back(bb); 
+}
+
+
 
 void Shape::add_prim(int num_node)
 {
@@ -125,57 +141,22 @@ int* Shape::get_prim(unsigned prim_idx) const
     assert( prim_idx < num ); 
     return (int*)prim.data() + prim_idx*prim_size ; 
 }
-const Node* Shape::get_node(unsigned idx) const  // hmm for variable tree sizes in each layer ?
+const Node* Shape::get_node(unsigned idx) const  
 {
     assert( idx < num ); 
-
     const Node* n = node.data() + idx ; 
     return n ; 
 }
-
-
-
-
-
-
-/**
-struct Prim 
-{
-    __device__ int partOffset() const { return  q0.i.x ; } 
-    __device__ int numParts()   const { return  q0.i.y < 0 ? -q0.i.y : q0.i.y ; } 
-    __device__ int tranOffset() const { return  q0.i.z ; } 
-    __device__ int planOffset() const { return  q0.i.w ; } 
-    __device__ int primFlag()   const { return  q0.i.y < 0 ? CSG_FLAGPARTLIST : CSG_FLAGNODETREE ; } 
-
-    quad q0 ; 
-
-};
-
-**/
-
-
-
-float* Shape::get_aabb(unsigned idx) const
+const AABB* Shape::get_aabb(unsigned idx) const
 {
     assert( idx < num ); 
-    return aabb + idx*6 ; 
+    const AABB* bb = aabb.data() + idx ; 
+    return bb ; 
 }
-float* Shape::get_param(unsigned idx) const
-{
-    assert( idx < num ); 
-    return param + idx*4 ; 
-}
-
-
 char Shape::get_type(unsigned idx) const
 {
     assert( idx < num ); 
     return typs[idx] ; 
-}
-float Shape::get_size(unsigned idx) const
-{
-    assert( idx < num ); 
-    return param[0+4*idx] ; 
 }
 
 std::string Shape::desc(unsigned idx) const 
@@ -185,10 +166,14 @@ std::string Shape::desc(unsigned idx) const
     ss << " typ: " << get_type(idx)  ;
     ss << " kludge_outer_aabb: " << kludge_outer_aabb ;  
     ss << " gas_bi_aabb " << gas_bi_aabb ; 
-    ss << " param: " ; 
-    for(unsigned i=0 ; i < 4 ; i++) ss << param[i+4*idx] << " "  ; 
-    ss << " aabb: " ; 
-    for(unsigned i=0 ; i < 6 ; i++) ss << aabb[i+6*idx] << " "  ; 
+    ss << " aabb: " 
+       << aabb[idx].mn.x << " "  
+       << aabb[idx].mn.y << " "  
+       << aabb[idx].mn.z << " "  
+       << aabb[idx].mx.x << " "  
+       << aabb[idx].mx.y << " "  
+       << aabb[idx].mx.z << " "  
+       ; 
     std::string s = ss.str(); 
     return s ; 
 }
@@ -206,11 +191,9 @@ void Shape::write(const char* base, const char* rel, unsigned idx) const
     std::stringstream ss ;   
     ss << base << "/" << rel << "/" << idx << "/" ; 
     std::string dir = ss.str();   
-    NP::Write(dir.c_str(), "aabb.npy",   aabb,  num, 2, 3 ); 
-    NP::Write(dir.c_str(), "param.npy",  param, num, 1, 4 ); 
-
-    assert( node.size() == num ); 
-    NP::Write(dir.c_str(), "node.npy",   (float*)node.data(), num, 4, 4 ); 
+    NP::Write(dir.c_str(), "aabb.npy", (float*)aabb.data(), num, 2, 3 ); 
+    NP::Write(dir.c_str(), "node.npy", (float*)node.data(), num, 4, 4 ); 
+    NP::Write(dir.c_str(), "prim.npy",   (int*)prim.data(), num, 4 ); 
 }
 
 

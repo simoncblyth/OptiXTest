@@ -16,6 +16,7 @@ struct Geo
     void init();
     void init_sphere_containing_grid_of_spheres(float& tminf, float& tmaxf, unsigned layers);
     void init_sphere(float& tminf, float& tmaxf, unsigned layers);
+    void init_zsphere(float& tminf, float& tmaxf, unsigned layers);
     std::string desc() const ;
 
     unsigned getNumShape() const ; 

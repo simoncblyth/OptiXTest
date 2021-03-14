@@ -51,6 +51,10 @@ void Geo::init()
     {
         init_sphere(tminf, tmaxf, layers);
     }
+    else if(strcmp(geometry.c_str(), "zsphere") == 0 )
+    {
+        init_zsphere(tminf, tmaxf, layers);
+    }
     else
     {
         assert(0); 
@@ -128,6 +132,21 @@ void Geo::init_sphere(float& tminf, float& tmaxf, unsigned layers)
     tminf = 1.60f ;   //  hmm depends on viewpoint, aiming to cut into the sphere with the tmin
     tmaxf = 10000.f ; 
 }
+
+
+void Geo::init_zsphere(float& tminf, float& tmaxf, unsigned layers)
+{
+    std::cout << "Geo::init_zsphere" << std::endl ; 
+    addShape("Z", 100.f, layers); 
+    setTopExtent(100.f); 
+    top = strdup("g0") ; 
+
+    tminf = 1.60f ;   //  hmm depends on viewpoint, aiming to cut into the sphere with the tmin
+    tmaxf = 10000.f ; 
+}
+
+
+
 
 std::string Geo::desc() const
 {

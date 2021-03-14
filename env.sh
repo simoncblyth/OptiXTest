@@ -15,7 +15,8 @@ tmin=1.0
 #tmin=0.1
 
 #geometry=sphere
-geometry=sphere_containing_grid_of_spheres
+geometry=zsphere
+#geometry=sphere_containing_grid_of_spheres
 
 modulo=0,1
 single=2
