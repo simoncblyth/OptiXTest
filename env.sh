@@ -15,8 +15,8 @@ tmin=1.0
 #tmin=0.1
 
 #geometry=sphere
-geometry=zsphere
-#geometry=sphere_containing_grid_of_spheres
+#geometry=zsphere
+geometry=sphere_containing_grid_of_spheres
 
 modulo=0,1
 single=2
@@ -27,7 +27,9 @@ gridspec=-10:11:2,-10:11:2,-10:11:2
 #gridspec=-40:41:10,-40:41:10,-40:41:10
 #gridspec=-40:41:10,-40:41:10,0:1:1
 
+#eye=-0.5,-0.5,0.0
 eye=-0.5,-0.5,0.5
+#eye=-0.5,-0.5,-0.5
 #eye=-1.0,-1.0,1.0
 
 # when non-zero repeats outer aabb for all layers of compound shape (optix 7 only)
