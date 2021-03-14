@@ -24,7 +24,11 @@ if(OptiX_INCLUDE)
 endif()
 
 message(STATUS "OptiX_VERSION_ : ${OptiX_VERSION_} ")
+message(STATUS "writing ${CMAKE_BINARY_DIR}/buildenv.sh " )
 
+FILE(WRITE ${CMAKE_BINARY_DIR}/buildenv.sh 
+"export OPTIX_VERSION=${OptiX_VERSION_}\n"
+)
 
 
 add_library(ImpOptiX INTERFACE IMPORTED) 
@@ -59,6 +63,7 @@ set(CU_SOURCES)
 list(APPEND SOURCES
     OptiXTest.cc
     Sys.cc
+    Node.cc
     Shape.cc
     Grid.cc
     Geo.cc

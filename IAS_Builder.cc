@@ -21,6 +21,16 @@
 #include "IAS_Builder.h"
 #include "SBT.h"
 
+/**
+IAS_Builder::Build
+--------------------
+
+Converts a grid with geometry identity instrumented transforms into
+a vector of OptixInstance. The instance.sbtOffset are set using SBT::getOffset
+for the gas_idx and with prim_idx:0 indicating the outer prim(aka layer) 
+of the GAS.
+
+**/
 
 void IAS_Builder::Build(IAS& ias, const Grid* gr, const SBT* sbt) // static 
 {
@@ -46,7 +56,7 @@ void IAS_Builder::Build(IAS& ias, const Grid* gr, const SBT* sbt) // static
         unsigned ins_idx ; 
         unsigned gas_idx ; 
         InstanceId::Decode( ins_idx, gas_idx, identity );
-        unsigned prim_idx = 0u ; 
+        unsigned prim_idx = 0u ;  // need offset for the outer prim(aka layer) of the GAS 
 
         const GAS& gas = sbt->getGAS(gas_idx); 
 
@@ -63,6 +73,13 @@ void IAS_Builder::Build(IAS& ias, const Grid* gr, const SBT* sbt) // static
     Build(ias, instances); 
 }
 
+/**
+IAS_Builder::Build
+-------------------
+
+Boilerplate turning the vector of OptixInstance into an IAS.
+
+**/
 
 void IAS_Builder::Build(IAS& ias, const std::vector<OptixInstance>& instances)
 {

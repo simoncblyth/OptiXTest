@@ -44,7 +44,7 @@ void GAS_Builder::Build(GAS& gas, const Shape* sh )  // static
 GAS_Builder::Build_1NN GAS:BI:AABB  1:N:N  with a single AABB for each BI
 -----------------------------------------------------------------------------
 
-This way gets bbox chopped with 700, Driver 435.21
+This way gets smallest bbox chopped with 700, Driver 435.21
 
 **/
 
@@ -122,6 +122,15 @@ void GAS_Builder::Build_11N( GAS& gas, const Shape* sh )
     Build(gas); 
 }
 
+/**
+GAS_Builder::MakeCustomPrimitivesBI_11N
+-----------------------------------------
+
+Uploads the aabb for all prim (aka layers) of the Shape 
+and arranges for separate SBT records for each prim.
+
+**/
+
 BI GAS_Builder::MakeCustomPrimitivesBI_11N(const Shape* sh)
 {
     std::cout << "GAS_Builder::MakeCustomPrimitivesBI_11N " << std::endl ; 
@@ -152,7 +161,7 @@ BI GAS_Builder::MakeCustomPrimitivesBI_11N(const Shape* sh)
     CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>(bi.d_aabb), aabb, 6*sizeof(float)*num, cudaMemcpyHostToDevice ));
 
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &bi.d_sbt_index ), sizeof(unsigned)*num ) ); 
-    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( bi.d_sbt_index ), bi.sbt_index, sizeof(unsigned)*num, cudaMemcpyHostToDevice ) ); 
+    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>(bi.d_sbt_index), bi.sbt_index, sizeof(unsigned)*num, cudaMemcpyHostToDevice ) ); 
 
     bi.buildInput = {};
     bi.buildInput.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
@@ -170,23 +179,32 @@ BI GAS_Builder::MakeCustomPrimitivesBI_11N(const Shape* sh)
     return bi ; 
 } 
 
+/**
+GAS_Builder::Build
+---------------------
+
+Boilerplate building the GAS from the BI vector. 
+In 11N mode there is always only one BI in the vector.
+
+**/
 
 void GAS_Builder::Build(GAS& gas)   // static 
 { 
     std::cout << "GAS_Builder::Build" << std::endl ;  
-
-    assert( gas.bis.size() > 0 ); 
+    unsigned num_bi = gas.bis.size() ;
+    assert( num_bi > 0 ); 
 
     std::vector<OptixBuildInput> buildInputs ; 
     for(unsigned i=0 ; i < gas.bis.size() ; i++)
     {
         const BI& bi = gas.bis[i]; 
         buildInputs.push_back(bi.buildInput); 
+        if(bi.mode == 1) assert( num_bi == 1 ); 
     }
 
     std::cout 
         << "GAS_Builder::Build" 
-        << " gas.bis.size " << gas.bis.size()
+        << " num_bi " << num_bi
         << " buildInputs.size " << buildInputs.size()
         << std::endl 
         ;  

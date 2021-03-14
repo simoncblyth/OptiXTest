@@ -4,6 +4,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Params.h"
+#include "InstanceId.h"
 #include "Geo.h"
 #include "Shape.h"
 #include "Grid.h"
@@ -128,6 +129,15 @@ void Six::createGrids(const Geo* geo)
     }
 }
 
+
+/**
+Six::convertGrid
+------------------
+
+Identity interpretation needs to match what IAS_Builder::Build is doing 
+
+**/
+
 optix::Group Six::convertGrid(const Grid* gr)
 {
     unsigned num_tr = gr->trs.size() ; 
@@ -159,9 +169,11 @@ optix::Group Six::convertGrid(const Grid* gr)
         imat[3].z = 0.f ; 
         imat[3].w = 1.f ; 
 
-        unsigned instanceId = idv.x ;  
-        unsigned gasIdx = idv.y ;   
-        unsigned identity = 1u + instanceId ; 
+
+        unsigned identity = idv.x ; 
+        unsigned ins_idx ; 
+        unsigned gas_idx ; 
+        InstanceId::Decode( ins_idx, gas_idx, identity );
 
         optix::Transform xform = context->createTransform();
 
@@ -169,7 +181,7 @@ optix::Group Six::convertGrid(const Grid* gr)
         xform->setMatrix(transpose, glm::value_ptr(imat), 0); 
         assembly->setChild(i, xform);
 
-        optix::GeometryInstance pergi = createGeometryInstance(gasIdx, identity ); 
+        optix::GeometryInstance pergi = createGeometryInstance(gas_idx, identity ); 
         optix::GeometryGroup perxform = context->createGeometryGroup();
         perxform->addChild(pergi); 
         perxform->setAcceleration(instance_accel) ; 
@@ -181,6 +193,14 @@ optix::Group Six::convertGrid(const Grid* gr)
 
 optix::GeometryInstance Six::createGeometryInstance(unsigned shape_idx, unsigned identity)
 {
+    std::cout 
+        << "Six::createGeometryInstance"
+        << " shape_idx " << shape_idx
+        << " identity " << identity
+        << " identity.hex " << std::hex <<  identity << std::dec
+        << std::endl 
+        ;   
+
     optix::Geometry shape = shapes[shape_idx]; 
 
     optix::GeometryInstance pergi = context->createGeometryInstance() ;

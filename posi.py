@@ -100,8 +100,6 @@ def make_mask(posi):
     return mask 
 
 
-
-
 class IAS(object):
     @classmethod
     def Path(cls, iasdir):
@@ -296,7 +294,7 @@ if 1:
 
          
 
-        print("i:%5d zid:%9d zid_count:%6d ins_idx:%4d gas_idx:%3d  d.min:%10s d.max:%10s radius:%s  "  % ( i, zid, zid_count, ins_idx, gas_idx, d.min(), d.max(), radius ))
+        print("i:%5d zid:%9d zid_count:%6d ins_idx:%4d gas_idx:%3d prim_idx:%3d  d.min:%10s d.max:%10s radius:%s  "  % ( i, zid, zid_count, ins_idx, gas_idx, zprimitive_idx, d.min(), d.max(), radius ))
         pass
         fres[i] = (d.min(),d.max(), radius,0. )
         ires[i] = ( len(zposi), ins_idx, gas_idx, zprimitive_idx )

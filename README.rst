@@ -28,44 +28,144 @@ Depends only on NVIDIA OptiX 7.0::
     ./go.sh # gets glm, builds, runs -> ppm image file    
      
 
-TODO : rethink identity handling re:gas_idx 
+Classes
+---------
+
+
+Geometry Model Classes
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Geo.h
+   container for shapes and grids
+
+Grid.h
+   configurably prepares vector of transforms with shape references 
+
+Shape.h
+   holder of aabb and param for multi-prim(aka multi-layer) shapes
+
+InstanceId.h
+   identity bit packer
+
+Identity.h
+   another identity bit packer
+
+
+Bring in Opticks Geometry struct 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+quad.h
+    union trick
+
+Prim.h
+    q0 wrapper for access to offsets  
+
+
+
+OptiX 7 Geometry 
+~~~~~~~~~~~~~~~~~~~~~
+
+AS.h
+    base struct for GAS and IAS
+
+BI.h
+    holds OptixBuildInput and workings 
+
+GAS.h
+    holds reference to the source Shape and vector of BI
+
+GAS_Builder.h
+    converts the Shape into BI and thence GAS
+
+IAS.h
+    vector of glm::mat4 and d_instances 
+
+IAS_Builder.h
+    converts Grid with gas_idx instrumented transforms into IAS
+
+PIP.h
+    OptixProgramGroup and OptixPipeline
+
+SBT.h
+    nexus of geometry control holding OptixShaderBindingTable 
+
+OptiX 7 Others
+~~~~~~~~~~~~~~~~~
+
+Ctx.h
+    holder of OptixDeviceContext and Params with uploadParams
+
+Properties.h
+    optix limits obtained with optixDeviceContextGetProperty 
+
+OPTIX_CHECK.h
+    preprocessor call wrapper and exception 
+
+Frame.h
+    holder of pixels and isect data
+
+Binding.h
+    host/device types
+
+Params.h
+    host/device view params 
+
+OptiX 6
+~~~~~~~~~~
+
+Six.h
+    one struct renderer
+
+
+CUDA Misc
+~~~~~~~~~~~~
+
+CUDA_CHECK.h
+    preprocessor call wrapper and exception 
+
+sutil_vec_math.h
+    lerp roundUp etc..
+ 
+sutil_Preprocessor.h
+    needed by sutil_vec_math.h
+
+Image Handling 
+~~~~~~~~~~~~~~~
+
+SPPM.h
+   ppm writing 
+
+SIMG.hh
+   jpg png writing using stb_image.h stb_image_write.h
+
+Utilities
+~~~~~~~~~~~
+
+Sys.h
+   unsigned_as_float float_as_unsigned 
+
+Util.h
+   misc  
+
+NP.hh
+   array persistency in NPY format, NumPy readable  
+
+NPU.hh
+   required by NP.hh
+
+
+
+
+WIP : rethink identity handling re:gas_idx 
 -----------------------------------------------------------
 
-::
-
-    520 ///
-    521 /// In Intersection and AH this corresponds to the currently intersected primitive.
-    522 /// In CH this corresponds to the primitive index of the closest intersected primitive.
-    523 /// In EX with exception code OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_HIT_SBT corresponds to the active primitive index. Returns zero for all other exceptions.
-    524 static __forceinline__ __device__ unsigned int optixGetPrimitiveIndex();
-    525 
-    526 
-    527 /// Returns the OptixInstance::instanceId of the instance within the top level acceleration structure associated with the current intersection.
-    528 ///
-    529 /// When building an acceleration structure using OptixBuildInputInstanceArray each OptixInstance has a user supplied instanceId.
-    530 /// OptixInstance objects reference another acceleration structure.  During traversal the acceleration structures are visited top down.
-    531 /// In the Intersection and AH programs the OptixInstance::instanceId corresponding to the most recently visited OptixInstance is returned when calling optixGetInstanceId().
-    532 /// In CH optixGetInstanceId() returns the OptixInstance::instanceId when the hit was recorded with optixReportIntersection.
-    533 /// In the case where there is no OptixInstance visited, optixGetInstanceId returns ~0u
-    534 static __forceinline__ __device__ unsigned int optixGetInstanceId();
-    535 
-    536 /// Returns the zero-based index of the instance within its instance acceleration structure associated with the current intersection.
-    537 ///
-    538 /// In the Intersection and AH programs the index corresponding to the most recently visited OptixInstance is returned when calling optixGetInstanceIndex().
-    539 /// In CH optixGetInstanceIndex() returns the index when the hit was recorded with optixReportIntersection.
-    540 /// In the case where there is no OptixInstance visited, optixGetInstanceId returns 0
-    541 static __forceinline__ __device__ unsigned int optixGetInstanceIndex();
-    542 
-
-
 It is inconvenient to have to lookup the gas_idx in the IAS. Where to encode gas_idx ?
+Better to not require an attribute/register for this if possible.
 
-Options:
+* optixGetInstanceId() limited to 3 bytes: 0xffffff (24 bits)
+  currently are splitting that 14 bits for instance_id and 10 bits for gas_id 
 
-1. hijack optixGetPrimitiveIndex() setting primitiveIndexOffset in GAS_Builder::MakeCustomPrimitivesBI_11N 
-2. hijack optixGetInstanceId()
-
-   * full unsigned int for instance_id can be 
+* optixGetPrimitiveIndex() is also controllable with a bias primitiveIndexOffset in GAS_Builder::MakeCustomPrimitivesBI_11N
 
 
 ::
@@ -79,11 +179,6 @@ Options:
     In [11]: 0xfffff
     Out[11]: 1048575
 
-
-
-
-Thus can then remove the limited bindex encoding that will not scale to relistic 
-numbers of GAS.
 
 
 Links

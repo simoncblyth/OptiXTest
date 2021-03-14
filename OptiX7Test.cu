@@ -1,7 +1,12 @@
 #include <optix.h>
+
+#include "Quad.h"
+#include "Node.h"
 #include "Binding.h"
 #include "Params.h"
 #include "sutil_vec_math.h"
+
+#include "robust_quadratic_roots.h"
 
 extern "C" { __constant__ Params params ;  }
 
@@ -140,53 +145,78 @@ extern "C" __global__ void __miss__ms()
     setPayload( normal,  t_cand, position, identity );
 }
 
+
+
+__forceinline__ __device__ bool csg_intersect_sphere(const quad& q0, const float& t_min, float4& isect, const float3& ray_origin, const float3& ray_direction )
+{
+    float3 center = make_float3(q0.f);
+    float radius = q0.f.w;
+
+    float3 O = ray_origin - center;
+    float3 D = ray_direction;
+
+    float b = dot(O, D);
+    float c = dot(O, O)-radius*radius;
+    float d = dot(D, D);
+
+#ifdef CATASTROPHIC_SUBTRACTION_ROOTS
+    float disc = b*b-d*c;
+    float sdisc = disc > 0.f ? sqrtf(disc) : 0.f ;   // ray has segment within sphere for sdisc > 0.f 
+    float root1 = (-b - sdisc)/d ;
+    float root2 = (-b + sdisc)/d ;  // root2 > root1 always
+#else
+    float root1, root2, disc, sdisc ;   
+    robust_quadratic_roots(root1, root2, disc, sdisc, d, b, c ) ; //  Solving:  d t^2 + 2 b t +  c = 0    root2 > root1 
+#endif
+
+    float t_cand = sdisc > 0.f ? ( root1 > t_min ? root1 : root2 ) : t_min ;
+
+    bool valid_isect = t_cand > t_min ;
+    if(valid_isect)
+    {
+        isect.x = (O.x + t_cand*D.x)/radius ;   // normalized by construction
+        isect.y = (O.y + t_cand*D.y)/radius ;
+        isect.z = (O.z + t_cand*D.z)/radius ;
+        isect.w = t_cand ;
+    }
+    return valid_isect ;
+}
+
+
 extern "C" __global__ void __intersection__is()
 {
     HitGroupData* hg  = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
-    const float  radius = hg->values[0] ;
-    const unsigned bindex = hg->bindex ; 
+
+    const Node* node = hg->node ;
 
     const float3 orig = optixGetObjectRayOrigin();
     const float3 dir  = optixGetObjectRayDirection();
     const float  t_min = optixGetRayTmin() ; 
 
-    const float3 center = {0.f, 0.f, 0.f};
-    const float3 O      = orig - center;
-    const float3 D      = dir ; 
- 
-    float b = dot(O, D);
-    float c = dot(O, O)-radius*radius;
-    float d = dot(D, D);
-    float disc = b*b-d*c;
-
-    float sdisc = disc > 0.f ? sqrtf(disc) : 0.f ;   // ray has segment within sphere for sdisc > 0.f 
-    float root1 = (-b - sdisc)/d ;
-    float root2 = (-b + sdisc)/d ;  // root2 > root1 always
-
-    float t_cand = sdisc > 0.f ? ( root1 > t_min ? root1 : root2 ) : t_min ; 
-    bool valid_isect = t_cand > t_min ;
+    float4 isect ; 
+    bool valid_isect = csg_intersect_sphere( node->q0, t_min, isect, orig, dir ) ; 
+    float t_cand = isect.w ; 
 
     if(valid_isect)
     {
-        const float3 position = orig + t_cand*dir ;   
-        const float3 shading_normal = ( O + t_cand*D )/radius;
+        const float3 position = orig + t_cand*dir ;     // TODO: can this be done in CH ?
         const unsigned hitKind = 0u ;  // user hit kind
 
         unsigned a0, a1, a2, a3;   // attribute registers
         unsigned a4, a5, a6, a7;
 
-        a0 = float_as_uint( shading_normal.x );
-        a1 = float_as_uint( shading_normal.y );
-        a2 = float_as_uint( shading_normal.z );
-        a3 = float_as_uint( t_cand ) ; 
+        a0 = float_as_uint( isect.x );
+        a1 = float_as_uint( isect.y );
+        a2 = float_as_uint( isect.z );
+        a3 = float_as_uint( isect.w ) ; 
 
         a4 = float_as_uint( position.x );
         a5 = float_as_uint( position.y );
         a6 = float_as_uint( position.z );
-        a7 = bindex ; 
+        a7 = 0u ; 
 
         optixReportIntersection(
-                t_cand,      
+                isect.w,      
                 hitKind,       
                 a0, a1, a2, a3, 
                 a4, a5, a6, a7

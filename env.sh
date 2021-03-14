@@ -4,6 +4,8 @@ sdir=$(pwd)
 name=$(basename $sdir)
 
 export PREFIX=/tmp/$USER/opticks/$name
+source $PREFIX/build/buildenv.sh 
+
 export PATH=$PREFIX/bin:$PATH
 export BIN=$(which $name)
 
@@ -58,6 +60,7 @@ export OUTDIR=$PREFIX/$GEOMETRY/TMIN_${TMIN}
 fmt="%-20s : %s \n"
 printf "$fmt" name $name
 printf "$fmt" PREFIX $PREFIX
+printf "$fmt" OPTIX_VERSION $OPTIX_VERSION
 printf "$fmt" BIN $BIN
 printf "$fmt" GEOMETRY $GEOMETRY
 printf "$fmt" TMIN $TMIN

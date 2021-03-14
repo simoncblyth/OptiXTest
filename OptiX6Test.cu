@@ -96,8 +96,7 @@ RT_PROGRAM void intersect(int primIdx)
         {
             position = ray.origin + t_cand*ray.direction ;   
             shading_normal = ( O + t_cand*D )/radius;
-            intersect_identity = identity ;
-
+            intersect_identity = (( (1u+primIdx) & 0xff ) << 24 ) | ( identity & 0x00ffffff ) ; 
             rtReportIntersection(0);
         }
     }

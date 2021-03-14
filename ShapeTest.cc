@@ -1,8 +1,10 @@
-// name=ShapeTest ; mkdir -p /tmp/ShapeTestWrite/{0,1} ; gcc -g $name.cc Shape.cc Sys.cc -lstdc++ -std=c++11 -I. -o /tmp/$name && lldb_ /tmp/$name
+// PREFIX=/tmp/$USER/opticks/OptiXTest name=ShapeTest ; mkdir -p /tmp/ShapeTestWrite/{0,1} ; gcc -g $name.cc Shape.cc Sys.cc -lstdc++ -std=c++11 -I. -I$PREFIX/externals/glm/glm  -o /tmp/$name && lldb_ /tmp/$name
 
 #include <cassert>
 #include <iostream>
 #include <vector>
+#include <vector_types.h>
+
 #include "Shape.h"
 
 void test_create_write_0()
@@ -50,13 +52,32 @@ void test_collect_ptr()
     assert(shapes.size() == 2); 
 }
 
+void test_dump()
+{
+    std::cout << "test_dump" << std::endl ; 
+    std::vector<float> szs = { 100.f, 50.f } ; 
+    Shape s1("SS", szs ); 
+    std::cout << s1.desc() << std::endl ;  
+
+    Node::Dump(s1.node.data(), s1.node.size(), "s1.node" ); 
+
+    const Node* n0 = s1.get_node(0); 
+    const Node* n1 = s1.get_node(1); 
+
+    Node::Dump(n0, 1, "n0"); 
+    Node::Dump(n1, 1, "n1"); 
+    Node::Dump(n0, 2, "n0+n1"); 
+}
+
 
 
 int main(int argc, char** argv)
 {
-    test_create_write_0(); 
-    test_create_write_1(); 
-    //test_collect_obj(); 
-    test_collect_ptr(); 
+    //test_create_write_0(); 
+    //test_create_write_1(); 
+        //test_collect_obj(); 
+    //test_collect_ptr(); 
+    test_dump(); 
+
     return 0 ; 
 }

@@ -17,6 +17,7 @@
 
 #include "Geo.h"
 #include "Shape.h"
+#include "Node.h"
 #include "Binding.h"
 #include "Params.h"
 
@@ -336,8 +337,8 @@ void SBT::createHitgroup(const Geo* geo)
 
             for( unsigned k=0 ; k < num_rec ; k++)
             { 
-                unsigned layer_idx = is_1NN ? j : k ;   
-                unsigned check_sbt_offset = getOffset(shape_idx, layer_idx ); 
+                unsigned prim_idx = is_1NN ? j : k ;   
+                unsigned check_sbt_offset = getOffset(shape_idx, prim_idx ); 
                 bool expected_sbt_offset = check_sbt_offset == sbt_offset  ;
 
                 std::cout 
@@ -346,7 +347,7 @@ void SBT::createHitgroup(const Geo* geo)
                     << " bi(j) " << j
                     << " sbt(k) " << k 
                     << " shape_idx " << shape_idx 
-                    << " layer_idx " << layer_idx 
+                    << " prim_idx " << prim_idx 
                     << " check_sbt_offset " << check_sbt_offset
                     << " sbt_offset " << sbt_offset
                     << std::endl 
@@ -361,16 +362,7 @@ void SBT::createHitgroup(const Geo* geo)
                       ;
                 assert( expected_sbt_offset ); 
 
-                float radius = sh->get_size(layer_idx); 
-
-                unsigned num_items = 1 ; 
-                float* values = new float[num_items]; 
-                values[0] = radius  ;  
-                float* d_values = UploadArray<float>(values, num_items) ; 
-                delete [] values ; 
-         
-                hg->data.values = d_values ; // set device pointer into CPU struct about to be copied to device
-                hg->data.bindex = ((1u+shape_idx) << 4 ) | ((1u+layer_idx) << 0 ) ;  
+                upload_prim_data( hg->data, sh, prim_idx );                 
 
                 hg++ ; 
                 sbt_offset++ ; 
@@ -387,6 +379,49 @@ void SBT::createHitgroup(const Geo* geo)
 }
 
 
+/**
+SBT::upload_prim_data
+------------------------
+
+Sets device pointers into *data* CPU struct which is about to be copied to device
+
+**/
+
+void SBT::upload_prim_data( HitGroupData& data, const Shape* sh, unsigned prim_idx )
+{
+    unsigned num_prim = 1 ;  // expect this to always be 1  
+    int* prim = sh->get_prim(prim_idx) ; 
+    int* d_prim = UploadArray<int>(prim, Shape::prim_size*num_prim ) ; 
+    data.prim = d_prim ; 
+
+    unsigned num_node = sh->get_num_node( prim_idx ); 
+    assert( num_node == 1 ) ; // only single node "trees" for now 
+    
+    const Node* node = sh->get_node(prim_idx); 
+    Node* d_node = UploadArray<Node>(node, num_node ); 
+    data.node = d_node ; 
+}
+
+void SBT::check_prim_data( const HitGroupData& data ) const 
+{
+    std::cout << "SBT::check_prim_data" << std::endl ; 
+
+    unsigned num_prim = 1 ;  // expect this to always be 1  
+    int* d_prim = data.prim ; 
+    int* prim = DownloadArray<int>(d_prim, Shape::prim_size*num_prim );  
+    int num_node = prim[1] ; 
+
+    std::cout << " prim " ; 
+    for(int i=0 ; i < 4 ; i++) std::cout << prim[i] << " " ; 
+    std::cout << std::endl ;  
+
+    std::cout << " num_node " << num_node << std::endl ; 
+    Node* d_node = data.node ; 
+    Node* node = DownloadArray<Node>(d_node, num_node);  
+
+    Node::Dump( node, 1, "SBT::check_prim_data"); 
+}
+
 
 void SBT::checkHitgroup(const Geo* geo)
 {
@@ -400,76 +435,53 @@ void SBT::checkHitgroup(const Geo* geo)
 
     check = new HitGroup[tot_sbt] ; 
 
-    CUDA_CHECK( cudaMemcpy(   
-                check,
-                reinterpret_cast<void*>( sbt.hitgroupRecordBase ),
-                sizeof( HitGroup )*tot_sbt,
-                cudaMemcpyDeviceToHost
-                ) );
-
+    CUDA_CHECK( cudaMemcpy(check, reinterpret_cast<void*>( sbt.hitgroupRecordBase ), sizeof( HitGroup )*tot_sbt, cudaMemcpyDeviceToHost ));
+    HitGroup* hg = check ; 
     for(unsigned i=0 ; i < tot_sbt ; i++)
     {
-        HitGroup* hg = check + i  ; 
-        unsigned num_items = 1 ; 
-        float* d_values = hg->data.values ; 
-        float* values = DownloadArray<float>(d_values, num_items);  
-
-        std::cout << "SBT::checkHitgroup downloaded array, num_items " << num_items << " : " ; 
-        for(unsigned j=0 ; j < num_items ; j++) std::cout << *(values+j) << " " ; 
-        std::cout << std::endl ; 
+        check_prim_data( hg->data ); 
+        hg++ ; 
     }
 }
 
 
+/**
+SBT::UploadArray
+----------------
 
+Allocate on device and copy from host to device
 
-
+**/
 template <typename T>
 T* SBT::UploadArray(const T* array, unsigned num_items ) // static
 {
+    std::cout << "SBT::UploadArray num_items " << num_items << std::endl ; 
     T* d_array = nullptr ; 
-    CUDA_CHECK( cudaMalloc(
-                reinterpret_cast<void**>( &d_array ),
-                num_items*sizeof(T)
-                ) );
-
-
-    std::cout << "SBT::UploadArray num_items " << num_items << " : " ; 
-    for(unsigned i=0 ; i < num_items ; i++) std::cout << *(array+i) << " " ; 
-    std::cout << std::endl ; 
-
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( d_array ),
-                array,
-                sizeof(T)*num_items,
-                cudaMemcpyHostToDevice
-                ) );
-
+    CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &d_array ), num_items*sizeof(T) ));
+    CUDA_CHECK( cudaMemcpy(reinterpret_cast<void*>( d_array ), array, sizeof(T)*num_items, cudaMemcpyHostToDevice ));
     return d_array ; 
 }
 
+/**
+SBT::UploadArray  
+----------------
+
+Allocate on host and copy from device to host 
+
+**/
 
 template <typename T>
 T* SBT::DownloadArray(const T* d_array, unsigned num_items ) // static
 {
-    std::cout << "SBT::DownloadArray num_items " << num_items << " : " ; 
-
+    std::cout << "SBT::DownloadArray num_items " << num_items << std::endl ; 
     T* array = new T[num_items] ;  
-    CUDA_CHECK( cudaMemcpy(
-                array,
-                d_array,
-                sizeof(T)*num_items,
-                cudaMemcpyDeviceToHost
-                ) );
-
+    CUDA_CHECK( cudaMemcpy( array, d_array, sizeof(T)*num_items, cudaMemcpyDeviceToHost ));
     return array ; 
 }
-
-
-
 
 template float* SBT::UploadArray<float>(const float* array, unsigned num_items) ;
 template float* SBT::DownloadArray<float>(const float* d_array, unsigned num_items) ;
 
-
+template Node* SBT::UploadArray<Node>(const Node* d_array, unsigned num_items) ;
+template Node* SBT::DownloadArray<Node>(const Node* d_array, unsigned num_items) ;
 

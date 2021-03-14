@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cstring>
+#include <vector_types.h>
 
 #include "Sys.h"
 #include "Util.h"

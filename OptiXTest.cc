@@ -31,11 +31,6 @@ OptiXTest
 #include "SBT.h"
 #endif
 
-/**
-In [13]: np.unique( a[:,:,3].view(np.int32), return_counts=True )
-Out[13]: (array([ 0, 42], dtype=int32), array([305534, 480898]))
-**/
-
 
 
 struct AS ; 

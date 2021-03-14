@@ -61,8 +61,11 @@ struct SBT
 
     unsigned getTotalRec() const ;
     void createHitgroup(const Geo* geo);
-    void checkHitgroup(const Geo* geo); 
 
+    void checkHitgroup(const Geo* geo); 
+    void check_prim_data( const HitGroupData& data ) const ;
+
+    void upload_prim_data( HitGroupData& data, const Shape* sh, unsigned prim_idx );
 
     template <typename T>
     static T* UploadArray(const T* array, unsigned num_items ) ; 
