@@ -3,6 +3,8 @@
 import os, glob, logging
 log = logging.getLogger(__name__)
 
+from OpticksCSG import CSG_ as CSG 
+
 import numpy as np
 np.set_printoptions(suppress=True)
 
@@ -139,29 +141,36 @@ class IAS(object):
 class GAS(object):
     def __init__(self, gasdir):
         self.dir = gasdir
-        self.param = load_("%s/param.npy" % gasdir)
+        self.node = load_("%s/node.npy" % gasdir)
+        self.prim = load_("%s/prim.npy" % gasdir)
         self.aabb = load_("%s/aabb.npy" % gasdir)
     pass
     def __repr__(self):
-        return "GAS %s param %s aabb %s " % (self.dir, str(self.param.shape), str(self.aabb.shape))
-
-    def par(self, prim_idx):
-        assert prim_idx < len(self.param)
-        return self.param[prim_idx]
+        return "GAS %s node %s aabb %s prim %s " % (self.dir, str(self.node.shape), str(self.aabb.shape), str(self.prim.shape))
 
     def radius(self, prim_idx):
+        """specific to sphere Node layout"""
+        nd = self.node[prim_idx]
+        return nd[0,3]
+
+    def typecode(self, prim_idx):
         """
-        specific to sphere param layout 
+        hmm for now assuming one node per prim, when generalize to 
+        having node trees will need to have a node_idx argument 
+        and consult the prim array to get the node offsets to use
+        in order to pluck from the tree of nodes for each gas 
         """
-        p = self.par(prim_idx)
-        return p[0,0]
+        tc = self.node[prim_idx].view(np.uint32)[2,3]
+        return tc 
 
     def sdf(self, prim_idx, lpos):
-        """
-        shapes need type codes and a switch statement to pick the right param and sdf functions  
-        """
-        radius = self.radius(prim_idx)
-        d = sdf_sphere(lpos[:,:3], radius )  # sdf : distances to sphere surface 
+        tc = self.typecode(prim_idx)
+        if tc == CSG.SPHERE:
+            radius = self.radius(prim_idx)
+            d = sdf_sphere(lpos[:,:3], radius )  # sdf : distances to sphere surface 
+        else:
+            assert 0 
+        pass
         return d 
 
 
