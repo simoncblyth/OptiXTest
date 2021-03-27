@@ -146,14 +146,17 @@ extern "C" __global__ void __miss__ms()
 extern "C" __global__ void __intersection__is()
 {
     HitGroupData* hg  = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
+
+    const Prim* prim = hg->prim ;
     const Node* node = hg->node ;
+    const float4* plan = hg->plan ;
 
     const float3 ray_origin = optixGetObjectRayOrigin();
     const float3 ray_direction = optixGetObjectRayDirection();
     const float  t_min = optixGetRayTmin() ; 
 
     float4 isect ; 
-    bool valid_isect = intersect_node( isect, node, t_min, ray_origin, ray_direction ); 
+    bool valid_isect = intersect_node( isect, prim, node, plan, t_min, ray_origin, ray_direction ); 
 
     if(valid_isect)
     {

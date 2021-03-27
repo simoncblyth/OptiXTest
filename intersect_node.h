@@ -7,9 +7,33 @@
 #endif
 
 
+#if defined(__CUDACC__)
+#include "math_constants.h"
+#else
+
+union uif_t 
+{
+    unsigned u ; 
+    int i ; 
+    float f ; 
+};
+
+float __int_as_float(int i)
+{
+    uif_t uif ; 
+    uif.i = i ; 
+    return uif.f ; 
+}
+
+#define CUDART_INF_F            __int_as_float(0x7f800000)
+
+#endif
+
+
 #include "OpticksCSG.h"
 #include "Quad.h"
 #include "Node.h"
+#include "Prim.h"
 #include "robust_quadratic_roots.h"
 
 
@@ -127,14 +151,96 @@ bool intersect_node_zsphere(float4& isect, const quad& q0, const quad& q1, const
 
 
 INTERSECT_FUNC
-bool intersect_node( float4& isect, const Node* node, const float t_min , const float3& ray_origin, const float3& ray_direction )
+bool intersect_node_convexpolyhedron( float4& isect, const Prim* prim, const Node* node, const float4* plan, const float t_min , const float3& ray_origin, const float3& ray_direction )
+{
+    float t0 = -CUDART_INF_F ; 
+    float t1 =  CUDART_INF_F ; 
+
+    float3 t0_normal = make_float3(0.f);
+    float3 t1_normal = make_float3(0.f);
+
+    unsigned num_plan = 6 ;  // TODO : get this from Prim 
+
+    for(unsigned i=0 ; i < num_plan ; i++) 
+    {    
+        float4 plane = plan[i];    // TODO: may need offsets here 
+        float3 n = make_float3(plane);
+        float dplane = plane.w ;
+
+         // RTCD p199,  
+         //            n.X = dplane
+         //   
+         //             n.(o+td) = dplane
+         //            no + t nd = dplane
+         //                    t = (dplane - no)/nd
+         //   
+
+        float nd = dot(n, ray_direction); // -ve: entering, +ve exiting halfspace  
+        float no = dot(n, ray_origin ) ;  //  distance from coordinate origin to ray origin in direction of plane normal 
+        float dist = no - dplane ;        //  subtract plane distance from origin to get signed distance from plane, -ve inside 
+        float t_cand = -dist/nd ;
+
+        bool parallel_inside = nd == 0.f && dist < 0.f ;   // ray parallel to plane and inside halfspace
+        bool parallel_outside = nd == 0.f && dist > 0.f ;  // ray parallel to plane and outside halfspac
+
+        if(parallel_inside) continue ;       // continue to next plane 
+        if(parallel_outside) return false ;  // <-- without early exit, this still works due to infinity handling 
+
+        //    NB ray parallel to plane and outside halfspace 
+        //         ->  t_cand = -inf 
+        //                 nd = 0.f 
+        //                t1 -> -inf  
+
+        if( nd < 0.f)  // entering 
+        {
+            if(t_cand > t0)
+            {
+                t0 = t_cand ;
+                t0_normal = n ;
+            }
+        }
+        else     // exiting
+        {
+            if(t_cand < t1)
+            {
+                t1 = t_cand ;
+                t1_normal = n ;
+            }
+        }
+    }
+
+    bool valid_intersect = t0 < t1 ;
+    if(valid_intersect)
+    {
+        if( t0 > t_min )
+        {
+            isect.x = t0_normal.x ;
+            isect.y = t0_normal.y ;
+            isect.z = t0_normal.z ;
+            isect.w = t0 ;
+        }
+        else if( t1 > t_min )
+        {
+            isect.x = t1_normal.x ;
+            isect.y = t1_normal.y ;
+            isect.z = t1_normal.z ;
+            isect.w = t1 ;
+        }
+    }
+    return valid_intersect ;
+}
+
+
+INTERSECT_FUNC
+bool intersect_node( float4& isect, const Prim* prim, const Node* node, const float4* plan, const float t_min , const float3& ray_origin, const float3& ray_direction )
 {
     const unsigned typecode = node->typecode() ;  
     bool valid_isect = false ; 
     switch(typecode)
     {
-        case CSG_SPHERE:  valid_isect = intersect_node_sphere(  isect, node->q0,           t_min, ray_origin, ray_direction ) ;  break ; 
-        case CSG_ZSPHERE: valid_isect = intersect_node_zsphere( isect, node->q0, node->q1, t_min, ray_origin, ray_direction ) ;  break ; 
+        case CSG_SPHERE:           valid_isect = intersect_node_sphere(           isect, node->q0,               t_min, ray_origin, ray_direction ) ; break ; 
+        case CSG_ZSPHERE:          valid_isect = intersect_node_zsphere(          isect, node->q0, node->q1,     t_min, ray_origin, ray_direction ) ; break ; 
+        case CSG_CONVEXPOLYHEDRON: valid_isect = intersect_node_convexpolyhedron( isect, prim, node, plan,       t_min, ray_origin, ray_direction ) ; break ;
     }
    return valid_isect ; 
 }

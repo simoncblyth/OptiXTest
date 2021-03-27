@@ -19,15 +19,22 @@
 
 #pragma once
 
-#include "quad.h"
+#include "Quad.h"
+
+#if defined(__CUDACC__) || defined(__CUDABE__)
+   #define PRIM_METHOD __device__
+#else
+   #define PRIM_METHOD 
+#endif 
+
 
 struct Prim 
 {
-    __device__ int partOffset() const { return  q0.i.x ; } 
-    __device__ int numParts()   const { return  q0.i.y < 0 ? -q0.i.y : q0.i.y ; } 
-    __device__ int tranOffset() const { return  q0.i.z ; } 
-    __device__ int planOffset() const { return  q0.i.w ; } 
-    __device__ int primFlag()   const { return  q0.i.y < 0 ? CSG_FLAGPARTLIST : CSG_FLAGNODETREE ; } 
+    PRIM_METHOD int partOffset() const { return  q0.i.x ; } 
+    PRIM_METHOD int numParts()   const { return  q0.i.y < 0 ? -q0.i.y : q0.i.y ; } 
+    PRIM_METHOD int tranOffset() const { return  q0.i.z ; } 
+    PRIM_METHOD int planOffset() const { return  q0.i.w ; } 
+    PRIM_METHOD int primFlag()   const { return  q0.i.y < 0 ? CSG_FLAGPARTLIST : CSG_FLAGNODETREE ; } 
 
     quad q0 ; 
 

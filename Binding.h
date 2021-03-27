@@ -3,6 +3,7 @@
 #include <vector_types.h>
 
 struct Node ; 
+struct Prim ; 
 
 struct RaygenData
 {
@@ -17,9 +18,9 @@ struct MissData
 struct HitGroupData
 {
     Node*    node ;    // aka part 
-    int*     prim ;    // (num_prim, 4 )          probably num_prim always 1 here  
-    //float*   tran ;  // (num_tran, 3, 4, 4)     num_tran will eventually be same as num_node
-    //float*   plan ;  // (num_plan, 4)           num_plan usually 0 
+    Prim*    prim ;    // (num_prim, 4 )          probably num_prim always 1 here  
+    float4*  plan ;    // (num_plan,)             num_plan usually 0 
+    //float4x4*   tran ;  // (num_tran, 3, 4, 4)     num_tran will eventually be same as num_node
 };
 
 
