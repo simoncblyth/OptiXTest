@@ -28,6 +28,42 @@ Depends only on NVIDIA OptiX 7.0::
     ./go.sh # gets glm, builds, runs -> ppm image file    
      
 
+Open Questions
+-----------------
+
+How to handle remainder non-repeated geometry ?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* suspect clumping into one remainder GAS non-optimal  
+* could have special handling of GMergedMesh zero creating many separate GAS
+* probably some kind of futher instancing algorithm with looser criteria could 
+  be applied to the remainder volumes 
+* could change the original instancing to find more instances within the "remainder"
+
+TODO: experiment with changing the instancing criteria to catch more and reduce the remainder
+
+* for JUNO only a handful of non-repeated volumes are optically important, 
+  they probably deserve special treatment 
+
+
+How to handle rendering and simulation of exactly the same geometry ?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* HitGroup and Miss shaders and SBT records exactly the same. Just needs different RayGen ? 
+
+How to switch ?
+
+* GPU runtime parameter switch ?  NO: should always aim to simplify and reduce what is on GPU 
+* different ptx ? YES: as minimizing the amount of ptx(even unused) is good   
+* split the ptx for geometry and raygen and have separate rg_camera and rg_simulation ptx 
+* a CPU side parameter then controls which flavor of pipeline is constructed and 
+  how that is managed : ie what data needs uploading/downloading 
+
+  * rendering : upload viewpoint, download pixels
+  * simulation : upload gensteps, download hits 
+
+
+
 Classes
 ---------
 

@@ -14,9 +14,9 @@ tmin=1.0
 #tmin=0.5
 #tmin=0.1
 
-#geometry=sphere
+geometry=sphere
 #geometry=zsphere
-geometry=sphere_containing_grid_of_spheres
+#geometry=sphere_containing_grid_of_spheres
 
 modulo=0,1
 single=2
@@ -43,9 +43,9 @@ cameratype=0
 
 # number of concentric layers in compound shapes
 #layers=1     
-layers=2
+#layers=2
 #layers=3
-#layers=20
+layers=20
 
 # make sensitive to calling environment
 export GEOMETRY=${GEOMETRY:-$geometry}
