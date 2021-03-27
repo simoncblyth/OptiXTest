@@ -7,6 +7,8 @@
 #endif
 
 
+#define RT_DEFAULT_MAX 1.e27f
+
 #if defined(__CUDACC__)
 #include "math_constants.h"
 #else
@@ -231,6 +233,131 @@ bool intersect_node_convexpolyhedron( float4& isect, const Prim* prim, const Nod
 }
 
 
+/**
+intersect_node_cone
+=====================
+
+
+
+
+
+
+**/
+
+INTERSECT_FUNC
+bool intersect_node_cone( float4& isect, const quad& q0, const float t_min , const float3& ray_origin, const float3& ray_direction )
+{
+    float r1 = q0.f.x ; 
+    float z1 = q0.f.y ; 
+    float r2 = q0.f.z ; 
+    float z2 = q0.f.w ;   // z2 > z1
+
+    float tth = (r2-r1)/(z2-z1) ;
+    float tth2 = tth*tth ; 
+    float z0 = (z2*r1-z1*r2)/(r1-r2) ;  // apex
+
+#ifdef DEBUG
+    printf(" r1 %10.4f z1 %10.4f r2 %10.4f z2 %10.4f : z0 %10.4f \n", r1, z1, r2, z2, z0 );  
+#endif
+ 
+    float r1r1 = r1*r1 ; 
+    float r2r2 = r2*r2 ; 
+
+    const float3& o = ray_origin ;
+    const float3& d = ray_direction ;
+
+    //  cone with apex at [0,0,z0]  and   r1/(z1-z0) = tanth  for any r1,z1 on the cone
+    //
+    //     x^2 + y^2  - (z - z0)^2 tanth^2 = 0 
+    //     x^2 + y^2  - (z^2 -2z0 z - z0^2) tanth^2 = 0 
+    //
+    //   Gradient:    [2x, 2y, (-2z tanth^2) + 2z0 tanth^2 ] 
+    //
+    //   (o.x+ t d.x)^2 + (o.y + t d.y)^2 - (o.z - z0 + t d.z)^2 tth2 = 0 
+    // 
+    // quadratic in t :    c2 t^2 + 2 c1 t + c0 = 0 
+
+    float c2 = d.x*d.x + d.y*d.y - d.z*d.z*tth2 ;
+    float c1 = o.x*d.x + o.y*d.y - (o.z-z0)*d.z*tth2 ; 
+    float c0 = o.x*o.x + o.y*o.y - (o.z-z0)*(o.z-z0)*tth2 ;
+    float disc = c1*c1 - c0*c2 ; 
+
+#ifdef DEBUG
+    printf(" c2 %10.4f c1 %10.4f c0 %10.4f disc %10.4f : tth %10.4f \n", c2, c1, c0, disc, tth  );  
+#endif
+ 
+
+
+    // * cap intersects (including axial ones) will always have potentially out of z-range cone intersects 
+    // * cone intersects will have out of r-range plane intersects, other than rays within xy plane
+ 
+    bool valid_isect = false ;
+ 
+    if(disc > 0.f)  // has intersects with infinite cone
+    {
+        float sdisc = sqrtf(disc) ;   
+        float root1 = (-c1 - sdisc)/c2 ;
+        float root2 = (-c1 + sdisc)/c2 ;  
+        float root1p = root1 > t_min ? root1 : RT_DEFAULT_MAX ;   // disqualify -ve roots from mirror cone immediately 
+        float root2p = root2 > t_min ? root2 : RT_DEFAULT_MAX ; 
+
+        float t_near = fminf( root1p, root2p );
+        float t_far  = fmaxf( root1p, root2p );  
+        float z_near = o.z+t_near*d.z ; 
+        float z_far  = o.z+t_far*d.z ; 
+
+        t_near = z_near > z1 && z_near < z2  && t_near > t_min ? t_near : RT_DEFAULT_MAX ; // disqualify out-of-z
+        t_far  = z_far  > z1 && z_far  < z2  && t_far  > t_min ? t_far  : RT_DEFAULT_MAX ; 
+
+        float idz = 1.f/d.z ; 
+        float t_cap1 = d.z == 0.f ? RT_DEFAULT_MAX : (z1 - o.z)*idz ;   // d.z zero means no z-plane intersects
+        float t_cap2 = d.z == 0.f ? RT_DEFAULT_MAX : (z2 - o.z)*idz ;
+        float r_cap1 = (o.x + t_cap1*d.x)*(o.x + t_cap1*d.x) + (o.y + t_cap1*d.y)*(o.y + t_cap1*d.y) ;  
+        float r_cap2 = (o.x + t_cap2*d.x)*(o.x + t_cap2*d.x) + (o.y + t_cap2*d.y)*(o.y + t_cap2*d.y) ;  
+
+        t_cap1 = r_cap1 < r1r1 && t_cap1 > t_min ? t_cap1 : RT_DEFAULT_MAX ;  // disqualify out-of-radius
+        t_cap2 = r_cap2 < r2r2 && t_cap2 > t_min ? t_cap2 : RT_DEFAULT_MAX ; 
+ 
+        float t_capn = fminf( t_cap1, t_cap2 );    // order caps
+        float t_capf = fmaxf( t_cap1, t_cap2 );
+
+        // NB use of RT_DEFAULT_MAX to represent disqualified
+        // roots is crucial to picking closest  qualified root with 
+        // the simple fminf(tt) 
+
+        float4 tt = make_float4( t_near, t_far, t_capn, t_capf );
+        float t_cand = fminf(tt) ; 
+        
+        valid_isect = t_cand > t_min && t_cand < RT_DEFAULT_MAX ;
+        if(valid_isect)
+        {
+            if( t_cand == t_cap1 || t_cand == t_cap2 )
+            {
+                isect.x = 0.f ; 
+                isect.y = 0.f ;
+                isect.z =  t_cand == t_cap2 ? 1.f : -1.f  ;   
+            }
+            else
+            { 
+                //     x^2 + y^2  - (z - z0)^2 tanth^2 = 0 
+                //     x^2 + y^2  - (z^2 -2z0 z - z0^2) tanth^2 = 0 
+                //
+                //   Gradient:    [2x, 2y, (-2z + 2z0) tanth^2 ] 
+                //   Gradient:    2*[x, y, (z0-z) tanth^2 ] 
+                float3 n = normalize(make_float3( o.x+t_cand*d.x, o.y+t_cand*d.y, (z0-(o.z+t_cand*d.z))*tth2  ))  ; 
+                isect.x = n.x ; 
+                isect.y = n.y ;
+                isect.z = n.z ; 
+            }
+            isect.w = t_cand ; 
+        }
+    }
+    return valid_isect ; 
+}
+
+
+
+
 INTERSECT_FUNC
 bool intersect_node( float4& isect, const Prim* prim, const Node* node, const float4* plan, const float t_min , const float3& ray_origin, const float3& ray_direction )
 {
@@ -241,6 +368,7 @@ bool intersect_node( float4& isect, const Prim* prim, const Node* node, const fl
         case CSG_SPHERE:           valid_isect = intersect_node_sphere(           isect, node->q0,               t_min, ray_origin, ray_direction ) ; break ; 
         case CSG_ZSPHERE:          valid_isect = intersect_node_zsphere(          isect, node->q0, node->q1,     t_min, ray_origin, ray_direction ) ; break ; 
         case CSG_CONVEXPOLYHEDRON: valid_isect = intersect_node_convexpolyhedron( isect, prim, node, plan,       t_min, ray_origin, ray_direction ) ; break ;
+        case CSG_CONE:             valid_isect = intersect_node_cone(             isect, node->q0,               t_min, ray_origin, ray_direction ) ; break ;
     }
    return valid_isect ; 
 }
