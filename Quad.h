@@ -7,3 +7,5 @@ union quad
    uint4  u ; 
 };
 
+struct quad4 { quad q0, q1, q2, q3 ; };
+

@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+
+"""
 import os
 import numpy as np
 
@@ -9,31 +12,59 @@ class IntersectNodeTest(object):
     def __init__(self, path):
         a = np.load(path) 
 
-        x = a[:,0]
-        y = a[:,1]
-        z = a[:,2]
-        t = a[:,3]
+        ori = a[:,0]
+        dir = a[:,1]
+        post = a[:,2]
+        isect = a[:,3,0].view(np.int32)  
+
+        tot = len(a)
+        hit = np.count_nonzero( isect == 1 )  
+        miss = np.count_nonzero( isect == 0 )  
 
         self.path = path 
         self.a = a
-        self.x = x
-        self.y = y
-        self.z = z
-        self.t = t
+        self.ori = ori
+        self.dir = dir
+        self.post = post
+        self.isect = isect
+        self.tot = tot 
+        self.hit = hit 
+        self.miss = miss
+
+    def __repr__(self):
+        return "%s : tot %d hit %d miss %d " % (self.path, self.tot, self.hit, self.miss)
+ 
 
 if __name__ == '__main__':
 
-    paths="/tmp/intersect_node_tests/circle_scan/*.npy" 
-    paths = sorted(glob(paths))
+    #solid = "sphere"
+    #solid = "zsphere"
+    #solid = "cone"
+    #solid = "convexpolyhedron_cube" 
+    #solid = "hyperboloid"
+    #solid = "box3"
+    #solid = "plane"
+    #solid = "slab"
+    #solid = "cylinder"
+    solid = "disc"
 
-    num = len(paths)
-    fig, axs = plt.subplots(num)
-    for i in range(num):
-        path = paths[i]
-        tst = IntersectNodeTest(path)
-        ax = axs[i]
-        ax.plot( tst.x, tst.z )
-    pass
+    #scan = "circle"
+    scan = "rectangle"
+
+    path = "/tmp/intersect_node_tests/%(scan)s_scan/%(solid)s.npy" % locals()
+
+    fig, axs = plt.subplots(1)
+    if not type(axs) is np.ndarray: axs = [axs] 
+
+    tst = IntersectNodeTest(path)
+    print(tst)
+
+    ax = axs[0]
+    ax.set_aspect('equal')
+    ax.scatter( tst.post[:,0], tst.post[:,2], s=0.1 )
+    ax.scatter( tst.ori[:,0], tst.ori[:,2] )
+    scale = 10.
+    ax.scatter( tst.ori[:,0] + tst.dir[:,0]*scale, tst.ori[:,2]+tst.dir[:,2]*scale )
     fig.show()
 
 
