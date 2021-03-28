@@ -22,7 +22,10 @@ struct Solid
     static Solid* MakeSphere(); 
     static Solid* MakeZSphere(); 
     static Solid* MakeCone(); 
-    static Solid* MakeConvexPolyhedron();
+    static Solid* MakeConvexPolyhedronCube();
+    static Solid* MakeConvexPolyhedronTetrahedron();
+    static float4 face_plane( const std::vector<float3>& v, unsigned i0, unsigned i1, unsigned i2 );
+    static Solid* MakeConvexPolyhedron(std::vector<float4>& plan);
     static Solid* MakeHyperboloid();
     static Solid* MakeBox3();
     static Solid* MakePlane();
@@ -39,7 +42,8 @@ Solid* Solid::Make(const char* name)
     if(     strcmp(name, "sphere") == 0)           return MakeSphere() ;
     else if(strcmp(name, "zsphere") == 0)          return MakeZSphere() ;
     else if(strcmp(name, "cone") == 0)             return MakeCone() ;
-    else if(strcmp(name, "convexpolyhedron") == 0) return MakeConvexPolyhedron() ;
+    else if(strcmp(name, "convexpolyhedron_cube") == 0) return MakeConvexPolyhedronCube() ;
+    else if(strcmp(name, "convexpolyhedron_tetrahedron") == 0) return MakeConvexPolyhedronTetrahedron() ;
     else if(strcmp(name, "hyperboloid") == 0)      return MakeHyperboloid() ;
     else if(strcmp(name, "box3") == 0)             return MakeBox3() ;
     else if(strcmp(name, "plane") == 0)            return MakePlane() ;
@@ -91,25 +95,132 @@ Solid* Solid::MakeCone()
     solid->extent = 500.f ;  // guess 
     return solid ; 
 }
-Solid* Solid::MakeConvexPolyhedron()
+
+Solid* Solid::MakeConvexPolyhedronCube()
 {
-    Solid* solid = new Solid ; 
-    solid->label = "convexpolyhedron_cube" ; 
     float hx = 10.f ; 
     float hy = 20.f ; 
     float hz = 30.f ; 
-    solid->plan.push_back( make_float4(  1.f,  0.f,  0.f, hx ) ); 
-    solid->plan.push_back( make_float4( -1.f,  0.f,  0.f, hx ) ); 
-    solid->plan.push_back( make_float4(  0.f,  1.f,  0.f, hy ) ); 
-    solid->plan.push_back( make_float4(  0.f, -1.f,  0.f, hy ) ); 
-    solid->plan.push_back( make_float4(  0.f,  0.f,  1.f, hz ) ); 
-    solid->plan.push_back( make_float4(  0.f,  0.f, -1.f, hz ) );
-    solid->node.q0.f = {0.f, 0.f, 0.f, 0.f } ; 
-    solid->node.q1.f = {0.f, 0.f, 0.f, 0.f } ; 
-    solid->node.q2.u = {0,0,0,CSG_CONVEXPOLYHEDRON} ; 
-    solid->node.q3.u = {0,0,0,0} ; 
-    solid->prim.q0.u = {0,0,0,0} ; 
+
+    std::vector<float4> plan ; 
+    plan.push_back( make_float4(  1.f,  0.f,  0.f, hx ) ); 
+    plan.push_back( make_float4( -1.f,  0.f,  0.f, hx ) ); 
+    plan.push_back( make_float4(  0.f,  1.f,  0.f, hy ) ); 
+    plan.push_back( make_float4(  0.f, -1.f,  0.f, hy ) ); 
+    plan.push_back( make_float4(  0.f,  0.f,  1.f, hz ) ); 
+    plan.push_back( make_float4(  0.f,  0.f, -1.f, hz ) );
+
+    Solid* solid = MakeConvexPolyhedron(plan); 
+
+    solid->label = "convexpolyhedron_cube" ; 
     solid->extent = 30.f ;  
+    return solid ; 
+}
+
+
+  /*  
+     https://en.wikipedia.org/wiki/Tetrahedron
+
+       0:(1,1,1)
+       1:(1,−1,−1)
+       2:(−1,1,−1) 
+       3:(−1,−1,1)
+
+
+                              (1,1,1)
+                 +-----------0
+                /|          /| 
+     (-1,-1,1) / |         / |
+              3-----------+  |
+              |  |        |  |
+              |  |        |  |
+   (-1,1,-1)..|..2--------|--+
+              | /         | /
+              |/          |/
+              +-----------1
+                          (1,-1,-1)      
+
+          Faces         (attempt to right-hand-rule orient normals outwards)
+                0-1-2
+                1-3-2
+                3-0-2
+                0-3-1
+
+
+         z  y
+         | /
+         |/
+         +---> x
+
+
+         012:    x + y - z = 1
+
+    */
+
+
+float4 Solid::face_plane( const std::vector<float3>& v, unsigned i, unsigned j, unsigned k )
+{
+    // normal for plane through v[i] v[j] v[k]
+    float3 ij = v[j] - v[i] ; 
+    float3 ik = v[k] - v[i] ; 
+    float3 n = normalize(cross(ij, ik )) ;
+    float di = dot( n, v[i] ) ;
+    float dj = dot( n, v[j] ) ;
+    float dk = dot( n, v[k] ) ;
+    std::cout 
+        << " di " << di 
+        << " dj " << dj 
+        << " dk " << dk
+        << " n (" << n.x << "," << n.y << "," << n.z << ")" 
+        << std::endl
+        ; 
+
+    float4 plane = make_float4( n, di ) ; 
+    return plane ;  
+}
+
+
+
+Solid* Solid::MakeConvexPolyhedronTetrahedron()
+{
+    float s = 100.f*sqrt(3) ; 
+
+    std::vector<float3> vtx ; 
+    vtx.push_back(make_float3( s, s, s));  
+    vtx.push_back(make_float3( s,-s,-s)); 
+    vtx.push_back(make_float3(-s, s,-s)); 
+    vtx.push_back(make_float3(-s,-s, s)); 
+
+    std::vector<float4> plan ; 
+    plan.push_back(face_plane(vtx, 0, 1, 2)) ;  
+    plan.push_back(face_plane(vtx, 1, 3, 2)) ;  
+    plan.push_back(face_plane(vtx, 3, 0, 2)) ;  
+    plan.push_back(face_plane(vtx, 0, 3, 1)) ;  
+
+    for(unsigned i=0 ; i < plan.size() ; i++) 
+    {
+        const float4& p = plan[i] ;  
+        std::cout << " plan (" << p.x << "," << p.y << "," << p.z << "," << p.w << ") " << std::endl ;
+    } 
+
+    Solid* solid = MakeConvexPolyhedron(plan); 
+    solid->label = "convexpolyhedron_tetrahedron" ; 
+    solid->extent = s ;  
+    return solid ; 
+}
+
+
+
+Solid* Solid::MakeConvexPolyhedron(std::vector<float4>& plan)
+{
+    Solid* solid = new Solid ; 
+    for(unsigned i=0 ; i < plan.size() ; i++) solid->plan.push_back( plan[i] ); 
+
+    solid->prim = {} ; 
+    solid->node = {} ;
+    solid->node.setTypecode(CSG_CONVEXPOLYHEDRON) ; 
+    solid->node.setPlaneNum(plan.size());    // must ve 
+
     return solid ; 
 }
 
@@ -124,12 +235,13 @@ Solid* Solid::MakeHyperboloid()
 
     Solid* solid = new Solid ; 
     solid->label = "hyperboloid" ; 
-    solid->node.q0.f = {r0, zf, z1, z2 } ; 
-    solid->node.q1.f = {0.f, 0.f, 0.f, 0.f } ; 
-    solid->node.q2.u = {0,0,0,CSG_HYPERBOLOID} ; 
-    solid->node.q3.u = {0,0,0,0} ; 
-    solid->prim.q0.u = {0,0,0,0} ; 
     solid->extent = r0*sqrt(2) ;  // guess  
+
+    solid->prim = {} ; 
+    solid->node = {} ;
+    solid->node.q0.f = {r0, zf, z1, z2 } ; 
+    solid->node.setTypecode(CSG_HYPERBOLOID) ; 
+
     return solid ; 
 }
 
@@ -141,12 +253,13 @@ Solid* Solid::MakeBox3()
 
     Solid* solid = new Solid ; 
     solid->label = "box3" ; 
-    solid->node.q0.f = {fx, fy, fz, 0.f } ; 
-    solid->node.q1.f = {0.f, 0.f, 0.f, 0.f } ; 
-    solid->node.q2.u = {0,0,0,CSG_BOX3} ; 
-    solid->node.q3.u = {0,0,0,0} ; 
-    solid->prim.q0.u = {0,0,0,0} ; 
     solid->extent = 150.f ; 
+
+    solid->prim = {} ; 
+    solid->node = {} ;
+    solid->node.q0.f = {fx, fy, fz, 0.f } ; 
+    solid->node.setTypecode(CSG_BOX3) ; 
+
     return solid ; 
 }
 
@@ -154,12 +267,13 @@ Solid* Solid::MakePlane()
 {
     Solid* solid = new Solid ; 
     solid->label = "plane" ; 
-    solid->node.q0.f = {1.f, 0.f, 0.f, 0.f } ; // plane normal in +x direction, thru origin 
-    solid->node.q1.f = {0.f, 0.f, 0.f, 0.f } ; 
-    solid->node.q2.u = {0,0,0,CSG_PLANE} ; 
-    solid->node.q3.u = {0,0,0,0} ; 
-    solid->prim.q0.u = {0,0,0,0} ; 
     solid->extent = 150.f ;    // its unbounded 
+
+    solid->prim = {} ; 
+    solid->node = {} ; 
+    solid->node.q0.f = {1.f, 0.f, 0.f, 0.f } ; // plane normal in +x direction, thru origin 
+    solid->node.setTypecode(CSG_PLANE) ; 
+
     return solid ; 
 }
 
@@ -167,12 +281,14 @@ Solid* Solid::MakeSlab()
 {
     Solid* solid = new Solid ; 
     solid->label = "slab" ; 
+    solid->extent = 150.f ;    // its unbounded 
+    solid->prim = {} ; 
+    solid->node = {} ; 
+
     solid->node.q0.f = {1.f, 0.f, 0.f, 0.f } ; // plane normal in +x direction
     solid->node.q1.f = {-10.f, 10.f, 0.f, 0.f } ; 
-    solid->node.q2.u = {0,0,0,CSG_SLAB} ; 
-    solid->node.q3.u = {0,0,0,0} ; 
-    solid->prim.q0.u = {0,0,0,0} ; 
-    solid->extent = 150.f ;    // its unbounded 
+    solid->node.setTypecode(CSG_SLAB) ; 
+
     return solid ; 
 }
 
@@ -188,12 +304,14 @@ Solid* Solid::MakeCylinder()
     float z1 = -50.f ; 
     float z2 =  50.f ; 
 
+    solid->extent = 150.f ;   
+    solid->prim = {} ; 
+    solid->node = {} ; 
+
     solid->node.q0.f = { px, py, 0.f, rxy } ; 
     solid->node.q1.f = { z1, z2, 0.f, 0.f } ; 
-    solid->node.q2.u = {0,0,0,CSG_CYLINDER} ; 
-    solid->node.q3.u = {0,0,0,0} ; 
-    solid->prim.q0.u = {0,0,0,0} ; 
-    solid->extent = 150.f ;   
+    solid->node.setTypecode(CSG_CYLINDER); 
+
     return solid ; 
 }
 
@@ -211,12 +329,14 @@ Solid* Solid::MakeDisc()
     float z1 = -5.f ; 
     float z2 =  5.f ; 
 
+    solid->extent = 100.f ;   
+    solid->prim = {} ; 
+    solid->node = {} ; 
+
     solid->node.q0.f = { px, py, inner, radius } ; 
     solid->node.q1.f = { z1, z2, 0.f, 0.f } ; 
-    solid->node.q2.u = {0,0,0,CSG_DISC} ; 
-    solid->node.q3.u = {0,0,0,0} ; 
-    solid->prim.q0.u = {0,0,0,0} ; 
-    solid->extent = 100.f ;   
+    solid->node.setTypecode(CSG_DISC); 
+
     return solid ; 
 }
 
@@ -226,7 +346,8 @@ void Solid::MakeSolids(std::vector<Solid*>& solids )
     solids.push_back( Solid::MakeSphere() ); 
     solids.push_back( Solid::MakeZSphere() ); 
     solids.push_back( Solid::MakeCone() ); 
-    solids.push_back( Solid::MakeConvexPolyhedron() ); 
+    solids.push_back( Solid::MakeConvexPolyhedronCube() ); 
+    solids.push_back( Solid::MakeConvexPolyhedronTetrahedron() ); 
     solids.push_back( Solid::MakeHyperboloid() ); 
     solids.push_back( Solid::MakeBox3() ); 
     solids.push_back( Solid::MakePlane() ); 
@@ -324,28 +445,25 @@ void axis_scan(const Solid* solid)
 }
 
 
-void rectangle_scan(const Solid* solid)
-{
-    std::vector<quad4> recs ; 
-    float halfside = 2.0f*solid->extent ; 
-    unsigned n = 100 ; 
-    float t_min = 0.f ;
 
+void _rectangle_scan( std::vector<quad4>& recs, const Solid* solid, float t_min, unsigned n, float halfside, float y )
+{
     // shooting up/down 
 
     float3 z_up   = make_float3( 0.f, 0.f,  1.f);
     float3 z_down = make_float3( 0.f, 0.f, -1.f);
 
-    float3 z_top = make_float3( 0.f, 0.f,  halfside ); 
-    float3 z_bot = make_float3( 0.f, 0.f, -halfside ); 
+    float3 z_top = make_float3( 0.f, y,  halfside ); 
+    float3 z_bot = make_float3( 0.f, y, -halfside ); 
 
     // shooting left/right
 
     float3 x_right = make_float3(  1.f, 0.f,  0.f);
     float3 x_left  = make_float3( -1.f, 0.f,  0.f);
 
-    float3 x_lhs = make_float3( -halfside, 0.f,  0.f ); 
-    float3 x_rhs = make_float3(  halfside, 0.f,  0.f ); 
+    float3 x_lhs = make_float3( -halfside, y,  0.f ); 
+    float3 x_rhs = make_float3(  halfside, y,  0.f ); 
+
 
     for(float v=-halfside ; v <= halfside ; v+= halfside/float(n) )
     { 
@@ -359,8 +477,21 @@ void rectangle_scan(const Solid* solid)
         test_intersect(recs,  solid,  t_min, x_lhs, x_right );     
         test_intersect(recs,  solid,  t_min, x_rhs, x_left  );     
     }
+}
 
 
+void rectangle_scan(const Solid* solid)
+{
+    std::vector<quad4> recs ; 
+    float halfside = 2.0f*solid->extent ; 
+    unsigned nxz = 100 ; 
+    unsigned ny = 10 ; 
+    float t_min = 0.f ;
+
+    for(float y=-halfside ; y <= halfside ; y += halfside/float(ny) )
+    {
+        _rectangle_scan( recs, solid, t_min, nxz, halfside,   y );  
+    }
 
     unsigned nhit = 0 ; 
     unsigned nmiss = 0 ; 
@@ -388,6 +519,12 @@ void rectangle_scan(const Solid* solid)
         recs.clear(); 
     }
 }
+
+
+
+
+
+
 
 void circle_scan(const Solid* solid)
 {

@@ -38,8 +38,19 @@ float __int_as_float(int i)
 #include "Prim.h"
 #include "robust_quadratic_roots.h"
 
-
 /**
+intersect_node.h
+===================
+
+
+Prim 
+   wrapper over int4, providing offsets 
+   
+Node (synonymous with Part) 
+
+
+
+
 
 Bringing over functions from  ~/opticks/optixrap/cu/csg_intersect_primitive.h
 
@@ -169,11 +180,11 @@ bool intersect_node_convexpolyhedron( float4& isect, const Prim* prim, const Nod
     float3 t0_normal = make_float3(0.f);
     float3 t1_normal = make_float3(0.f);
 
-    unsigned num_plan = 6 ;  // TODO : get this from Prim 
+    unsigned num_plan = node->planeNum() ; 
 
     for(unsigned i=0 ; i < num_plan ; i++) 
     {    
-        float4 plane = plan[i];    // TODO: may need offsets here 
+        float4 plane = plan[i];    // TODO: may need offsets from prim here 
         float3 n = make_float3(plane);
         float dplane = plane.w ;
 

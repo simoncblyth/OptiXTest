@@ -4,9 +4,29 @@
 """
 import os
 import numpy as np
-
 from glob import glob
-import matplotlib.pyplot as plt 
+
+try:
+    import matplotlib.pyplot as plt 
+except ImportError:
+    plt = None
+pass
+
+try:
+    import pyvista as pv
+except ImportError:
+    pv = None
+pass
+
+def plot3d(pos, grid=False):
+    pl = pv.Plotter()
+    pl.add_points(pos, color='#FFFFFF', point_size=2.0 )  
+    if grid:
+        pl.show_grid()
+    pass
+    cp = pl.show()
+    return cp
+
 
 class IntersectNodeTest(object):
     def __init__(self, path):
@@ -37,16 +57,18 @@ class IntersectNodeTest(object):
 
 if __name__ == '__main__':
 
+
     #solid = "sphere"
     #solid = "zsphere"
     #solid = "cone"
     #solid = "convexpolyhedron_cube" 
+    solid = "convexpolyhedron_tetrahedron" 
     #solid = "hyperboloid"
     #solid = "box3"
     #solid = "plane"
     #solid = "slab"
     #solid = "cylinder"
-    solid = "disc"
+    #solid = "disc"
 
     #scan = "circle"
     scan = "rectangle"
@@ -66,5 +88,8 @@ if __name__ == '__main__':
     scale = 10.
     ax.scatter( tst.ori[:,0] + tst.dir[:,0]*scale, tst.ori[:,2]+tst.dir[:,2]*scale )
     fig.show()
+
+    #plot3d( tst.post[:,:3] )
+
 
 
