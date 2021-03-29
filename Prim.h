@@ -2,8 +2,8 @@
 
 struct Prim
 {
+    int numNode    ; 
     int nodeOffset ; 
-    int numNodes   ; 
     int tranOffset ; 
     int planOffset ; 
 };
