@@ -67,11 +67,11 @@ void SBT::setGeo(const Geo* geo_)
 {
     geo = geo_ ; 
 
-    createGAS(geo); 
+    createGAS(geo);      // uploads aabb of all prim of all shapes to create GAS
     createIAS(geo); 
     setTop(geo->top); 
 
-    createHitgroup(geo); 
+    createHitgroup(geo); // creates Hitgroup SBT records   
     checkHitgroup(geo); 
 }
 
@@ -131,6 +131,15 @@ void SBT::updateRaygen()
                 ) );
 }
 
+
+/**
+SBT::createGAS
+----------------
+
+For each compound shape the aabb of each prim (aka layer) is 
+uploaded to GPU in order to create GAS for each compound shape.
+
+**/
 
 void SBT::createGAS(const Geo* geo)
 {
@@ -212,6 +221,17 @@ AS* SBT::getAS(const char* spec) const
    return a ; 
 }
 
+/**
+SBT::getOffset
+----------------
+
+The layer_idx_ within the shape_idx_ composite shape 
+could also be called prim_idx_.
+
+
+
+**/
+
 unsigned SBT::getOffset(unsigned shape_idx_ , unsigned layer_idx_ ) const 
 {
     assert( geo ); 
@@ -238,6 +258,14 @@ unsigned SBT::getOffset(unsigned shape_idx_ , unsigned layer_idx_ ) const
     return offset_sbt ; 
 }
 
+/**
+SBT::_getOffset
+----------------
+
+Implemented as an inner method avoiding "goto" 
+to break out of multiple for loops.
+
+**/
 unsigned SBT::_getOffset(unsigned shape_idx_ , unsigned layer_idx_ ) const 
 {
     unsigned offset_sbt = 0 ; 
@@ -292,6 +320,17 @@ unsigned SBT::getTotalRec() const
     return tot_rec ;  
 }
 
+/**
+SBT::createHitgroup
+---------------------
+
+Note:
+
+1. all HitGroup SBT records have the same hitgroup_pg, different shapes 
+   are distinguished by program data not program code 
+
+
+**/
 
 void SBT::createHitgroup(const Geo* geo)
 {
@@ -324,6 +363,8 @@ void SBT::createHitgroup(const Geo* geo)
         unsigned shape_idx = i ;    
         const GAS& gas = vgas[i] ;    
         unsigned num_bi = gas.bis.size(); 
+        if(is_11N) assert( num_bi == 1 ); // 11N mode every GAS has only one BI with multiple aabb 
+
         const Shape* sh = gas.sh ; 
 
         std::cout << "SBT::createHitgroup gas_idx " << i << " num_bi " << num_bi << std::endl ; 
@@ -333,7 +374,7 @@ void SBT::createHitgroup(const Geo* geo)
             const BI& bi = gas.bis[j] ; 
             const OptixBuildInputCustomPrimitiveArray& buildInputCPA = bi.buildInput.aabbArray ;
             unsigned num_rec = buildInputCPA.numSbtRecords ; 
-            if(is_1NN) assert( num_rec == 1 ); 
+            if(is_1NN) assert( num_rec == 1 );  // 1NN mode : every BI has one aabb 
 
             for( unsigned k=0 ; k < num_rec ; k++)
             { 
@@ -383,13 +424,14 @@ void SBT::createHitgroup(const Geo* geo)
 SBT::upload_prim_data
 ------------------------
 
-Sets device pointers into *data* CPU struct which is about to be copied to device
+Sets device pointers into HitGroupData *data* CPU struct which is about to be copied to device
 
 **/
 
 void SBT::upload_prim_data( HitGroupData& data, const Shape* sh, unsigned prim_idx )
 {
-    unsigned num_prim = 1 ;  // expect this to always be 1  
+    unsigned num_prim = 1 ;  // expect this to always be 1 : single prim (aka layer) for each HG SBT record
+   
     int* prim = sh->get_prim(prim_idx) ; 
     int* d_prim = UploadArray<int>(prim, Shape::prim_size*num_prim ) ; 
     data.prim = d_prim ; 
@@ -400,6 +442,7 @@ void SBT::upload_prim_data( HitGroupData& data, const Shape* sh, unsigned prim_i
     const Node* node = sh->get_node(prim_idx); 
     Node* d_node = UploadArray<Node>(node, num_node ); 
     data.node = d_node ; 
+
 }
 
 void SBT::check_prim_data( const HitGroupData& data ) const 

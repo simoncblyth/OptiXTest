@@ -7,7 +7,7 @@ CUDA_PREFIX=/usr/local/cuda   # just use some CUDA headers, not using GPU
 opts=""
 
 name=intersect_node 
-gcc $name.cc -std=c++11 -lstdc++ $opts -I. -I$HOME/np -I${CUDA_PREFIX}/include -o /tmp/$name 
+gcc $name.cc Solid.cc Scan.cc  -std=c++11 -lstdc++ $opts -I. -I$HOME/np -I${CUDA_PREFIX}/include -o /tmp/$name 
 [ $? -ne 0 ] && echo compile error && exit 1
 
 

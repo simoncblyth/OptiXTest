@@ -79,6 +79,8 @@ Grid.h
 
 Shape.h
    holder of aabb and param for multi-prim(aka multi-layer) shapes
+   perhaps Comp would be a better name (short for Composite but that 
+   is too similar to Composition)
 
 InstanceId.h
    identity bit packer

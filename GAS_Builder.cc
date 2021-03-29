@@ -129,6 +129,8 @@ GAS_Builder::MakeCustomPrimitivesBI_11N
 Uploads the aabb for all prim (aka layers) of the Shape 
 and arranges for separate SBT records for each prim.
 
+Hmm : separate aabb allocations for every GAS ?
+
 **/
 
 BI GAS_Builder::MakeCustomPrimitivesBI_11N(const Shape* sh)
@@ -137,7 +139,7 @@ BI GAS_Builder::MakeCustomPrimitivesBI_11N(const Shape* sh)
     
     BI bi = {} ; 
     bi.mode = 1 ; 
-    unsigned num = sh->num ; 
+    unsigned num = sh->num ; // number of layers (aka prim) of the compound Shape 
     const std::vector<AABB>& aabb_ = sh->aabb ; 
     assert( aabb_.size() == num ); 
     const float* aabb = (float*)aabb_.data() ; 
@@ -185,7 +187,7 @@ GAS_Builder::Build
 ---------------------
 
 Boilerplate building the GAS from the BI vector. 
-In 11N mode there is always only one BI in the vector.
+In the default 11N mode there is always only one BI in the vector.
 
 **/
 

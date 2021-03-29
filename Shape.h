@@ -11,6 +11,14 @@ struct AABB
     float3 mx ; 
 }; 
 
+
+/**
+Shape
+========
+
+
+**/
+
 struct Shape
 {
     enum { GBA_1NN=0, GBA_11N=1 } ; 

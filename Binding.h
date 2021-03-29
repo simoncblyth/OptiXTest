@@ -15,7 +15,7 @@ struct MissData
     float r, g, b;
 };
 
-struct HitGroupData
+struct HitGroupData   // hmm this is effectively Prim 
 {
     Node*    node ;    // aka part 
     Prim*    prim ;    // (num_prim, 4 )          probably num_prim always 1 here  
