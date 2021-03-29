@@ -32,7 +32,6 @@ struct Node
     NODE_METHOD void setPlaneIdx(unsigned idx){  q0.u.x = idx ; } 
     NODE_METHOD void setPlaneNum(unsigned num){  q0.u.y = num ; }
 
- 
 
     NODE_METHOD unsigned index()     const {      return q1.u.w ; }  //  
     NODE_METHOD unsigned boundary()  const {      return q1.u.z ; }  //   see ggeo-/GPmt
@@ -42,6 +41,7 @@ struct Node
 
 #if defined(__CUDACC__) || defined(__CUDABE__)
 #else
+    std::string desc() const ; 
     static void Dump(const Node* n, unsigned ni, const char* label);  
 #endif
 

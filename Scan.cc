@@ -1,41 +1,57 @@
-
 #include "sutil_vec_math.h"
 #include "intersect_node.h"
 
 #include "NP.hh"
+#include "Foundry.h"
 #include "Solid.h"
 #include "Scan.h"
 
-Scan::Scan( const Solid* solid_ ) 
+Scan::Scan( const char* dir_, const Foundry* foundry_, const Solid* solid_ ) 
     :
+    dir(strdup(dir_)),
+    foundry(foundry_),
     solid(solid_)
 {
 }
 
 void Scan::trace(const float t_min, const float3& ray_origin, const float3& ray_direction )
 {
-    float4 isect = make_float4( 0.f, 0.f, 0.f, 0.f ) ; 
-    bool valid_isect = intersect_node( isect, &solid->prim, &solid->node, solid->plan.data() , t_min, ray_origin, ray_direction ); 
-
-
-    quad4 rec ;  
-    rec.q0.f = make_float4(ray_origin); 
-    rec.q0.i.w = int(valid_isect) ; 
-
-    rec.q1.f = make_float4(ray_direction); 
-    rec.q2.f = make_float4(0.f); 
-    rec.q3.f = isect ; 
-    //rec.q3.f = make_int4( valid_isect, 0, 0, 0);         
-
-    if(valid_isect)
+    for(unsigned primIdx=solid->primOffset ; primIdx < solid->primOffset+solid->numPrim ; primIdx++)
     {
-        float t = isect.w ; 
-        float3 pos = ray_origin + t*ray_direction ; 
-        rec.q2.f = make_float4(pos, t ); 
-    }
-    recs.push_back(rec);  
+        const Prim* prim = foundry->getPrim(primIdx);   // numNode,nodeOffset,tranOffset,planOffset
+        const float4* plan = foundry->getPlan(prim->planOffset); 
+        const quad4* tran = foundry->getTran(prim->tranOffset); 
+        assert( tran == NULL ); 
+        
+        //std::cout << prim->desc() << std::endl ; 
 
-    dump(rec); 
+        for(unsigned nodeIdx=prim->nodeOffset ; nodeIdx < prim->nodeOffset+prim->numNode ; nodeIdx++)
+        {
+            const Node* node = foundry->getNode(nodeIdx); 
+            //std::cout << node->desc() << std::endl ; 
+
+            float4 isect = make_float4( 0.f, 0.f, 0.f, 0.f ) ; 
+            bool valid_isect = intersect_node( isect, prim, node, plan, t_min, ray_origin, ray_direction ); 
+
+            quad4 rec ;  
+            rec.q0.f = make_float4(ray_origin); 
+            rec.q0.i.w = int(valid_isect) ; 
+
+            rec.q1.f = make_float4(ray_direction); 
+            rec.q2.f = make_float4(0.f); 
+            rec.q3.f = isect ; 
+            //rec.q3.f = make_int4( valid_isect, 0, 0, 0);         
+
+            if(valid_isect)
+            {
+                float t = isect.w ; 
+                float3 pos = ray_origin + t*ray_direction ; 
+                rec.q2.f = make_float4(pos, t ); 
+            }
+            recs.push_back(rec);  
+            //dump(rec); 
+        }
+    } 
 }
 
 
@@ -186,17 +202,17 @@ void Scan::axis_scan()
 
 void Scan::save(const char* sub)
 {
-    std::cout << " recs.size " << recs.size() << std::endl ; 
+    //std::cout << " recs.size " << recs.size() << std::endl ; 
     if(recs.size() == 0 ) return ; 
 
     std::string name = solid->label ; 
     name += ".npy" ; 
 
     std::stringstream ss ; 
-    ss << "/tmp/intersect_node_tests/" << sub ; 
-    std::string dir = ss.str(); 
+    ss << dir << "/" << sub ; 
+    std::string fold = ss.str(); 
 
-    NP::Write( dir.c_str(), name.c_str(), (float*)recs.data(), recs.size(), 4, 4 ) ; 
+    NP::Write( fold.c_str(), name.c_str(), (float*)recs.data(), recs.size(), 4, 4 ) ; 
     recs.clear(); 
 }
 

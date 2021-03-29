@@ -787,12 +787,12 @@ template <typename T> void NP::Write(const char* dir, const char* name, const T*
     std::cout 
         << "NP::Write"
         << " dtype " << dtype
-        << " ni  " << ni_
+        << " ni  " << std::setw(8) << ni_
         << " nj  " << nj_
         << " nk  " << nk_
         << " nl  " << nl_
         << " nm  " << nm_
-        << " dir " << dir
+        << " dir " << std::setw(50) << dir
         << " name " << name
         << std::endl 
         ;   

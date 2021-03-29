@@ -28,14 +28,14 @@ def plot3d(pos, grid=False):
     return cp
 
 
-class IntersectNodeTest(object):
+class ScanTest(object):
     def __init__(self, path):
         a = np.load(path) 
 
         ori = a[:,0]
         dir = a[:,1]
         post = a[:,2]
-        isect = a[:,3,0].view(np.int32)  
+        isect = a[:,0,3].view(np.int32)  
 
         tot = len(a)
         hit = np.count_nonzero( isect == 1 )  
@@ -73,23 +73,23 @@ if __name__ == '__main__':
     #scan = "circle"
     scan = "rectangle"
 
-    path = "/tmp/intersect_node_tests/%(scan)s_scan/%(solid)s.npy" % locals()
+    base = "/tmp/ScanTest_scans"
+    path = "%(base)s/%(scan)s_scan/%(solid)s.npy" % locals()
 
     fig, axs = plt.subplots(1)
     if not type(axs) is np.ndarray: axs = [axs] 
 
-    tst = IntersectNodeTest(path)
-    print(tst)
+    st = ScanTest(path)
+    print(st)
 
     ax = axs[0]
     ax.set_aspect('equal')
-    ax.scatter( tst.post[:,0], tst.post[:,2], s=0.1 )
-    ax.scatter( tst.ori[:,0], tst.ori[:,2] )
+    ax.scatter( st.post[:,0], st.post[:,2], s=0.1 )
+    ax.scatter( st.ori[:,0],  st.ori[:,2] )
     scale = 10.
-    ax.scatter( tst.ori[:,0] + tst.dir[:,0]*scale, tst.ori[:,2]+tst.dir[:,2]*scale )
+    ax.scatter( st.ori[:,0] + st.dir[:,0]*scale, st.ori[:,2]+st.dir[:,2]*scale )
     fig.show()
 
-    #plot3d( tst.post[:,:3] )
-
+    plot3d( st.post[:,:3] )
 
 

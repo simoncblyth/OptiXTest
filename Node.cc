@@ -2,9 +2,24 @@
 #else
 
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <vector_types.h>
+
+#include "OpticksCSG.h"
 #include "Node.h"
+
+std::string Node::desc() const 
+{
+    std::stringstream ss ; 
+    ss
+       << "Node "
+       << CSG::Name((OpticksCSG_t)typecode())
+       ;    
+    std::string s = ss.str();
+    return s ; 
+}
+
 
 void Node::Dump(const Node* n_, unsigned ni, const char* label)
 {
