@@ -196,8 +196,6 @@ void Shape::write(const char* base, const char* rel, unsigned idx) const
     NP::Write(dir.c_str(), "prim.npy",   (int*)prim.data(), num, 4 ); 
 }
 
-
-
 void Shape::Dump(const float* f, const int ni, const char* label)
 {
     if(label) std::cout << label << std::endl ; 
@@ -224,9 +222,4 @@ void Shape::Dump(const std::vector<glm::mat4>& nds)
     float* f = (float*)nds.data() ;
     Dump(f, nds.size(), "vec.mat4" ) ;
 }
-
-
-
-
-
 

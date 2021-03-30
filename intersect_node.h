@@ -110,9 +110,6 @@ bool intersect_node_zsphere(float4& isect, const quad& q0, const quad& q1, const
     // Cannot intersect when ray origin outside sphere and direction away from sphere.
     // Whether early exit speeds things up is another question ... 
 
-    const bool QCAP = true ; 
-    const bool PCAP = true ;  
-
     const float2 zdelta = make_float2(q1.f);
     const float zmax = center.z + zdelta.y ; 
     const float zmin = center.z + zdelta.x ;    
@@ -126,8 +123,8 @@ bool intersect_node_zsphere(float4& isect, const quad& q0, const quad& q1, const
     float z2sph = ray_origin.z + t2sph*ray_direction.z ; 
 
     float idz = 1.f/ray_direction.z ; 
-    float t_QCAP = QCAP ? (zmax - ray_origin.z)*idz : t_min ;   // cap intersects,  t_min for cap not enabled
-    float t_PCAP = PCAP ? (zmin - ray_origin.z)*idz : t_min ;
+    float t_QCAP = (zmax - ray_origin.z)*idz ;   // cap intersects
+    float t_PCAP = (zmin - ray_origin.z)*idz ;
 
     float t1cap = fminf( t_QCAP, t_PCAP ) ;   // order cap intersects along the ray 
     float t2cap = fmaxf( t_QCAP, t_PCAP ) ;   // t2cap > t1cap 

@@ -13,6 +13,7 @@ int main(int argc, char** argv)
 {
     const char* dir = "/tmp/ScanTest_scans" ; 
     Foundry fd ;  
+    fd.init(); 
 
     for(unsigned i=0 ; i < fd.getNumSolid() ; i++)
     {

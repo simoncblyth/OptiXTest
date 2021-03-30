@@ -9,8 +9,9 @@
 
 Foundry::Foundry()
 {
-    init(); 
+   // not calling init as in real usage need to minimize contained nodes, prim, tran etc..
 }
+
 
 void Foundry::init()
 {
@@ -171,127 +172,117 @@ unsigned Foundry::makeSolid11(float extent, const char* label, Node& nd, const s
 
 unsigned Foundry::makeSphere(const char* label, float radius)
 {
+    assert( radius > 0.f); 
     Node nd = {} ;
-    nd.q0.f = {0.f,   0.f, 0.f, radius } ; 
+    nd.setParam( 0.f, 0.f, 0.f, radius,  0.f,  0.f ); 
+    nd.setAABB(  -radius, -radius, -radius,  radius, radius, radius  ); 
     nd.setTypecode(CSG_SPHERE) ; 
-    float extent = radius ; 
+    float extent = radius ;  // TODO: get from AABB
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
-unsigned Foundry::makeZSphere(const char* label)
+unsigned Foundry::makeZSphere(const char* label, float radius, float z1, float z2)
 {
+    assert( radius > 0.f); 
+    assert( z2 > z1 ); 
     Node nd = {} ;
-    nd.q0.f = {0.f,   0.f, 0.f, 100.f } ; 
-    nd.q1.f = {-50.f,50.f, 0.f,   0.f } ; 
+    nd.setParam( 0.f, 0.f, 0.f, radius, z1, z2 ); 
+    nd.setAABB(  -radius, -radius, z1,  radius, radius, z2  ); 
     nd.setTypecode(CSG_ZSPHERE) ; 
+
     float extent = 100.f ; 
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
-unsigned Foundry::makeCone(const char* label)
+unsigned Foundry::makeCone(const char* label, float r1, float z1, float r2, float z2)
 {
     float extent = 500.f ;  // guess 
-
-    float r2 = 100.f ;
-    float r1 = 300.f ;
-    float z2 = -100.f ;  
-    float z1 = -300.f ;
     assert( z2 > z1 ); 
-    //float z0 = (z2*r1-z1*r2)/(r1-r2) ;  // apex
-
+    float rmax = fmaxf(r1, r2) ;
     Node nd = {} ;
-    nd.q0.f = {r1, z1, r2, z2 } ; 
+    nd.setParam( r1, z1, r2, z2, 0.f, 0.f ) ;
+    nd.setAABB( -rmax, -rmax, z1, rmax, rmax, z2 ); 
     nd.setTypecode(CSG_CONE) ; 
 
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
-unsigned Foundry::makeHyperboloid(const char* label)
+unsigned Foundry::makeHyperboloid(const char* label, float r0, float zf, float z1, float z2)
 {
-    const float r0 = 100.f ;  // waist (z=0) radius 
-    const float zf = 50.f ;   // at z=zf radius grows to  sqrt(2)*r0 
-    const float z1 = -50.f ;  // z1 < z2 by assertion  
-    const float z2 =  50.f ; 
     assert( z1 < z2 ); 
- 
-    float extent = r0*sqrt(2.) ;  // guess  
+
+    const float rr0 = r0*r0 ; 
+    const float z1s = z1/zf ; 
+    const float z2s = z2/zf ; 
+
+    const float rr1 = rr0 * ( z1s*z1s + 1.f ) ;
+    const float rr2 = rr0 * ( z2s*z2s + 1.f ) ;
+    const float rmx = sqrtf(fmaxf( rr1, rr2 )) ; 
+
+    float extent = r0*sqrt(2.) ;  // guess  TODO: get from AABB
 
     Node nd = {} ;
-    nd.q0.f = {r0, zf, z1, z2 } ; 
+    nd.setParam(r0, zf, z1, z2, 0.f, 0.f ) ; 
+    nd.setAABB(  -rmx,  -rmx,  z1,  rmx, rmx, z2 ); 
     nd.setTypecode(CSG_HYPERBOLOID) ; 
 
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
-unsigned Foundry::makeBox3(const char* label)
+unsigned Foundry::makeBox3(const char* label, float fx, float fy, float fz )
 {
     float extent = 150.f ; 
-
-    float fx = 100.f ;   // fullside sizes
-    float fy = 100.f ; 
-    float fz = 150.f ; 
+    assert( fx > 0.f ); 
+    assert( fy > 0.f ); 
+    assert( fz > 0.f ); 
 
     Node nd = {} ;
-    nd.q0.f = {fx, fy, fz, 0.f } ; 
+    nd.setParam( fx, fy, fz, 0.f, 0.f, 0.f ); 
+    nd.setAABB( -fx*0.5f , -fy*0.5f, -fz*0.5f, fx*0.5f , fy*0.5f, fz*0.5f );   
     nd.setTypecode(CSG_BOX3) ; 
 
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
-unsigned Foundry::makePlane(const char* label)
+unsigned Foundry::makePlane(const char* label, float nx, float ny, float nz, float d)
 {
     float extent = 150.f ;    // its unbounded 
 
     Node nd = {} ;
-    nd.q0.f = {1.f, 0.f, 0.f, 0.f } ; // plane normal in +x direction, thru origin 
+    nd.setParam(nx, ny, nz, d, 0.f, 0.f ) ;
     nd.setTypecode(CSG_PLANE) ; 
 
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
-unsigned Foundry::makeSlab(const char* label)
+unsigned Foundry::makeSlab(const char* label, float nx, float ny, float nz, float d1, float d2 )
 {
     float extent = 150.f ;   // hmm: its unbounded 
     Node nd = {} ;
-    nd.q0.f = {1.f, 0.f, 0.f, 0.f } ; // plane normal in +x direction
-    nd.q1.f = {-10.f, 10.f, 0.f, 0.f } ; 
+    nd.setParam( nx, ny, nz, 0.f, d1, d2 ); 
+
     nd.setTypecode(CSG_SLAB) ; 
 
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
-unsigned Foundry::makeCylinder(const char* label)
+unsigned Foundry::makeCylinder(const char* label, float px, float py, float radius, float z1, float z2)
 {
     float extent = 100.f ; 
 
-    float px = 0.f ; 
-    float py = 0.f ; 
-    float rxy = 100.f ; 
-    float z1 = -50.f ; 
-    float z2 =  50.f ; 
-
     Node nd = {} ; 
-    nd.q0.f = { px, py, 0.f, rxy } ; 
-    nd.q1.f = { z1, z2, 0.f, 0.f } ; 
+    nd.setParam( px, py, 0.f, radius, z1, z2)  ; 
     nd.setTypecode(CSG_CYLINDER); 
 
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
-unsigned Foundry::makeDisc(const char* label)
+unsigned Foundry::makeDisc(const char* label, float px, float py, float ir, float r, float z1, float z2)
 {
     float extent = 100.f ; 
-
-    float px = 0.f ; 
-    float py = 0.f ; 
-    float inner = 50.f ;
-    float radius = 100.f ;  
-    float z1 = -5.f ; 
-    float z2 =  5.f ; 
-
     Node nd = {} ;
-    nd.q0.f = { px, py, inner, radius } ; 
-    nd.q1.f = { z1, z2, 0.f, 0.f } ; 
+    nd.setParam( px, py, ir, r, z1, z2 ); 
+    nd.setAABB( px - r , py - r , z1, px + r, py + r, z2 ); 
     nd.setTypecode(CSG_DISC); 
 
     return makeSolid11(extent, label, nd, nullptr ); 

@@ -5,6 +5,15 @@
 
 struct Shape ; 
 struct Grid ; 
+struct Foundry ; 
+
+/**
+Can Foundry replace Geo ?
+
+* no foundry is for now just for making local solids 
+  and holding the constituent Node, Prim etc..
+
+**/
 
 struct Geo
 {
@@ -40,6 +49,7 @@ struct Geo
     float tmax = 1e16f ; 
     float top_extent = 100.f ; 
 
+    Foundry*                  foundry ; 
     std::vector<const Shape*> shapes ; 
     std::vector<const Grid*>  grids ; 
     const char*               top ;  

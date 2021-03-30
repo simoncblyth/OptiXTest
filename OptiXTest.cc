@@ -72,6 +72,8 @@ int main(int argc, char** argv)
     params.setView(eye, U, V, W, geo.tmin, geo.tmax, cameratype ); 
     params.setSize(width, height, depth); 
 
+    // need to set the Foundry buffer pointers into params here 
+
 
 #if OPTIX_VERSION < 70000
 

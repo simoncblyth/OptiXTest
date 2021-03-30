@@ -12,7 +12,46 @@ Node (synonymous with Part)
 ==============================
 
 NB elements are used for different purposes depending on typecode, 
-eg planeIdx, planeNum are used only with CSG_CONVEXPOLYHEDRON. 
+eg planeIdx, planeNum are used only with CSG_CONVEXPOLYHEDRON.  Marked "cx:" below.
+
+* vim replace : shift-R
+
+
+    +----+----------------+----------------+----------------+----------------+-------------------------------------------------+
+    | q  |      x         |      y         |     z          |      w         |  notes                                          |
+    +====+================+================+================+================+=================================================+
+    |    | sp/zs/cy:cen_x | sp/zs/cy:cen_y | sp/zs/cy:cen_z | sp/zs/cy:radius|  eliminate center? as can be done by transform  |
+    | q0 | cn:r1          | cn:z1          | cn:r2          | cn:z2          |  cn:z2 > z1                                     |
+    |    | hy:r0 z=0 waist| hy:zf          | hy:z1          | hy:z2          |  hy:z2 > z1                                     |
+    |    | b3:fx          | b3:fy          | b3:fz          |                |  b3: fullside dimensions, center always origin  |
+    |    | pl/sl:nx       | pl/sl:ny       | pl/sl:nz       | pl:d           |  pl: NB Node plane distinct from plane array    |
+    |    |                |                | ds:inner_r     | ds:radius      |                                                 |
+    |    |                |                |                |                |                                                 |
+    |    | cx:planeIdx    | cx:planeNum    |                |                |                                                 |
+    +----+----------------+----------------+----------------+----------------+-------------------------------------------------+
+    |    | zs:zdelta_0    | zs:zdelta_1    | boundary       | index          |                                                 |
+    |    | sl:a           | sl:b           |                |                |  sl:a,b offsets from origin                     |
+    | q1 | cy:z1          | cy:z2          |                |                |  cy:z2 > z1                                     |
+    |    | ds:z1          | ds:z2          |                |                |                                                 |
+    |    |                |                |                |                |                                                 |
+    +----+----------------+----------------+----------------+----------------+-------------------------------------------------+
+    |    |                |                |                |(prev:typecode) |                                                 |
+    |    |                |                |                |                |                                                 |
+    | q2 |  BBMin_x       |  BBMin_y       |  BBMin_z       |  BBMax_x       |                                                 |
+    |    |                |                |                |                |                                                 |
+    |    |                |                |                |                |                                                 |
+    +----+----------------+----------------+----------------+----------------+-------------------------------------------------+
+    |    |                |                | (typecode)     | gtransformIdx  |                                                 |
+    |    |                |                |                | complement     |                                                 |
+    | q3 |  BBMax_y       |  BBMax_z       |                |                |                                                 |
+    |    |                |                |                |                |                                                 |
+    |    |                |                |                |                |                                                 |
+    |    |                |                |                |                |                                                 |
+    |    |                |                |                |                |                                                 |
+    +----+----------------+----------------+----------------+----------------+-------------------------------------------------+
+
+
+* moving typecode would give 6 contiguous slots for aabb
 
 **/
 
@@ -26,17 +65,24 @@ struct Node
     NODE_METHOD unsigned gtransformIdx() const { return q3.u.w & 0x7fffffff ; }  //  gtransformIdx is 1-based, 0 meaning None 
     NODE_METHOD bool        complement() const { return q3.u.w & 0x80000000 ; } 
 
-    // only relevant for CSG_CONVEXPOLYHEDRON 
     NODE_METHOD unsigned planeIdx()      const { return q0.u.x ; }  // 1-based, 0 meaning None
     NODE_METHOD unsigned planeNum()      const { return q0.u.y ; } 
     NODE_METHOD void setPlaneIdx(unsigned idx){  q0.u.x = idx ; } 
     NODE_METHOD void setPlaneNum(unsigned num){  q0.u.y = num ; }
 
+    NODE_METHOD void setParam( float x , float y , float z , float w , float z1, float z2 ){ q0.f.x = x  ; q0.f.y = y  ; q0.f.z = z  ; q0.f.w = w  ; q1.f.x = z1 ; q1.f.y = z2 ;  }
+    NODE_METHOD void setAABB(  float x0, float y0, float z0, float x1, float y1, float z1){  q2.f.x = x0 ; q2.f.y = y0 ; q2.f.z = z0 ; q2.f.w = x1 ; q3.f.x = y1 ; q3.f.y = z1 ; }  
 
     NODE_METHOD unsigned index()     const {      return q1.u.w ; }  //  
     NODE_METHOD unsigned boundary()  const {      return q1.u.z ; }  //   see ggeo-/GPmt
-    NODE_METHOD unsigned typecode()  const {      return q2.u.w ; }  //  OptickCSG_t enum 
-    NODE_METHOD void setTypecode(unsigned tc){  q2.u.w = tc ; }
+
+    //NODE_METHOD unsigned typecode()  const {      return q2.u.w ; }  //  OptickCSG_t enum 
+    //NODE_METHOD void setTypecode(unsigned tc){           q2.u.w = tc ; }
+
+    NODE_METHOD unsigned typecode()  const {      return q3.u.z ; }  //  OptickCSG_t enum 
+    NODE_METHOD void setTypecode(unsigned tc){           q3.u.z = tc ; }
+
+
 
 
 #if defined(__CUDACC__) || defined(__CUDABE__)
@@ -46,6 +92,5 @@ struct Node
 #endif
 
 };
-
 
 

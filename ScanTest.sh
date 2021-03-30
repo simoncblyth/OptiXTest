@@ -7,7 +7,7 @@ CUDA_PREFIX=/usr/local/cuda   # just use some CUDA headers, not using GPU
 opts=""
 
 name=ScanTest 
-gcc $name.cc Foundry.cc Solid.cc Prim.cc Node.cc Scan.cc  -std=c++11 -lstdc++ $opts -I. -I$HOME/np -I${CUDA_PREFIX}/include -o /tmp/$name 
+gcc $name.cc Foundry.cc Solid.cc Prim.cc Node.cc Scan.cc  -std=c++11 -lstdc++ $opts -I. -I${CUDA_PREFIX}/include -o /tmp/$name 
 [ $? -ne 0 ] && echo compile error && exit 1
 
 base=/tmp/ScanTest_scans

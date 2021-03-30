@@ -16,6 +16,7 @@ struct AABB
 Shape
 ========
 
+Hmm: Solid from Foundry is superceeding this 
 
 **/
 
@@ -47,14 +48,13 @@ struct Shape
     const AABB* get_aabb(unsigned idx) const ;
     const Node* get_node(unsigned idx) const ;
 
-    int*   get_prim(unsigned idx) const ;
-    const glm::ivec4& get_prim_(unsigned idx) const ; 
-    unsigned get_num_node(unsigned idx) const ;
+    int*                 get_prim(unsigned idx) const ;
+    const    glm::ivec4& get_prim_(unsigned idx) const ; 
+    unsigned             get_num_node(unsigned idx) const ;
 
     void add_sphere(float radius);
     void add_zsphere(float radius);
     void add_prim(int num_node);
-
     char  get_type(unsigned idx) const ;
 
     std::string desc(unsigned idx) const ;

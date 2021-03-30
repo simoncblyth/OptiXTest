@@ -8,6 +8,7 @@
 int main(int argc, char** argv)
 {
     Foundry fd ;  
+    fd.init(); 
 
     const Solid* so = fd.getSolid("slab"); 
     std::cout << so->desc() << std::endl ; 
