@@ -27,8 +27,6 @@ struct Shape
 
     static constexpr unsigned prim_size = 4 ; 
     static constexpr unsigned node_size = 4*4 ; 
-    static constexpr unsigned tran_size = 4*4 ;  // ?3*4*4
-    static constexpr unsigned plan_size = 4 ; 
 
     unsigned num ; 
     char*  typs ; 
@@ -45,7 +43,9 @@ struct Shape
     virtual ~Shape();
     void init(const std::vector<float>& szs );
 
-    const AABB* get_aabb(unsigned idx) const ;
+    const float* get_aabb(unsigned idx) const ;
+    unsigned get_aabb_stride() const ;  // in bytes 
+
     const Node* get_node(unsigned idx) const ;
 
     int*                 get_prim(unsigned idx) const ;
@@ -56,6 +56,8 @@ struct Shape
     void add_zsphere(float radius);
     void add_prim(int num_node);
     char  get_type(unsigned idx) const ;
+
+
 
     std::string desc(unsigned idx) const ;
     std::string desc() const ;
@@ -69,9 +71,6 @@ struct Shape
     std::vector<glm::ivec4> prim ; 
     std::vector<AABB>       aabb ; 
     std::vector<Node>       node ; 
-
-    std::vector<glm::mat4>  tran ; 
-    std::vector<glm::vec4>  plan ; 
 
 };
 

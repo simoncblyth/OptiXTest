@@ -72,11 +72,9 @@ void Shape::init( const std::vector<float>& szs )
 void Shape::add_sphere(float radius)
 {
     Node nd ; 
-    nd.q0.f = {0.f, 0.f, 0.f, radius} ; 
-    nd.q1.i = {0,0,0,0} ; 
-    nd.q2.u = {0,0,0,CSG_SPHERE} ; 
-    nd.q3.i = {0,0,0,0} ; 
-
+    nd.setTypecode(CSG_SPHERE); 
+    nd.setParam(0.f, 0.f, 0.f, radius, 0.f, 0.f); 
+    nd.setAABB( -radius, -radius, -radius, radius, radius, radius );  
     node.push_back(nd); 
 
     int num_node = 1 ; 
@@ -90,19 +88,15 @@ void Shape::add_sphere(float radius)
 
 void Shape::add_zsphere(float radius)
 {
-    Node nd ; 
-
     float3 center = {0.f, 0.f, 0.f } ;  
     float2 zdelta = {-radius/2.f , +radius/2.f } ; 
-
     const float zmax = center.z + zdelta.y ;
     const float zmin = center.z + zdelta.x ;
 
-    nd.q0.f = { center.x, center.y, center.z, radius} ; 
-    nd.q1.f = { zdelta.x, zdelta.y, 0,0} ; 
-    nd.q2.u = {0,0,0, CSG_ZSPHERE} ; 
-    nd.q3.i = {0,0,0,0} ; 
-
+    Node nd ; 
+    nd.setTypecode(CSG_ZSPHERE); 
+    nd.setParam( center.x, center.y, center.z, radius,  zdelta.x, zdelta.y ); 
+    nd.setAABB( center.x-radius, center.y-radius, zmin, center.x+radius, center.y+radius, zmax ); 
     node.push_back(nd); 
 
     int num_node = 1 ; 
@@ -119,8 +113,8 @@ void Shape::add_zsphere(float radius)
 void Shape::add_prim(int num_node)
 {
     int node_offset = node.size() ;
-    int tran_offset = tran.size() ;
-    int plan_offset = plan.size() ;
+    int tran_offset = 0 ;
+    int plan_offset = 0 ;
 
     glm::ivec4 pr(node_offset, num_node, tran_offset, plan_offset)  ; 
     prim.push_back(pr); 
@@ -147,12 +141,20 @@ const Node* Shape::get_node(unsigned idx) const
     const Node* n = node.data() + idx ; 
     return n ; 
 }
-const AABB* Shape::get_aabb(unsigned idx) const
+const float* Shape::get_aabb(unsigned idx) const
 {
     assert( idx < num ); 
     const AABB* bb = aabb.data() + idx ; 
-    return bb ; 
+    return (const float*)bb ; 
 }
+unsigned Shape::get_aabb_stride() const  // bytes 
+{
+    unsigned stride_in_bytes = sizeof(float)*6 ; 
+    std::cout << "Shape::get_aabb_stride stride_in_bytes  " << std::dec << stride_in_bytes  << std::endl ; 
+    return stride_in_bytes ;
+}
+
+
 char Shape::get_type(unsigned idx) const
 {
     assert( idx < num ); 

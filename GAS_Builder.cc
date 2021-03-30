@@ -14,7 +14,6 @@
 #include "OPTIX_CHECK.h"
 
 #include "Ctx.h"
-#include "Shape.h"
 #include "GAS.h"
 #include "GAS_Builder.h"
 
@@ -24,57 +23,137 @@ GAS_Builder::Build
 
 **/
 
-void GAS_Builder::Build(GAS& gas, const Shape* sh )  // static
+void GAS_Builder::Build( GAS& gas, const float* aabb, unsigned num_aabb, unsigned stride_in_bytes )  // static
 {
-    if(sh->is1NN())
-    {
-        Build_1NN(gas, sh);  
-    }
-    else if(sh->is11N())
-    {
-        Build_11N(gas, sh);  
-    }
-    else
-    {
-        assert(0); 
-    }
+    std::cout 
+        << "GAS_Builder::Build"
+        << " num_aabb " << num_aabb
+        << " stride_in_bytes " << stride_in_bytes
+        << std::endl
+        ;  
+
+    DumpAABB( aabb, num_aabb, stride_in_bytes ); 
+    Build_11N(gas, aabb, num_aabb, stride_in_bytes );  
+    //Build_1NN(gas, aabb, num_aabb, stride_in_bytes );  
 }
+
+/**
+GAS_Builder::Build_11N GAS:BI:AABB  1:1:N  one BI with multiple AABB
+------------------------------------------------------------------------
+**/
+
+void GAS_Builder::Build_11N( GAS& gas, const float* aabb, unsigned num_aabb, unsigned stride_in_bytes )
+{
+    std::cout << "[ GAS_Builder::Build_11N" << std::endl ;  
+    BI bi = MakeCustomPrimitivesBI_11N( aabb, num_aabb, stride_in_bytes );
+    gas.bis.push_back(bi); 
+    std::cout << "] GAS_Builder::Build_11N bis.size " << gas.bis.size() << std::endl ;  
+    BoilerPlate(gas); 
+}
+
+
+/**
+GAS_Builder::MakeCustomPrimitivesBI_11N
+-----------------------------------------
+
+Uploads the aabb for all prim (aka layers) of the Shape 
+and arranges for separate SBT records for each prim.
+
+Hmm : separate aabb allocations for every GAS ?
+
+**/
+
+BI GAS_Builder::MakeCustomPrimitivesBI_11N(const float* aabb, unsigned num_aabb, unsigned stride_in_bytes )
+{
+    assert( stride_in_bytes % sizeof(float) == 0 ); 
+    unsigned stride_in_floats = stride_in_bytes / sizeof(float) ;
+    std::cout 
+        << "GAS_Builder::MakeCustomPrimitivesBI_11N"
+        << " num_aabb " << num_aabb 
+        << " stride_in_bytes " << stride_in_bytes 
+        << " stride_in_floats " << stride_in_floats 
+        << std::endl
+        ; 
+
+    unsigned primitiveIndexOffset = 0 ; // offsets the normal 0,1,2,... result of optixGetPrimitiveIndex()  
+    
+    BI bi = {} ; 
+    bi.mode = 1 ; 
+    bi.flags = new unsigned[num_aabb];
+    bi.sbt_index = new unsigned[num_aabb];
+    for(unsigned i=0 ; i < num_aabb ; i++) bi.flags[i] = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT ; 
+    for(unsigned i=0 ; i < num_aabb ; i++) bi.sbt_index[i] = i ; 
+
+
+    // gather aabb into contiguous tmp 
+    unsigned size_in_floats = 6 ; 
+    std::vector<float> tmp(size_in_floats*num_aabb) ; 
+    for(unsigned i=0 ; i < num_aabb ; i++) 
+    {   
+        float* dst = tmp.data() + size_in_floats*i ;   
+        const float* src = aabb + stride_in_floats*i ;   
+        memcpy(dst, src,  sizeof(float)*size_in_floats );  
+    }   
+
+
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>(&bi.d_aabb), 6*sizeof(float)*num_aabb ));
+    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>(bi.d_aabb), tmp.data(), sizeof(float)*tmp.size(), cudaMemcpyHostToDevice ));
+
+    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &bi.d_sbt_index ), sizeof(unsigned)*num_aabb ) ); 
+    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>(bi.d_sbt_index), bi.sbt_index, sizeof(unsigned)*num_aabb, cudaMemcpyHostToDevice ) ); 
+
+    bi.buildInput = {};
+    bi.buildInput.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
+    OptixBuildInputCustomPrimitiveArray& buildInputCPA = bi.buildInput.aabbArray ;  
+    buildInputCPA.aabbBuffers = &bi.d_aabb ;  
+    buildInputCPA.numPrimitives = num_aabb  ;   
+    buildInputCPA.strideInBytes = stride_in_bytes ;
+    buildInputCPA.flags = bi.flags;                  // flags per sbt record
+    buildInputCPA.numSbtRecords = num_aabb ;              // number of sbt records available to sbt index offset override. 
+    buildInputCPA.sbtIndexOffsetBuffer  = bi.d_sbt_index ;   // Device pointer to per-primitive local sbt index offset buffer, Every entry must be in range [0,numSbtRecords-1]
+    buildInputCPA.sbtIndexOffsetSizeInBytes  = sizeof(unsigned);  // Size of type of the sbt index offset. Needs to be 0,     1, 2 or 4    
+    buildInputCPA.sbtIndexOffsetStrideInBytes = sizeof(unsigned); // Stride between the index offsets. If set to zero, the offsets are assumed to be tightly packed.
+    buildInputCPA.primitiveIndexOffset = primitiveIndexOffset ;  // Primitive index bias, applied in optixGetPrimitiveIndex()
+
+    return bi ; 
+} 
+
+
+
+
+
+
+
 
 /**
 GAS_Builder::Build_1NN GAS:BI:AABB  1:N:N  with a single AABB for each BI
 -----------------------------------------------------------------------------
-
 This way gets smallest bbox chopped with 700, Driver 435.21
-
 **/
 
-void GAS_Builder::Build_1NN( GAS& gas, const Shape* sh )
+void GAS_Builder::Build_1NN( GAS& gas, const float* aabb_base, unsigned num_aabb, unsigned stride_in_bytes  )
 {
-    std::cout 
-        << "GAS_Builder::Build_1NN"
-        << " sh.num " << sh->num 
-        << " sh.kludge_outer_aabb " << sh->kludge_outer_aabb
-        << std::endl
-        ;  
-    gas.sh = sh ; 
+    std::cout << "[ GAS_Builder::Build_1NN" << std::endl ;  
+    assert(0); 
+    assert( stride_in_bytes % sizeof(float) == 0 );
+    unsigned stride_in_floats = stride_in_bytes/sizeof(float); 
 
-    for(unsigned i=0 ; i < sh->num ; i++)
+    for(unsigned i=0 ; i < num_aabb ; i++)
     { 
-         BI bi = MakeCustomPrimitivesBI_1NN( sh,  i );  
+         const float* aabb = aabb_base + stride_in_floats*i  ; 
+         BI bi = MakeCustomPrimitivesBI_1NN( aabb, 1, stride_in_bytes, i );  
          gas.bis.push_back(bi); 
     }
-    std::cout << "GAS_Builder::Build bis.size " << gas.bis.size() << std::endl ; 
-    Build(gas); 
+    std::cout << "] GAS_Builder::Build_1NN bis.size " << gas.bis.size() << std::endl ; 
+    BoilerPlate(gas); 
 }
 
-
-BI GAS_Builder::MakeCustomPrimitivesBI_1NN(const Shape* sh, unsigned i )
+BI GAS_Builder::MakeCustomPrimitivesBI_1NN( const float* aabb, unsigned num_aabb, unsigned stride_in_bytes, unsigned primitiveIndexOffset )  // static 
 {
-    std::cout << "GAS_Builder::MakeCustomPrimitivesBI_1NN " << std::endl ; 
+    std::cout << "GAS_Builder::MakeCustomPrimitivesBI_1NN primitiveIndexOffset " << primitiveIndexOffset << std::endl ; 
+    assert(0); 
 
-    unsigned primitiveIndexOffset = i ;  // without this optixGetPrimitiveIndex() would always give zero in 1NN mode
-    const float* aabb = (float*)sh->aabb.data() + i*6u ; 
-
+    assert( num_aabb == 1 ); 
     unsigned num_sbt_records = 1 ; 
 
     BI bi = {} ; 
@@ -95,92 +174,38 @@ BI GAS_Builder::MakeCustomPrimitivesBI_1NN(const Shape* sh, unsigned i )
     OptixBuildInputCustomPrimitiveArray& buildInputCPA = bi.buildInput.aabbArray ;  
     buildInputCPA.aabbBuffers = &bi.d_aabb ;  
     buildInputCPA.numPrimitives = 1 ;   
-    buildInputCPA.strideInBytes = sizeof(float)*6  ; // stride between AABBs, 0-> sizeof(optixAabb)  
+    buildInputCPA.strideInBytes = stride_in_bytes ; // between AABB
     buildInputCPA.flags = bi.flags;
     buildInputCPA.numSbtRecords = num_sbt_records ;  
     buildInputCPA.sbtIndexOffsetBuffer  = bi.d_sbt_index ;
     buildInputCPA.sbtIndexOffsetSizeInBytes  = sizeof(unsigned);
     buildInputCPA.sbtIndexOffsetStrideInBytes = sizeof(unsigned);
-    buildInputCPA.primitiveIndexOffset = primitiveIndexOffset ;  // Primitive index bias, applied in optixGetPrimitiveIndex()
+    buildInputCPA.primitiveIndexOffset = primitiveIndexOffset ;  // Primitive index bias, applied in optixGetPrimitiveIndex() : otherwise always zero in 1NN
     return bi ; 
 } 
 
 
-/**
-GAS_Builder::Build_11N GAS:BI:AABB  1:1:N  one BI with multiple AABB
-------------------------------------------------------------------------
-**/
 
-void GAS_Builder::Build_11N( GAS& gas, const Shape* sh )
+void GAS_Builder::DumpAABB( const float* aabb, unsigned num_aabb, unsigned stride_in_bytes )  // static 
 {
-    std::cout << "GAS_Builder::Build_11N sh.num " << sh->num << std::endl ;  
-    gas.sh = sh ; 
+    assert( stride_in_bytes % sizeof(float) == 0 ); 
+    unsigned stride_in_floats = stride_in_bytes/sizeof(float); 
 
-    BI bi = MakeCustomPrimitivesBI_11N( sh );
-    gas.bis.push_back(bi); 
-
-    Build(gas); 
-}
-
-/**
-GAS_Builder::MakeCustomPrimitivesBI_11N
------------------------------------------
-
-Uploads the aabb for all prim (aka layers) of the Shape 
-and arranges for separate SBT records for each prim.
-
-Hmm : separate aabb allocations for every GAS ?
-
-**/
-
-BI GAS_Builder::MakeCustomPrimitivesBI_11N(const Shape* sh)
-{
-    std::cout << "GAS_Builder::MakeCustomPrimitivesBI_11N " << std::endl ; 
-    
-    BI bi = {} ; 
-    bi.mode = 1 ; 
-    unsigned num = sh->num ; // number of layers (aka prim) of the compound Shape 
-    const std::vector<AABB>& aabb_ = sh->aabb ; 
-    assert( aabb_.size() == num ); 
-    const float* aabb = (float*)aabb_.data() ; 
-
-    bi.flags = new unsigned[num];
-    bi.sbt_index = new unsigned[num];
-    for(unsigned i=0 ; i < num ; i++) bi.flags[i] = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT ; 
-    for(unsigned i=0 ; i < num ; i++) bi.sbt_index[i] = i ; 
-
-    unsigned primitiveIndexOffset = 0 ; // offsets the normal 0,1,2,... result of optixGetPrimitiveIndex()  
-
-    std::cout << "GAS_Builder::MakeCustomPrimitivesBI_11N dump aabb for layers: " << num << std::endl ; 
-    for(unsigned i=0 ; i < num ; i++)
+    std::cout 
+        << "GAS_Builder::DumpAABB"
+        << "  num_aabb " << num_aabb 
+        << "  stride_in_bytes " << stride_in_bytes
+        << "  stride_in_floats " << stride_in_floats
+        << std::endl 
+        ; 
+    for(unsigned i=0 ; i < num_aabb ; i++)
     { 
         std::cout << std::setw(4) << i << " : " ; 
         for(unsigned j=0 ; j < 6 ; j++)  
-           std::cout << std::setw(10) << std::fixed << std::setprecision(3) << *(aabb + i*6 + j ) << " "  ; 
+           std::cout << std::setw(10) << std::fixed << std::setprecision(3) << *(aabb + i*stride_in_floats + j ) << " "  ; 
         std::cout << std::endl ; 
     }
-
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>(&bi.d_aabb), 6*sizeof(float)*num ));
-    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>(bi.d_aabb), aabb, 6*sizeof(float)*num, cudaMemcpyHostToDevice ));
-
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &bi.d_sbt_index ), sizeof(unsigned)*num ) ); 
-    CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>(bi.d_sbt_index), bi.sbt_index, sizeof(unsigned)*num, cudaMemcpyHostToDevice ) ); 
-
-    bi.buildInput = {};
-    bi.buildInput.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
-    OptixBuildInputCustomPrimitiveArray& buildInputCPA = bi.buildInput.aabbArray ;  
-    buildInputCPA.aabbBuffers = &bi.d_aabb ;  
-    buildInputCPA.numPrimitives = num  ;   
-    buildInputCPA.strideInBytes = sizeof(float)*6  ; // stride between AABBs, 0-> sizeof(optixAabb)  
-    buildInputCPA.flags = bi.flags;                  // flags per sbt record 
-    buildInputCPA.numSbtRecords = num ;              // number of sbt records available to sbt index offset override. 
-    buildInputCPA.sbtIndexOffsetBuffer  = bi.d_sbt_index ;   // Device pointer to per-primitive local sbt index offset buffer, Every entry must be in range [0,numSbtRecords-1]
-    buildInputCPA.sbtIndexOffsetSizeInBytes  = sizeof(unsigned);  // Size of type of the sbt index offset. Needs to be 0,     1, 2 or 4    
-    buildInputCPA.sbtIndexOffsetStrideInBytes = sizeof(unsigned); // Stride between the index offsets. If set to zero, the offsets are assumed to be tightly packed.
-    buildInputCPA.primitiveIndexOffset = primitiveIndexOffset ;  // Primitive index bias, applied in optixGetPrimitiveIndex()
-
-    return bi ; 
-} 
+}
 
 /**
 GAS_Builder::Build
@@ -191,9 +216,9 @@ In the default 11N mode there is always only one BI in the vector.
 
 **/
 
-void GAS_Builder::Build(GAS& gas)   // static 
+void GAS_Builder::BoilerPlate(GAS& gas)   // static 
 { 
-    std::cout << "GAS_Builder::Build" << std::endl ;  
+    std::cout << "GAS_Builder::BoilerPlate" << std::endl ;  
     unsigned num_bi = gas.bis.size() ;
     assert( num_bi > 0 ); 
 
@@ -206,7 +231,7 @@ void GAS_Builder::Build(GAS& gas)   // static
     }
 
     std::cout 
-        << "GAS_Builder::Build" 
+        << "GAS_Builder::BoilerPlate" 
         << " num_bi " << num_bi
         << " buildInputs.size " << buildInputs.size()
         << std::endl 

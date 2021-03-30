@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <iomanip>
 #include <cstring>
@@ -148,7 +149,15 @@ void SBT::createGAS(const Geo* geo)
     {
         const Shape* sh = geo->getShape(i) ;    
         GAS gas = {} ;  
-        GAS_Builder::Build(gas, sh );
+
+
+        gas.sh = sh ; 
+        const float* aabb = sh->get_aabb(0) ; 
+        unsigned num_aabb = sh->num ; 
+        unsigned stride_in_bytes = sh->get_aabb_stride(); 
+
+        //GAS_Builder::Build(gas, sh );
+        GAS_Builder::Build(gas, aabb, num_aabb, stride_in_bytes  );
         vgas.push_back(gas);  
     }
 }
@@ -434,7 +443,7 @@ void SBT::upload_prim_data( HitGroupData& data, const Shape* sh, unsigned prim_i
    
     int* prim = sh->get_prim(prim_idx) ; 
     int* d_prim = UploadArray<int>(prim, Shape::prim_size*num_prim ) ; 
-    data.prim = d_prim ; 
+    data.prim = (Prim*)d_prim ; 
 
     unsigned num_node = sh->get_num_node( prim_idx ); 
     assert( num_node == 1 ) ; // only single node "trees" for now 
@@ -450,7 +459,7 @@ void SBT::check_prim_data( const HitGroupData& data ) const
     std::cout << "SBT::check_prim_data" << std::endl ; 
 
     unsigned num_prim = 1 ;  // expect this to always be 1  
-    int* d_prim = data.prim ; 
+    const int* d_prim = (const int*)data.prim ; 
     int* prim = DownloadArray<int>(d_prim, Shape::prim_size*num_prim );  
     int num_node = prim[1] ; 
 
