@@ -1,12 +1,19 @@
-// name=GeoTest ; glm- ; gcc -g $name.cc Geo.cc Sys.cc Util.cc Shape.cc Grid.cc -lstdc++ -std=c++11 -I. -I$(glm-prefix) -o /tmp/$name && lldb_ /tmp/$name
+// ./GeoTest.sh
+
+#include "sutil_vec_math.h"
 
 #include <iostream>
+#include "Foundry.h"
 #include "Geo.h"
 
 int main(int argc, char** argv)
 {
-    Geo geo ; 
+    Foundry foundry ; 
+    Geo geo(&foundry) ; 
     std::cout << geo.desc() << std::endl ; 
+
+    geo.write("/tmp/GeoTest_" ); 
+
     return 0 ; 
 }
 

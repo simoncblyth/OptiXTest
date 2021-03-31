@@ -11,18 +11,19 @@
 #include "NP.hh"
 #include "Geo.h"
 #include "Shape.h"
+#include "Foundry.h"
 #include "Grid.h"
 #include "InstanceId.h"
 
-Geo* Geo::fGeo = NULL ; 
+//Geo* Geo::fGeo = NULL ; 
+//Geo* Geo::Get(){  return fGeo ;  }
 
-Geo::Geo()
+Geo::Geo(Foundry* foundry_)
     :
-    top("i0"),
-    kludge_outer_aabb(Util::GetEValue<int>("KLUDGE_OUTER_AABB", 0)),
-    gas_bi_aabb(Util::GetEValue<int>("GAS_BI_AABB", 0))
+    foundry(foundry_),
+    top("i0")
 {
-    fGeo = this ; 
+ //   fGeo = this ; 
     init();
 }
 
@@ -38,8 +39,6 @@ void Geo::init()
         << "Geo::init"
         << " geometry " << geometry
         << " layers " << layers 
-        << " kludge_outer_aabb " << kludge_outer_aabb
-        << " gas_bi_aabb " << gas_bi_aabb
         << std::endl 
         ;    
 
@@ -110,9 +109,9 @@ void Geo::init_sphere_containing_grid_of_spheres(float& tminf, float& tmaxf, uns
     float big_radius = float(grid->extent())*sqrtf(3.f) ;
     std::cout << " big_radius " << big_radius << std::endl ; 
 
-    addShape("S", 0.7f, layers); 
-    addShape("S", 1.0f, layers); 
-    addShape("S", big_radius, 1u); 
+    foundry->makeLayered("sphere", 0.7f, layers ); 
+    foundry->makeLayered("sphere", 1.0f, layers ); 
+    foundry->makeLayered("sphere", big_radius, 1 ); 
 
     top = strdup("i0") ; 
 
@@ -126,7 +125,9 @@ void Geo::init_sphere_containing_grid_of_spheres(float& tminf, float& tmaxf, uns
 void Geo::init_sphere(float& tminf, float& tmaxf, unsigned layers)
 {
     std::cout << "Geo::init_sphere" << std::endl ; 
-    addShape("S", 100.f, layers); 
+
+    foundry->makeLayered("sphere", 100.f, layers ); 
+
     setTopExtent(100.f); 
     top = strdup("g0") ; 
 
@@ -138,7 +139,9 @@ void Geo::init_sphere(float& tminf, float& tmaxf, unsigned layers)
 void Geo::init_zsphere(float& tminf, float& tmaxf, unsigned layers)
 {
     std::cout << "Geo::init_zsphere" << std::endl ; 
-    addShape("Z", 100.f, layers); 
+
+    foundry->makeLayered("zsphere", 100.f, layers ); 
+
     setTopExtent(100.f); 
     top = strdup("g0") ; 
 
@@ -152,15 +155,12 @@ void Geo::init_zsphere(float& tminf, float& tmaxf, unsigned layers)
 std::string Geo::desc() const
 {
     std::stringstream ss ; 
-    ss << "Geo shapes: " << shapes.size() << " grids:" << grids.size() ; 
+    ss << "Geo " << " grids:" << grids.size() ; 
     std::string s = ss.str(); 
     return s ; 
 }
 
-Geo* Geo::Get()
-{
-    return fGeo ; 
-}
+
 void Geo::setTopExtent(float top_extent_)
 {
     top_extent = top_extent_ ; 
@@ -174,36 +174,13 @@ float Geo::getTopExtent() const
 
 
 
-
-void Geo::addShape(const char* typs, float outer_extent, unsigned layers)
+unsigned Geo::getNumSolid() const 
 {
-    std::vector<float> extents ;
-
-    for(unsigned i=0 ; i < layers ; i++) 
-    {
-        float f = float(layers-i)/float(layers) ; 
-        extents.push_back(outer_extent*f);  
-    }
-
-    addShape(typs, extents); 
+    return foundry->getNumSolid() ; 
 }
-void Geo::addShape(const char* typs, const std::vector<float>& extents)
+const Solid* Geo::getSolid(int idx) const
 {
-    Shape* sh = new Shape(typs, extents) ; 
-    sh->kludge_outer_aabb = kludge_outer_aabb ; 
-    sh->gas_bi_aabb = gas_bi_aabb ; 
-    shapes.push_back(sh); 
-    std::cout << "Geo::addShape " << std::endl << sh->desc() << std::endl ;
-}
-unsigned Geo::getNumShape() const 
-{
-    return shapes.size() ; 
-}
-const Shape* Geo::getShape(int shape_idx_) const
-{
-    unsigned shape_idx = shape_idx_ < 0 ? shapes.size() + shape_idx_ : shape_idx_ ;   // -ve counts from end
-    assert( shape_idx < shapes.size() ); 
-    return shapes[shape_idx] ; 
+    return foundry->getSolid(idx); 
 }
 
 
@@ -234,18 +211,15 @@ void Geo::write(const char* dir) const
 
     NP spec("<u4", 4); 
     unsigned* v = spec.values<unsigned>() ; 
-    *(v+0) = getNumShape(); 
+    *(v+0) = getNumSolid(); 
     *(v+1) = getNumGrid(); 
     *(v+2) = InstanceId::ins_bits ; 
     *(v+3) = InstanceId::gas_bits ; 
     spec.save(dir, "spec.npy"); 
 
-    unsigned num_shape = getNumShape(); 
-    for(unsigned i=0 ; i < num_shape ; i++) 
-    {
-        const Shape* sh = getShape(i); 
-        sh->write(dir,"shape", i ); 
-    } 
+    // with foundry it makes more sense to write everything at once, not individual solids
+    foundry->write(dir, "foundry"); 
+
     unsigned num_grid = getNumGrid(); 
     for(unsigned i=0 ; i < num_grid ; i++) 
     {

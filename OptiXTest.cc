@@ -60,9 +60,8 @@ int main(int argc, char** argv)
 
 
     Foundry foundry ; 
-    foundry.makeSphere(); 
 
-    Geo geo ;  
+    Geo geo(&foundry) ;  
     geo.write(outdir);  
 
     glm::vec3 eye_model ; 

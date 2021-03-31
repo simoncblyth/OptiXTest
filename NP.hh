@@ -799,23 +799,28 @@ template <typename T> void NP::Write(const char* dir, const char* name, const T*
 
     NP a(dtype.c_str(), ni_,nj_,nk_,nl_,nm_) ;    
 
-    T* v = a.values<T>(); 
 
-    int ni = std::max(1,ni_); 
-    int nj = std::max(1,nj_); 
-    int nk = std::max(1,nk_); 
-    int nl = std::max(1,nl_); 
-    int nm = std::max(1,nm_); 
+    if(data != nullptr)
+    {
+        T* v = a.values<T>(); 
 
-    for(int i=0 ; i < ni ; i++ ) 
-    for(int j=0 ; j < nj ; j++ )
-    for(int k=0 ; k < nk ; k++ )
-    for(int l=0 ; l < nl ; l++ )
-    for(int m=0 ; m < nm ; m++ )
-    {   
-        int index = i*nj*nk*nl*nm + j*nk*nl*nm + k*nl*nm + l*nm + m  ;
-        *(v + index) = *(data + index ) ; 
-    }   
+        int ni = std::max(1,ni_); 
+        int nj = std::max(1,nj_); 
+        int nk = std::max(1,nk_); 
+        int nl = std::max(1,nl_); 
+        int nm = std::max(1,nm_); 
+
+        for(int i=0 ; i < ni ; i++ ) 
+        for(int j=0 ; j < nj ; j++ )
+        for(int k=0 ; k < nk ; k++ )
+        for(int l=0 ; l < nl ; l++ )
+        for(int m=0 ; m < nm ; m++ )
+        {   
+            int index = i*nj*nk*nl*nm + j*nk*nl*nm + k*nl*nm + l*nm + m  ;
+            *(v + index) = *(data + index ) ; 
+        }   
+    }
+
     a.save(dir, name); 
 }
 

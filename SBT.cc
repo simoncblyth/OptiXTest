@@ -17,7 +17,7 @@
 
 
 #include "Geo.h"
-#include "Shape.h"
+#include "Solid.h"
 #include "Node.h"
 #include "Binding.h"
 #include "Params.h"
@@ -52,7 +52,9 @@ SBT::SBT(const PIP* pip_)
     miss(nullptr),
     hitgroup(nullptr),
     check(nullptr),
-    geo(nullptr)
+    geo(nullptr),
+    is_1NN(false),
+    is_11N(true)  
 {
     init(); 
 }
@@ -154,22 +156,28 @@ SBT::createGAS
 For each compound shape the aabb of each prim (aka layer) is 
 uploaded to GPU in order to create GAS for each compound shape.
 
+Note that the prim could be a CSG tree of constituent nodes each 
+with their own aabb, but only one aabb corresponding to the overall 
+prim extent is used.
+
+
 **/
 
 void SBT::createGAS(const Geo* geo)
 {
-    unsigned num_shape = geo->getNumShape(); 
-    for(unsigned i=0 ; i < num_shape ; i++)
+    unsigned num_solid = geo->getNumSolid(); 
+    for(unsigned i=0 ; i < num_solid ; i++)
     {
-        const Shape* sh = geo->getShape(i) ;    
+        const Solid* so = geo->getSolid(i) ;    
         GAS gas = {} ;  
-        gas.sh = sh ; 
+        gas.so = so ; 
 
         const float* aabb = sh->get_aabb(0) ; 
         unsigned num_aabb = sh->num ; 
         unsigned stride_in_bytes = sh->get_aabb_stride(); 
 
-        //GAS_Builder::Build(gas, sh );
+
+
         GAS_Builder::Build(gas, aabb, num_aabb, stride_in_bytes  );
         vgas.push_back(gas);  
     }
@@ -254,24 +262,20 @@ could also be called prim_idx_.
 
 **/
 
-unsigned SBT::getOffset(unsigned shape_idx_ , unsigned layer_idx_ ) const 
+unsigned SBT::getOffset(unsigned solid_idx_ , unsigned layer_idx_ ) const 
 {
     assert( geo ); 
-    bool is_1NN = geo->gas_bi_aabb == 0u ;  
-    bool is_11N = geo->gas_bi_aabb == 1u ; 
-    assert( is_1NN || is_11N  ); 
-
     unsigned num_gas = vgas.size(); 
-    unsigned num_shape = geo->getNumShape(); 
-    assert( num_gas == num_shape ); 
+    unsigned num_solid = geo->getNumSolid(); 
+    assert( num_gas == num_solid ); 
 
-    unsigned offset_sbt = _getOffset(shape_idx_, layer_idx_ ); 
+    unsigned offset_sbt = _getOffset(solid_idx_, layer_idx_ ); 
  
     bool dump = false ; 
     if(dump) std::cout 
         << "SBT::getOffset"
         << " num_gas " <<  num_gas
-        << " shape_idx_ " << shape_idx_
+        << " solid_idx_ " << solid_idx_
         << " layer_idx_ " << layer_idx_
         << " offset_sbt " << offset_sbt 
         << std::endl
@@ -288,10 +292,11 @@ Implemented as an inner method avoiding "goto"
 to break out of multiple for loops.
 
 **/
-unsigned SBT::_getOffset(unsigned shape_idx_ , unsigned layer_idx_ ) const 
+unsigned SBT::_getOffset(unsigned solid_idx_ , unsigned layer_idx_ ) const 
 {
     unsigned offset_sbt = 0 ; 
-    bool is_1NN = geo->gas_bi_aabb == 0u ;  
+    bool is_1NN = false ; 
+
     for(unsigned i=0 ; i < vgas.size() ; i++)
     {
         const GAS& gas = vgas[i] ;    
@@ -307,7 +312,7 @@ unsigned SBT::_getOffset(unsigned shape_idx_ , unsigned layer_idx_ ) const
             for( unsigned k=0 ; k < num_sbt ; k++)
             { 
                 unsigned layer_idx = is_1NN ? j : k ;  
-                if( shape_idx_ == i && layer_idx_ == layer_idx ) return offset_sbt ;
+                if( solid_idx_ == i && layer_idx_ == layer_idx ) return offset_sbt ;
                 offset_sbt += 1 ; 
             }
         }         
@@ -320,7 +325,6 @@ unsigned SBT::_getOffset(unsigned shape_idx_ , unsigned layer_idx_ ) const
 
 unsigned SBT::getTotalRec() const 
 {
-    bool is_1NN = geo->gas_bi_aabb == 0u ;  
     unsigned tot_bi = 0 ; 
     unsigned tot_rec = 0 ; 
     for(unsigned i=0 ; i < vgas.size() ; i++)
@@ -356,18 +360,14 @@ Note:
 
 void SBT::createHitgroup(const Geo* geo)
 {
-    bool is_1NN = geo->gas_bi_aabb == 0u ;  
-    bool is_11N = geo->gas_bi_aabb == 1u ; 
-    assert( is_1NN || is_11N  ); 
-
-    unsigned num_shape = geo->getNumShape(); 
+    unsigned num_solid = geo->getNumSolid(); 
     unsigned num_gas = vgas.size(); 
-    assert( num_gas == num_shape ); 
+    assert( num_gas == num_solid ); 
     unsigned tot_rec = getTotalRec(); 
 
     std::cout 
         << "SBT::createHitgroup"
-        << " num_shape " << num_shape 
+        << " num_solid " << num_solid 
         << " num_gas " << num_gas 
         << " tot_rec " << tot_rec 
         << std::endl 
@@ -382,7 +382,7 @@ void SBT::createHitgroup(const Geo* geo)
     unsigned sbt_offset = 0 ; 
     for(unsigned i=0 ; i < num_gas ; i++)
     {
-        unsigned shape_idx = i ;    
+        unsigned solid_idx = i ;    
         const GAS& gas = vgas[i] ;    
         unsigned num_bi = gas.bis.size(); 
         if(is_11N) assert( num_bi == 1 ); // 11N mode every GAS has only one BI with multiple aabb 
@@ -401,7 +401,7 @@ void SBT::createHitgroup(const Geo* geo)
             for( unsigned k=0 ; k < num_rec ; k++)
             { 
                 unsigned prim_idx = is_1NN ? j : k ;   
-                unsigned check_sbt_offset = getOffset(shape_idx, prim_idx ); 
+                unsigned check_sbt_offset = getOffset(solid_idx, prim_idx ); 
                 bool expected_sbt_offset = check_sbt_offset == sbt_offset  ;
 
                 std::cout 
@@ -409,7 +409,7 @@ void SBT::createHitgroup(const Geo* geo)
                     << " gas(i) " << i 
                     << " bi(j) " << j
                     << " sbt(k) " << k 
-                    << " shape_idx " << shape_idx 
+                    << " solid_idx " << solid_idx 
                     << " prim_idx " << prim_idx 
                     << " check_sbt_offset " << check_sbt_offset
                     << " sbt_offset " << sbt_offset
@@ -502,7 +502,6 @@ void SBT::checkHitgroup(const Geo* geo)
         << " tot_sbt " << tot_sbt
         << std::endl 
         ; 
-    assert( geo->gas_bi_aabb == 0u || geo->gas_bi_aabb == 1u ); 
 
     check = new HitGroup[tot_sbt] ; 
 

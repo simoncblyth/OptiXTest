@@ -25,6 +25,8 @@ struct SBT
     HitGroup*     hitgroup ;
     HitGroup*     check ;
     const Geo*    geo ; 
+    bool          is_1NN ;  // 1NN:true is smallest bbox chopped 
+    bool          is_11N ; 
  
     CUdeviceptr   d_raygen ;
     CUdeviceptr   d_miss ;

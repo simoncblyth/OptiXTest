@@ -5,24 +5,20 @@
 #include "OpticksCSG.h"
 #include "Solid.h"
 #include "CU.h"
+#include "NP.hh"
 #include "Foundry.h"
 
 
 Foundry::Foundry()
     :
     d_node(nullptr),
-    d_plan(nullptr)
+    d_plan(nullptr),
+    d_tran(nullptr),
+    d_aabb(nullptr)
 {
-    // not calling init as in real usage need to minimize contained nodes, prim, tran etc..
 }
 
-void Foundry::init()
-{
-    makeSolids(); 
-    dump(); 
-}
-
-void Foundry::makeSolids()
+void Foundry::makeDemoSolids()
 {
     makeSphere(); 
     makeZSphere(); 
@@ -35,37 +31,108 @@ void Foundry::makeSolids()
     makeDisc(); 
     makeConvexPolyhedronCube(); 
     makeConvexPolyhedronTetrahedron(); 
+    dump(); 
+}
+
+
+void Foundry::write(const char* base, const char* rel) const 
+{
+    std::stringstream ss ;   
+    ss << base << "/" << rel ; 
+    std::string dir = ss.str();   
+
+    std::cout << "Foundry::write " << dir << std::endl ; 
+    NP::Write(dir.c_str(), "solid.npy",    (int*)solid.data(), solid.size(), 4 ); 
+    NP::Write(dir.c_str(), "prim.npy",     (int*)prim.data(),   prim.size(), 4 ); 
+    NP::Write(dir.c_str(), "node.npy",   (float*)node.data(), node.size(), 4, 4 ); 
+    NP::Write(dir.c_str(), "plan.npy",   (float*)plan.data(), plan.size(), 4 ); 
+    NP::Write(dir.c_str(), "tran.npy",   (float*)tran.data(), tran.size(), 4, 4 ); 
+    NP::Write(dir.c_str(), "aabb.npy",   (float*)aabb.data(), aabb.size(), 6 ); 
 }
 
 void Foundry::dump() const 
 {
-    for(unsigned idx=0 ; idx < getNumSolid() ; idx++)
+    for(unsigned idx=0 ; idx < getNumSolid() ; idx++) dumpSolid(idx); 
+}
+
+void Foundry::dumpSolid(int idx ) const 
+{
+    std::cout << "Foundry::dumpSolid " << idx << std::endl ; 
+    const Solid* so = getSolid(idx); 
+    std::cout << so->desc() << std::endl ; 
+
+    for(unsigned primIdx=so->primOffset ; primIdx < so->primOffset+so->numPrim ; primIdx++)
     {
-        const Solid* so = getSolid(idx); 
+        const Prim* pr = getPrim(primIdx);   // numNode,nodeOffset,tranOffset,planOffset
         std::cout 
-            << std::setw(3) << idx 
-            << " : "
-            << so->desc()
-            << std::endl
-            ;
+            << " primIdx " << std::setw(3) << primIdx << " "
+            << pr->desc() 
+            << "  "
+            ; 
+
+        for(unsigned nodeIdx=pr->nodeOffset ; nodeIdx < pr->nodeOffset+pr->numNode ; nodeIdx++)
+        {
+            const Node* nd = getNode(nodeIdx); 
+            std::cout << nd->desc() << std::endl ; 
+        }
+    } 
+}
+
+/**
+Collects aabb for all prim within a compound solid 
+
+Although there is absolute addressing into solid, prim and node
+that is only useful once you have the prim within the solid and node within
+the prim.
+
+**/
+
+void Foundry::get_aabb( std::vector<float>& aabb, unsigned idx ) const 
+{
+    const Solid* so = getSolid(idx); 
+    for(unsigned primIdx=so->primOffset ; primIdx < so->primOffset+so->numPrim ; primIdx++)
+    {
+        const Prim* pr = getPrim(primIdx);      // numNode,nodeOffset,tranOffset,planOffset
+        unsigned nodeIdx0 = pr->nodeOffset ;    // first node for the prim, corresponds to root for node trees 
+        const Node* nd = getNode(nodeIdx0); 
+        assert(nd);
+        const float* f = nd->AABB(); 
+        for(int i=0 ; i < 6 ; i++ ) aabb.push_back(*(f+i)) ;  
     }
 }
 
-unsigned Foundry::getNumSolid() const { return solid.size(); }
-unsigned Foundry::getNumPrim() const  { return prim.size();  }
 
+void Foundry::Dump( const std::vector<float>& aabb, const char* msg)  // static
+{
+    assert( aabb.size() % 6 == 0 ); 
+    unsigned num_aabb = aabb.size() / 6 ;
+    std::cout << "Foundry::Dump num_aabb " << num_aabb << " msg " << msg << std::endl ; 
+    for(unsigned i=0 ; i < num_aabb ; i++)
+    {   
+        std::cout << std::setw(4) << i << " : " ; 
+        for(unsigned j=0 ; j < 6 ; j++)  
+            std::cout << std::setw(10) << std::fixed << std::setprecision(3) << *(aabb.data() + i*6 + j ) << " "  ;   
+        std::cout << std::endl ; 
+    }   
+}
+
+unsigned Foundry::getNumSolid() const { return solid.size(); } 
+unsigned Foundry::getNumPrim() const  { return prim.size();  } 
 unsigned Foundry::getNumNode() const  { return node.size(); }
 unsigned Foundry::getNumPlan() const  { return plan.size(); }
 unsigned Foundry::getNumTran() const  { return tran.size(); }
 
-const Solid*  Foundry::getSolid(unsigned solidIdx) const { return solidIdx < solid.size() ? solid.data() + solidIdx : nullptr ; }   
-const Prim*   Foundry::getPrim(unsigned primIdx)   const { return primIdx  < prim.size()  ? prim.data()  + primIdx  : nullptr ; } 
+const Solid*  Foundry::getSolid(int idx_) const { 
+    int idx = idx_ < 0 ? solid.size() + idx_ : idx_ ;   // -ve counts from end
+    return idx < solid.size() ? solid.data() + idx : nullptr ; 
+}   
 
+const Prim*   Foundry::getPrim(unsigned primIdx)   const { return primIdx  < prim.size()  ? prim.data()  + primIdx  : nullptr ; } 
 const Node*   Foundry::getNode(unsigned nodeIdx)   const { return nodeIdx  < node.size()  ? node.data()  + nodeIdx  : nullptr ; }  
 const float4* Foundry::getPlan(unsigned planIdx)   const { return planIdx  < plan.size()  ? plan.data()  + planIdx  : nullptr ; }
 const qat4*   Foundry::getTran(unsigned tranIdx)   const { return tranIdx  < tran.size()  ? tran.data()  + tranIdx  : nullptr ; }
 
-const Solid* Foundry::getSolid(const char* name) const 
+const Solid* Foundry::getSolid(const char* name) const  // caution stored labels truncated to 4 char 
 {
     unsigned missing = ~0u ; 
     unsigned idx = missing ; 
@@ -74,6 +141,26 @@ const Solid* Foundry::getSolid(const char* name) const
     return getSolid(idx) ; 
 }
 
+unsigned Foundry::make(char type)
+{
+    unsigned idx = ~0u ; 
+    switch(type)
+    {
+       case 'S':  idx = makeSphere()         ; break ;    
+       case 'Z':  idx = makeZSphere()        ; break ;    
+       case 'O':  idx = makeCone()           ; break ;    
+       case 'H':  idx = makeHyperboloid()    ; break ;    
+       case 'B':  idx = makeBox3()           ; break ;    
+       case 'P':  idx = makePlane()          ; break ;    
+       case 'A':  idx = makeSlab()           ; break ;    
+       case 'Y':  idx = makeCylinder()       ; break ;    
+       case 'D':  idx = makeDisc()                        ; break ;    
+       case 'U':  idx = makeConvexPolyhedronCube()        ; break ;    
+       case 'T':  idx = makeConvexPolyhedronTetrahedron() ; break ;    
+    }
+    assert( idx != ~0u ); 
+    return idx ; 
+}
 
 unsigned Foundry::make(const char* name)
 {
@@ -97,11 +184,9 @@ unsigned Foundry::make(const char* name)
 Foundry::addNode
 --------------------
 
-This is called after addPrim allowing an offset check to be made.
-
 **/
 
-void Foundry::addNode(Node& nd, bool prim_check, const std::vector<float4>* pl )
+void Foundry::addNode(Node& nd, const std::vector<float4>* pl )
 {
     unsigned num_planes = pl ? pl->size() : 0 ; 
     if(num_planes > 0)
@@ -112,27 +197,14 @@ void Foundry::addNode(Node& nd, bool prim_check, const std::vector<float4>* pl )
     }
 
     node.push_back(nd); 
-
-    if(prim_check)   // is Prim needed here ?
-    {
-       const Prim& pr = prim.back(); 
-       assert( node.size() - pr.nodeOffset == 1 ); 
-       assert( plan.size() - pr.planOffset == num_planes ); 
-    }
 }
 
-void Foundry::addNodes(const std::vector<Node>& nds, bool prim_check )
+void Foundry::addNodes(const std::vector<Node>& nds )
 {
     for(unsigned i=0 ; i < nds.size() ; i++) 
     {
         const Node& nd = nds[i]; 
         node.push_back(nd); 
-    }
- 
-    if(prim_check)   // is Prim needed here ?
-    {
-       const Prim& pr = prim.back(); 
-       assert( node.size() - pr.nodeOffset == nds.size() ); 
     }
 }
 
@@ -159,7 +231,7 @@ void Foundry::addPrim(int num_node)
 
 
 /**
-Foundary::makeLayeredSphere
+Foundary::makeLayered
 ----------------------------
 
 Once have transforms working can generalize to any shape. 
@@ -170,23 +242,32 @@ NB Each layer is a separate Prim with a single Node
 
 **/
 
-unsigned Foundry::makeLayeredSphere(const char* label, float outer_radius, unsigned layers )
+unsigned Foundry::makeLayered(const char* label, float outer_radius, unsigned layers )
 {
     std::vector<float> radii ;
     for(unsigned i=0 ; i < layers ; i++) radii.push_back(outer_radius*float(layers-i)/float(layers)) ; 
 
-    Solid so = {} ; 
-    so.label = strdup(label) ; 
-    so.numPrim = layers ; 
-    so.primOffset = prim.size(); 
-    so.extent = outer_radius ;
+    Solid so(label, layers, prim.size(), outer_radius ) ; 
 
     for(unsigned i=0 ; i < layers ; i++)
     {
         addPrim(1); 
         float radius = radii[i]; 
-        Node nd = Node::Sphere(radius); 
-        addNode(nd, true, nullptr ); 
+
+        if(strcmp(label, "sphere") == 0)
+        {
+            Node nd = Node::Sphere(radius); 
+            addNode(nd); 
+        }
+        else if(strcmp(label, "zsphere") == 0)
+        {
+            Node nd = Node::ZSphere(radius, -radius/2.f , radius/2.f ); 
+            addNode(nd); 
+        }
+        else
+        {
+            assert( 0 && "layered only implemented for sphere and zsphere currently" ); 
+        } 
     }
 
     unsigned idx = solid.size(); 
@@ -202,18 +283,14 @@ Foundry::makeSolid11 makes 1-Prim with 1-Node
 
 unsigned Foundry::makeSolid11(float extent, const char* label, Node& nd, const std::vector<float4>* pl  ) 
 {
-    Solid sol = {} ; 
-    sol.extent = extent ;
-    sol.label = strdup(label) ; 
-    sol.numPrim = 1 ; 
-    sol.primOffset = prim.size(); 
+    Solid so(label, 1, prim.size(), extent) ; 
 
     unsigned num_node = 1 ; 
     addPrim(num_node); 
-    addNode(nd, true, pl ); 
+    addNode(nd, pl ); 
 
     unsigned idx = solid.size(); 
-    solid.push_back(sol); 
+    solid.push_back(so); 
     return idx ; 
 }
 

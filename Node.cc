@@ -14,11 +14,18 @@
 
 std::string Node::desc() const 
 {
+    const float* aabb = AABB(); 
+
     std::stringstream ss ; 
     ss
        << "Node "
        << CSG::Name((OpticksCSG_t)typecode())
+       << " "
        ;    
+
+    for(int i=0 ; i < 6 ; i++ ) ss << std::setw(10) << *(aabb+i) << " " ; 
+
+
     std::string s = ss.str();
     return s ; 
 }

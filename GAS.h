@@ -4,11 +4,11 @@
 #include "AS.h"
 #include "BI.h"
 
-struct Shape ; 
+struct Solid ; 
 
 struct GAS : public AS
 {
-    const Shape*    sh ; 
+    const Solid*    so ; 
     std::vector<BI> bis ; 
 };
 

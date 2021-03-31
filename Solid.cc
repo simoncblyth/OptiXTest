@@ -1,8 +1,20 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <cstring>
 
 #include "Solid.h"
+
+
+Solid::Solid( const char* label_,  int numPrim_, int primOffset_, float extent_ )
+    :
+    numPrim(numPrim_),
+    primOffset(primOffset_), 
+    extent(extent_)
+{
+    memcpy(label, label_, 4 );
+}
+
 
 std::string Solid::desc() const 
 {

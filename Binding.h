@@ -2,9 +2,6 @@
 #include <stdint.h>
 #include <vector_types.h>
 
-//struct Node ; 
-//struct Prim ; 
-
 struct RaygenData
 {
     float placeholder ; 
@@ -15,17 +12,10 @@ struct MissData
     float r, g, b;
 };
 
-struct HitGroupData   // hmm this is effectively Prim 
+struct HitGroupData   // hmm this is now effectively Prim 
 {
     int numNode ;   
     int nodeOffset ; 
-
-/*
-    Node*    node ;    // aka part 
-    Prim*    prim ;    // (num_prim, 4 )          probably num_prim always 1 here  
-    float4*  plan ;    // (num_plan,)             num_plan usually 0 
-*/
-
 };
 
 

@@ -3,13 +3,7 @@
 #include <string>
 #include <glm/glm.hpp>
 #include "Node.h"
-
-
-struct AABB
-{
-    float3 mn ; 
-    float3 mx ; 
-}; 
+#include "AABB.h"
 
 
 /**

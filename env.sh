@@ -3,6 +3,8 @@
 sdir=$(pwd)
 name=$(basename $sdir)
 
+
+
 export PREFIX=/tmp/$USER/opticks/$name
 source $PREFIX/build/buildenv.sh 
 

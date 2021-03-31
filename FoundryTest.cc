@@ -8,22 +8,25 @@
 int main(int argc, char** argv)
 {
     Foundry fd ;  
-    fd.init(); 
+    //fd.init(); 
+    //fd.makeSphere(); 
+    unsigned s0 = fd.makeLayered("sphere", 100.f, 10 ); 
+    unsigned s1 = fd.makeLayered("sphere", 1000.f, 10 ); 
+    unsigned s2 = fd.makeLayered("sphere", 50.f, 5 ); 
 
-    const Solid* so = fd.getSolid("slab"); 
-    std::cout << so->desc() << std::endl ; 
+    fd.dump(); 
 
-    for(unsigned primIdx=so->primOffset ; primIdx < so->primOffset+so->numPrim ; primIdx++)
-    {
-        const Prim* pr = fd.getPrim(primIdx);   // numNode,nodeOffset,tranOffset,planOffset
-        std::cout << pr->desc() << std::endl ; 
+    std::vector<float> aabb ; 
+    fd.get_aabb(aabb, s0 ); 
+    Foundry::Dump(aabb, "s0"); 
 
-        for(unsigned nodeIdx=pr->nodeOffset ; nodeIdx < pr->nodeOffset+pr->numNode ; nodeIdx++)
-        {
-            const Node* nd = fd.getNode(nodeIdx); 
-            std::cout << nd->desc() << std::endl ; 
-        }
-    } 
+    fd.get_aabb(aabb, s2 ); 
+    Foundry::Dump(aabb, "s2"); 
+
+    fd.get_aabb(aabb, s1 ); 
+    Foundry::Dump(aabb, "s1"); 
+
+    fd.write("/tmp", "FoundryTest_" ); 
 
 
     return 0 ; 

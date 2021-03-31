@@ -148,10 +148,6 @@ extern "C" __global__ void __intersection__is()
     HitGroupData* hg  = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
 
-    //const Prim* prim = hg->prim ;
-    //const Node* node = hg->node ;
-    //const float4* plan = hg->plan ;
-
     //int numNode = hg->numNode ; 
     int nodeOffset = hg->nodeOffset ; 
 
