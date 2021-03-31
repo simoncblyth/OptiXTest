@@ -147,9 +147,18 @@ extern "C" __global__ void __intersection__is()
 {
     HitGroupData* hg  = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
-    const Prim* prim = hg->prim ;
-    const Node* node = hg->node ;
-    const float4* plan = hg->plan ;
+
+    //const Prim* prim = hg->prim ;
+    //const Node* node = hg->node ;
+    //const float4* plan = hg->plan ;
+
+    //int numNode = hg->numNode ; 
+    int nodeOffset = hg->nodeOffset ; 
+
+    const Prim* prim = NULL ;  
+    const Node* node = params.node + nodeOffset ;  
+    const float4* plan = params.plan + 0 ;    // hmm global planOffsets simplify 
+
 
     const float3 ray_origin = optixGetObjectRayOrigin();
     const float3 ray_direction = optixGetObjectRayDirection();

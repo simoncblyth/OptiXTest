@@ -7,9 +7,15 @@
 #include <glm/glm.hpp>
 #endif
 
+struct Node ; 
+struct qat4 ; 
 
 struct Params
 {
+    Node*      node ; 
+    float4*    plan ; 
+    qat4*      tran ; 
+
     uchar4*    pixels ;
     float4*    isect ;
 

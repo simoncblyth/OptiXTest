@@ -2,8 +2,8 @@
 #include <stdint.h>
 #include <vector_types.h>
 
-struct Node ; 
-struct Prim ; 
+//struct Node ; 
+//struct Prim ; 
 
 struct RaygenData
 {
@@ -17,10 +17,15 @@ struct MissData
 
 struct HitGroupData   // hmm this is effectively Prim 
 {
+    int numNode ;   
+    int nodeOffset ; 
+
+/*
     Node*    node ;    // aka part 
     Prim*    prim ;    // (num_prim, 4 )          probably num_prim always 1 here  
     float4*  plan ;    // (num_plan,)             num_plan usually 0 
-    //float4x4*   tran ;  // (num_tran, 3, 4, 4)     num_tran will eventually be same as num_node
+*/
+
 };
 
 

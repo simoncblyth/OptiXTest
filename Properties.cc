@@ -65,7 +65,7 @@ void Properties::dump() const
         << " : "
         << std::setw(10) <<  std::dec << limitMaxSbtOffset 
         << std::setw(10) <<  std::hex << limitMaxSbtOffset 
-        << std::hex 
+        << std::dec
         << std::endl 
         ;  
 }

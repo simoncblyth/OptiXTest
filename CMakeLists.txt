@@ -70,6 +70,9 @@ list(APPEND SOURCES
     Util.cc 
     Frame.cc 
     Params.cc 
+    Foundry.cc
+    CU.cc
+    Solid.cc
 )
 
 if(OptiX_VERSION_ GREATER_EQUAL 70000)

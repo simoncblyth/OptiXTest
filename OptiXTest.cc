@@ -29,8 +29,9 @@ OptiXTest
 #include "OPTIX_CHECK.h"   
 #include "PIP.h"
 #include "SBT.h"
-#endif
 
+#include "Foundry.h"
+#endif
 
 
 struct AS ; 
@@ -57,6 +58,10 @@ int main(int argc, char** argv)
     unsigned depth = 1u ; 
     unsigned cameratype = Util::GetEValue<unsigned>("CAMERATYPE", 0u ); 
 
+
+    Foundry foundry ; 
+    foundry.makeSphere(); 
+
     Geo geo ;  
     geo.write(outdir);  
 
@@ -72,8 +77,11 @@ int main(int argc, char** argv)
     params.setView(eye, U, V, W, geo.tmin, geo.tmax, cameratype ); 
     params.setSize(width, height, depth); 
 
-    // need to set the Foundry buffer pointers into params here 
-
+    foundry.upload();   // uploads nodes, planes, transforms
+    params.node = foundry.d_node ; 
+    params.plan = foundry.d_plan ; 
+    params.tran = foundry.d_tran ; 
+    
 
 #if OPTIX_VERSION < 70000
 
@@ -87,7 +95,9 @@ int main(int argc, char** argv)
 
     PIP pip(ptx_path); 
     SBT sbt(&pip);
-    sbt.setGeo(&geo); 
+    sbt.setGeo(&geo);    // creates GAS, IAS, SBT records 
+
+
     AS* top = sbt.getTop(); 
     params.handle = top->handle ; 
 

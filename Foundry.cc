@@ -4,14 +4,17 @@
 #include "sutil_vec_math.h"
 #include "OpticksCSG.h"
 #include "Solid.h"
+#include "CU.h"
 #include "Foundry.h"
 
 
 Foundry::Foundry()
+    :
+    d_node(nullptr),
+    d_plan(nullptr)
 {
-   // not calling init as in real usage need to minimize contained nodes, prim, tran etc..
+    // not calling init as in real usage need to minimize contained nodes, prim, tran etc..
 }
-
 
 void Foundry::init()
 {
@@ -50,15 +53,17 @@ void Foundry::dump() const
 
 unsigned Foundry::getNumSolid() const { return solid.size(); }
 unsigned Foundry::getNumPrim() const  { return prim.size();  }
+
 unsigned Foundry::getNumNode() const  { return node.size(); }
 unsigned Foundry::getNumPlan() const  { return plan.size(); }
 unsigned Foundry::getNumTran() const  { return tran.size(); }
 
 const Solid*  Foundry::getSolid(unsigned solidIdx) const { return solidIdx < solid.size() ? solid.data() + solidIdx : nullptr ; }   
 const Prim*   Foundry::getPrim(unsigned primIdx)   const { return primIdx  < prim.size()  ? prim.data()  + primIdx  : nullptr ; } 
+
 const Node*   Foundry::getNode(unsigned nodeIdx)   const { return nodeIdx  < node.size()  ? node.data()  + nodeIdx  : nullptr ; }  
 const float4* Foundry::getPlan(unsigned planIdx)   const { return planIdx  < plan.size()  ? plan.data()  + planIdx  : nullptr ; }
-const quad4*  Foundry::getTran(unsigned tranIdx)   const { return tranIdx  < tran.size()  ? tran.data()  + tranIdx  : nullptr ; }
+const qat4*   Foundry::getTran(unsigned tranIdx)   const { return tranIdx  < tran.size()  ? tran.data()  + tranIdx  : nullptr ; }
 
 const Solid* Foundry::getSolid(const char* name) const 
 {
@@ -72,7 +77,7 @@ const Solid* Foundry::getSolid(const char* name) const
 
 unsigned Foundry::make(const char* name)
 {
-    if(     strcmp(name, "sphere") == 0)           return makeSphere(name, 100.f) ;
+    if(     strcmp(name, "sphere") == 0)           return makeSphere(name) ;
     else if(strcmp(name, "zsphere") == 0)          return makeZSphere(name) ;
     else if(strcmp(name, "cone") == 0)             return makeCone(name) ;
     else if(strcmp(name, "hyperboloid") == 0)      return makeHyperboloid(name) ;
@@ -108,7 +113,7 @@ void Foundry::addNode(Node& nd, bool prim_check, const std::vector<float4>* pl )
 
     node.push_back(nd); 
 
-    if(prim_check)
+    if(prim_check)   // is Prim needed here ?
     {
        const Prim& pr = prim.back(); 
        assert( node.size() - pr.nodeOffset == 1 ); 
@@ -123,8 +128,8 @@ void Foundry::addNodes(const std::vector<Node>& nds, bool prim_check )
         const Node& nd = nds[i]; 
         node.push_back(nd); 
     }
-
-    if(prim_check)
+ 
+    if(prim_check)   // is Prim needed here ?
     {
        const Prim& pr = prim.back(); 
        assert( node.size() - pr.nodeOffset == nds.size() ); 
@@ -153,13 +158,55 @@ void Foundry::addPrim(int num_node)
 }
 
 
+/**
+Foundary::makeLayeredSphere
+----------------------------
+
+Once have transforms working can generalize to any shape. 
+But prior to that just do layering for sphere for adiabatic transition
+from Shape to Foundry/Solid.
+
+NB Each layer is a separate Prim with a single Node 
+
+**/
+
+unsigned Foundry::makeLayeredSphere(const char* label, float outer_radius, unsigned layers )
+{
+    std::vector<float> radii ;
+    for(unsigned i=0 ; i < layers ; i++) radii.push_back(outer_radius*float(layers-i)/float(layers)) ; 
+
+    Solid so = {} ; 
+    so.label = strdup(label) ; 
+    so.numPrim = layers ; 
+    so.primOffset = prim.size(); 
+    so.extent = outer_radius ;
+
+    for(unsigned i=0 ; i < layers ; i++)
+    {
+        addPrim(1); 
+        float radius = radii[i]; 
+        Node nd = Node::Sphere(radius); 
+        addNode(nd, true, nullptr ); 
+    }
+
+    unsigned idx = solid.size(); 
+    solid.push_back(so); 
+    return idx ; 
+}
+
+
+/**
+Foundry::makeSolid11 makes 1-Prim with 1-Node
+------------------------------------------------
+**/
+
 unsigned Foundry::makeSolid11(float extent, const char* label, Node& nd, const std::vector<float4>* pl  ) 
 {
     Solid sol = {} ; 
+    sol.extent = extent ;
     sol.label = strdup(label) ; 
     sol.numPrim = 1 ; 
     sol.primOffset = prim.size(); 
-    sol.extent = extent ;
 
     unsigned num_node = 1 ; 
     addPrim(num_node); 
@@ -172,121 +219,71 @@ unsigned Foundry::makeSolid11(float extent, const char* label, Node& nd, const s
 
 unsigned Foundry::makeSphere(const char* label, float radius)
 {
-    assert( radius > 0.f); 
-    Node nd = {} ;
-    nd.setParam( 0.f, 0.f, 0.f, radius,  0.f,  0.f ); 
-    nd.setAABB(  -radius, -radius, -radius,  radius, radius, radius  ); 
-    nd.setTypecode(CSG_SPHERE) ; 
+    Node nd = Node::Sphere(radius); 
     float extent = radius ;  // TODO: get from AABB
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
 unsigned Foundry::makeZSphere(const char* label, float radius, float z1, float z2)
 {
-    assert( radius > 0.f); 
-    assert( z2 > z1 ); 
-    Node nd = {} ;
-    nd.setParam( 0.f, 0.f, 0.f, radius, z1, z2 ); 
-    nd.setAABB(  -radius, -radius, z1,  radius, radius, z2  ); 
-    nd.setTypecode(CSG_ZSPHERE) ; 
-
-    float extent = 100.f ; 
+    Node nd = Node::ZSphere(radius, z1, z2); 
+    float extent = radius ;  // TODO: get from AABB
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
 unsigned Foundry::makeCone(const char* label, float r1, float z1, float r2, float z2)
 {
     float extent = 500.f ;  // guess 
-    assert( z2 > z1 ); 
-    float rmax = fmaxf(r1, r2) ;
-    Node nd = {} ;
-    nd.setParam( r1, z1, r2, z2, 0.f, 0.f ) ;
-    nd.setAABB( -rmax, -rmax, z1, rmax, rmax, z2 ); 
-    nd.setTypecode(CSG_CONE) ; 
-
+    Node nd = Node::Cone(r1, z1, r2, z2 ); 
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
 unsigned Foundry::makeHyperboloid(const char* label, float r0, float zf, float z1, float z2)
 {
-    assert( z1 < z2 ); 
-
-    const float rr0 = r0*r0 ; 
-    const float z1s = z1/zf ; 
-    const float z2s = z2/zf ; 
-
-    const float rr1 = rr0 * ( z1s*z1s + 1.f ) ;
-    const float rr2 = rr0 * ( z2s*z2s + 1.f ) ;
-    const float rmx = sqrtf(fmaxf( rr1, rr2 )) ; 
-
     float extent = r0*sqrt(2.) ;  // guess  TODO: get from AABB
-
-    Node nd = {} ;
-    nd.setParam(r0, zf, z1, z2, 0.f, 0.f ) ; 
-    nd.setAABB(  -rmx,  -rmx,  z1,  rmx, rmx, z2 ); 
-    nd.setTypecode(CSG_HYPERBOLOID) ; 
-
+    Node nd = Node::Hyperboloid( r0, zf, z1, z2 ); 
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
 unsigned Foundry::makeBox3(const char* label, float fx, float fy, float fz )
 {
     float extent = 150.f ; 
-    assert( fx > 0.f ); 
-    assert( fy > 0.f ); 
-    assert( fz > 0.f ); 
-
-    Node nd = {} ;
-    nd.setParam( fx, fy, fz, 0.f, 0.f, 0.f ); 
-    nd.setAABB( -fx*0.5f , -fy*0.5f, -fz*0.5f, fx*0.5f , fy*0.5f, fz*0.5f );   
-    nd.setTypecode(CSG_BOX3) ; 
-
+    Node nd = Node::Box3(fx, fy, fz); 
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
 unsigned Foundry::makePlane(const char* label, float nx, float ny, float nz, float d)
 {
     float extent = 150.f ;    // its unbounded 
-
-    Node nd = {} ;
-    nd.setParam(nx, ny, nz, d, 0.f, 0.f ) ;
-    nd.setTypecode(CSG_PLANE) ; 
-
+    Node nd = Node::Plane(nx, ny, nz, d ); 
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
 unsigned Foundry::makeSlab(const char* label, float nx, float ny, float nz, float d1, float d2 )
 {
     float extent = 150.f ;   // hmm: its unbounded 
-    Node nd = {} ;
-    nd.setParam( nx, ny, nz, 0.f, d1, d2 ); 
-
-    nd.setTypecode(CSG_SLAB) ; 
-
+    Node nd = Node::Slab( nx, ny, nz, d1, d1 ); 
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
 unsigned Foundry::makeCylinder(const char* label, float px, float py, float radius, float z1, float z2)
 {
     float extent = 100.f ; 
-
-    Node nd = {} ; 
-    nd.setParam( px, py, 0.f, radius, z1, z2)  ; 
-    nd.setTypecode(CSG_CYLINDER); 
-
+    Node nd = Node::Cylinder( px, py, radius, z1, z2 ); 
     return makeSolid11(extent, label, nd, nullptr ); 
 }
 
 unsigned Foundry::makeDisc(const char* label, float px, float py, float ir, float r, float z1, float z2)
 {
+    Node nd = Node::Disc(px, py, ir, r, z1, z2 ); 
     float extent = 100.f ; 
-    Node nd = {} ;
-    nd.setParam( px, py, ir, r, z1, z2 ); 
-    nd.setAABB( px - r , py - r , z1, px + r, py + r, z2 ); 
-    nd.setTypecode(CSG_DISC); 
-
     return makeSolid11(extent, label, nd, nullptr ); 
 }
+
+
+
+
+
 
 float4 Foundry::TriPlane( const std::vector<float3>& v, unsigned i, unsigned j, unsigned k )  // static 
 {
@@ -343,7 +340,7 @@ unsigned Foundry::makeConvexPolyhedronCube(const char* label)
               +-----------1
                           (1,-1,-1)      
 
-          Faces         (attempt to right-hand-rule orient normals outwards)
+          Faces (right-hand-rule oriented outwards normals)
                 0-1-2
                 1-3-2
                 3-0-2
@@ -378,6 +375,26 @@ unsigned Foundry::makeConvexPolyhedronTetrahedron(const char* label)
  
     Node nd = {} ;
     return makeSolid11(extent, label, nd, &pl ); 
+}
+
+
+void Foundry::upload()
+{
+    unsigned num_node = node.size(); 
+    unsigned num_plan = plan.size(); 
+    unsigned num_tran = tran.size(); 
+
+    std::cout 
+        << "Foundry::upload"
+        << " num_node " << num_node
+        << " num_plan " << num_plan
+        << " num_tran " << num_tran
+        << std::endl
+        ;
+
+    d_node = num_node > 0 ? CU::UploadArray<Node>(node.data(), num_node ) : nullptr ; 
+    d_plan = num_plan > 0 ? CU::UploadArray<float4>(plan.data(), num_plan ) : nullptr ; 
+    d_tran = num_tran > 0 ? CU::UploadArray<qat4>(tran.data(), num_tran ) : nullptr ; 
 }
 
 

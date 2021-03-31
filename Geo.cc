@@ -103,7 +103,8 @@ void Geo::init_sphere_containing_grid_of_spheres(float& tminf, float& tmaxf, uns
     std::cout << "Geo::init_sphere_containing_grid_of_spheres : layers " << layers << std::endl ; 
 
     unsigned ias_idx = grids.size(); 
-    Grid* grid = new Grid(ias_idx, 3) ; 
+    unsigned num_shape = 3 ; 
+    Grid* grid = new Grid(ias_idx, num_shape) ; 
     addGrid(grid); 
 
     float big_radius = float(grid->extent())*sqrtf(3.f) ;
@@ -169,26 +170,15 @@ float Geo::getTopExtent() const
     return top_extent ; 
 }
 
-/**
 
-::
 
-    In [1]: a = np.arange(10) ; a 
-    Out[1]: array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 
-    In [2]: 100/(a+1)
-    Out[2]: array([100,  50,  33,  25,  20,  16,  14,  12,  11,  10])
 
-    In [3]: 100*((1.+a[::-1])/10.)
-    Out[3]: array([100,  90,  80,  70,  60,  50,  40,  30,  20,  10])
-
-**/
 
 void Geo::addShape(const char* typs, float outer_extent, unsigned layers)
 {
     std::vector<float> extents ;
 
-    //for(unsigned i=0 ; i < layers ; i++) extents.push_back(outer_extent/float(i+1));  
     for(unsigned i=0 ; i < layers ; i++) 
     {
         float f = float(layers-i)/float(layers) ; 
@@ -205,25 +195,32 @@ void Geo::addShape(const char* typs, const std::vector<float>& extents)
     shapes.push_back(sh); 
     std::cout << "Geo::addShape " << std::endl << sh->desc() << std::endl ;
 }
-void Geo::addGrid(const Grid* grid)
-{
-    grids.push_back(grid); 
-}
-
 unsigned Geo::getNumShape() const 
 {
     return shapes.size() ; 
 }
-unsigned Geo::getNumGrid() const 
-{
-    return grids.size() ; 
-}
-
 const Shape* Geo::getShape(int shape_idx_) const
 {
     unsigned shape_idx = shape_idx_ < 0 ? shapes.size() + shape_idx_ : shape_idx_ ;   // -ve counts from end
     assert( shape_idx < shapes.size() ); 
     return shapes[shape_idx] ; 
+}
+
+
+
+
+
+
+
+
+void Geo::addGrid(const Grid* grid)
+{
+    grids.push_back(grid); 
+}
+
+unsigned Geo::getNumGrid() const 
+{
+    return grids.size() ; 
 }
 const Grid* Geo::getGrid(int grid_idx_) const
 {
@@ -231,7 +228,6 @@ const Grid* Geo::getGrid(int grid_idx_) const
     assert( grid_idx < grids.size() ); 
     return grids[grid_idx] ; 
 }
-
 void Geo::write(const char* dir) const 
 {
     std::cout << "Geo::write " << dir << std::endl ;  
