@@ -9,9 +9,12 @@
 #include "glm/gtc/matrix_transform.hpp"
 
 #include "NP.hh"
-#include "Geo.h"
-#include "Shape.h"
+
+#include "sutil_vec_math.h"
+
+#include "Prim.h"
 #include "Foundry.h"
+#include "Geo.h"
 #include "Grid.h"
 #include "InstanceId.h"
 
@@ -171,23 +174,10 @@ float Geo::getTopExtent() const
 }
 
 
-
-
-
-unsigned Geo::getNumSolid() const 
-{
-    return foundry->getNumSolid() ; 
-}
-const Solid* Geo::getSolid(int idx) const
-{
-    return foundry->getSolid(idx); 
-}
-const float* Geo::getSolidAABB(unsigned& num_aabb, unsigned& stride_in_floats, unsigned idx) const 
-{
-    return foundry->getAABB(num_aabb, stride_in_floats, idx ); 
-}
-
-
+unsigned        Geo::getNumSolid() const {                        return foundry->getNumSolid() ;      }
+const Solid*    Geo::getSolid(         unsigned solidIdx) const { return foundry->getSolid(solidIdx);  }
+PrimSpec        Geo::getPrimSpecDevice(unsigned solidIdx) const { return foundry->getPrimSpecDevice(solidIdx);  }
+PrimSpec        Geo::getPrimSpec(      unsigned solidIdx) const { return foundry->getPrimSpec(solidIdx);  }
 
 
 
@@ -201,12 +191,20 @@ unsigned Geo::getNumGrid() const
 {
     return grids.size() ; 
 }
-const Grid* Geo::getGrid(int grid_idx_) const
+
+
+const Grid* Geo::getGrid_(int gridIdx_) const
 {
-    unsigned grid_idx = grid_idx_ < 0 ? grids.size() + grid_idx_ : grid_idx_ ;  
-    assert( grid_idx < grids.size() ); 
-    return grids[grid_idx] ; 
+    unsigned gridIdx = gridIdx_ < 0 ? grids.size() + unsigned(gridIdx_) : unsigned(gridIdx_) ;  
+    return getGrid(gridIdx);  
 }
+const Grid* Geo::getGrid(unsigned gridIdx) const
+{
+    assert( gridIdx < grids.size() );
+    return grids[gridIdx] ; 
+}
+
+
 void Geo::write(const char* dir) const 
 {
     std::cout << "Geo::write " << dir << std::endl ;  

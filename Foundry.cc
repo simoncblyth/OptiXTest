@@ -82,12 +82,11 @@ void Foundry::dumpSolid(unsigned solidIdx) const
 
 
 /**
-Foundry::getPrimAABB
+Foundry::getPrimSpec
 ----------------------
 
-Provides the AABB of all Primitives within a Solid
-by returning pointer to the first PrimAABB with count 
-and stride to yield the AABB of all the Prim within the solid.
+Provides the specification to access the AABB and sbtIndexOffset of all Prim 
+of a Solid.  The specification includes pointers, counts and stride.
 
 NB PrimAABB is distinct from NodeAABB. Cannot directly use NodeAABB 
 because the number of nodes for each prim (node tree) varies meaning 
@@ -97,31 +96,21 @@ that the strides are irregular.
 
 PrimSpec Foundry::getPrimSpec(unsigned solidIdx) const 
 {
-    
-
-
     const Solid* so = solid.data() + solidIdx ; 
-    const Prim* pr = prim.data() + so->primOffset ;   // 1st 6 floats of Prim are aabb 
-    num_prim = so->numPrim ; 
-    stride_in_bytes = sizeof(Prim) ; 
-
-
-    AABBSpec spec ;  
-
-   
-     AABBSpec spec ; 
-     spec.aabb = (float*)prim.data() ; 
-     spec.sbtIndexOffset = (unsigned*)(prim.data()) + 6 ;   
-     spec.num_aabb = prim.size() ; 
-     spec.stride_in_bytes = sizeof(Prim); 
-     spec.dump(); 
-
-
-
- 
-
-    return spec ; 
+    PrimSpec ps = Prim::MakeSpec( prim.data(),  so->primOffset, so->numPrim ); ; 
+    ps.device = false ; 
+    return ps ; 
 }
+
+PrimSpec Foundry::getPrimSpecDevice(unsigned solidIdx) const 
+{
+    assert( d_prim ); 
+    const Solid* so = solid.data() + solidIdx ; 
+    PrimSpec psd = Prim::MakeSpec( d_prim,  so->primOffset, so->numPrim ); ; 
+    psd.device = true ; 
+    return psd ; 
+}
+
 
 unsigned Foundry::getNumSolid() const { return solid.size(); } 
 unsigned Foundry::getNumPrim() const  { return prim.size();  } 
@@ -271,6 +260,7 @@ Prim* Foundry::addPrim(int num_node)
     pr.nodeOffset = node.size(); 
     pr.tranOffset = tran.size(); 
     pr.planOffset = plan.size(); 
+    pr.sbtIndexOffset = 0 ; 
 
     unsigned primIdx = prim.size(); 
     assert( primIdx < imax ); 
@@ -346,6 +336,7 @@ Solid* Foundry::makeLayered(const char* label, float outer_radius, unsigned laye
             assert( 0 && "layered only implemented for sphere and zsphere currently" ); 
         } 
 
+        p->sbtIndexOffset = i ; 
         p->mn = n->mn(); 
         p->mx = n->mx(); 
     }

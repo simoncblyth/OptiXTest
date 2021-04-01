@@ -168,17 +168,16 @@ void SBT::createGAS(const Geo* geo)
     unsigned num_solid = geo->getNumSolid(); 
     for(unsigned i=0 ; i < num_solid ; i++)
     {
-        const Solid* so = geo->getSolid(i) ;    
+        unsigned solidIdx = i ; 
+
+        //PrimSpec ps = geo->getPrimSpecDevice(solidIdx); 
+        //assert( ps.device == true ); 
+
+        PrimSpec ps = geo->getPrimSpec(solidIdx); 
+        assert( ps.device == false ); 
+
         GAS gas = {} ;  
-        gas.so = so ; 
-
-        const float* aabb = sh->get_aabb(0) ; 
-        unsigned num_aabb = sh->num ; 
-        unsigned stride_in_bytes = sh->get_aabb_stride(); 
-
-
-
-        GAS_Builder::Build(gas, aabb, num_aabb, stride_in_bytes  );
+        GAS_Builder::Build(gas, ps);
         vgas.push_back(gas);  
     }
 }

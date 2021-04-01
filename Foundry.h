@@ -28,8 +28,8 @@ struct Foundry
     void dump() const ;
     void dumpSolid(unsigned solidIdx ) const ;
 
-    const AABBSpec getPrimAABB(unsigned solidIdx) const ;
-    static void Dump(c, const char* msg ) ; 
+    PrimSpec getPrimSpec(      unsigned solidIdx) const ;
+    PrimSpec getPrimSpecDevice(unsigned solidIdx) const ;
 
     const Solid*   getSolid(const char* name) const ;
     const Solid*   getSolid_(int solidIdx) const ;   // -ve counts from back 

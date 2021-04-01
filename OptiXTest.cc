@@ -17,6 +17,7 @@ OptiXTest
 #include <glm/glm.hpp>
 
 #include "Util.h"
+#include "Prim.h"
 #include "Geo.h"
 #include "Frame.h"
 #include "Params.h"

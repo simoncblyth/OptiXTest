@@ -63,8 +63,11 @@ set(CU_SOURCES)
 list(APPEND SOURCES
     OptiXTest.cc
     Sys.cc
+
+    Solid.cc
+    Prim.cc
     Node.cc
-    Shape.cc
+
     Grid.cc
     Geo.cc
     Util.cc 
@@ -72,7 +75,6 @@ list(APPEND SOURCES
     Params.cc 
     Foundry.cc
     CU.cc
-    Solid.cc
 )
 
 if(OptiX_VERSION_ GREATER_EQUAL 70000)

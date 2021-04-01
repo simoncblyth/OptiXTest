@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <sstream>
 #include <cassert>
+#include <cstring>
 
 
 std::string Prim::desc() const 
@@ -20,6 +21,7 @@ std::string Prim::desc() const
       << "Prim"
       << " mn " << mn 
       << " mx " << mx 
+      << " sbtIndexOffset " << sbtIndexOffset 
       << " numNode "    << std::setw(3) << numNode 
       << " nodeOffset " << std::setw(3) << nodeOffset
       << " tranOffset " << std::setw(3) << tranOffset
@@ -40,10 +42,39 @@ PrimSpec Prim::MakeSpec( const Prim* prim,  unsigned primIdx, unsigned numPrim )
     PrimSpec ps ; 
     ps.aabb = (float*)pr ; 
     ps.sbtIndexOffset = (unsigned*)(pr) + offset_sbtIndexOffset ;  
-    ps.num_aabb = numPrim ; 
+    ps.num_prim = numPrim ; 
     ps.stride_in_bytes = sizeof(Prim); 
     return ps ; 
 }
+
+void PrimSpec::gather(std::vector<float>& out) const 
+{
+    assert( device == false ); 
+    unsigned size_in_floats = 6 ; 
+    out.resize( num_prim*size_in_floats ); 
+
+    unsigned stride_in_floats = stride_in_bytes/sizeof(float) ; 
+    for(unsigned i=0 ; i < num_prim ; i++) 
+    {   
+        float* dst = out.data() + size_in_floats*i ;   
+        const float* src = aabb + stride_in_floats*i ;   
+        memcpy(dst, src,  sizeof(float)*size_in_floats );  
+    }   
+}
+
+void PrimSpec::Dump(std::vector<float>& out)  // static 
+{
+     std::cout << " gather " << out.size() << std::endl ; 
+     for(unsigned i=0 ; i < out.size() ; i++) 
+     {    
+         if(i % 6 == 0) std::cout << std::endl ; 
+         std::cout << std::setw(10) << out[i] << " " ; 
+     } 
+     std::cout << std::endl ; 
+}
+
+
+
 
 
 void PrimSpec::dump(const char* msg) const 
@@ -52,13 +83,13 @@ void PrimSpec::dump(const char* msg) const
     unsigned stride_in_floats = stride_in_bytes/sizeof(float) ; 
     std::cout 
         << msg 
-        << " num_aabb " << num_aabb 
+        << " num_prim " << num_prim 
         << " stride_in_bytes " << stride_in_bytes 
         << " stride_in_floats " << stride_in_floats 
         << std::endl 
         ; 
 
-    for(unsigned i=0 ; i < num_aabb ; i++)
+    for(unsigned i=0 ; i < num_prim ; i++)
     {   
         std::cout 
             << " i " << std::setw(4) << i 

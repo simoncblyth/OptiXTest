@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 
+
+#include "Prim.h"
 struct Solid ; 
 struct Grid ; 
 struct Foundry ; 
@@ -29,12 +31,14 @@ struct Geo
     std::string desc() const ;
 
     unsigned getNumSolid() const ; 
+
+    const Solid* getSolid(unsigned solidIdx) const ; 
+    PrimSpec getPrimSpec(unsigned solidIdx) const ;
+    PrimSpec getPrimSpecDevice(unsigned solidIdx) const ;
+
     unsigned getNumGrid() const ; 
-
-    const Solid* getSolid(int idx) const ; 
-    const float* getSolidAABB(unsigned& num_aabb, unsigned& stride_in_floats, int idx) const ;
-
-    const Grid*  getGrid(int grid_idx_) const ; 
+    const Grid*  getGrid(unsigned gridIdx) const ; 
+    const Grid*  getGrid_(int gridIdx) const ; 
 
     void addGrid(const Grid* grid) ;
 
