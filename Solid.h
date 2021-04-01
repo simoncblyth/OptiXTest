@@ -1,16 +1,21 @@
 #pragma once
+
+#if defined(__CUDACC__) || defined(__CUDABE__)
+#else
 #include <string>
+#endif
 
 struct Solid   // Composite shape 
 {
-    Solid( const char* label,  int numPrim, int primOffset, float extent ); 
-
     char        label[4] ; 
     int         numPrim ; 
     int         primOffset ; 
     float       extent ; 
 
+#if defined(__CUDACC__) || defined(__CUDABE__)
+#else
     std::string desc() const ; 
+#endif
 
 };
 

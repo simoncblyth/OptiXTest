@@ -32,6 +32,8 @@ struct Geo
     unsigned getNumGrid() const ; 
 
     const Solid* getSolid(int idx) const ; 
+    const float* getSolidAABB(unsigned& num_aabb, unsigned& stride_in_floats, int idx) const ;
+
     const Grid*  getGrid(int grid_idx_) const ; 
 
     void addGrid(const Grid* grid) ;

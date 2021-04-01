@@ -5,20 +5,35 @@
 #include <string>
 #endif
 
-struct Prim
+struct PrimSpec
 {
-    int numNode    ; 
-    int nodeOffset ; 
+    float*    aabb ; 
+    unsigned* sbtIndexOffset ;  
+    unsigned num_aabb ; 
+    unsigned stride_in_bytes ; 
 
-    // hmm : with global pools seems do not need tranOffset + planOffset anymore ? 
-    // the old way of handling geometry ingredients separately for each solid adds complexity 
+#if defined(__CUDACC__) || defined(__CUDABE__)
+#else
+    void dump(const char* msg="PrimSpec::Dump") const ; 
+#endif
+};
 
-    int tranOffset ; 
-    int planOffset ; // 
+struct Prim   // (3*4)
+{
+    float3 mn ; 
+    float3 mx ; 
+    unsigned sbtIndexOffset ; 
+    float  pad1 ; 
+
+    int    numNode    ;  // nodes in the tree 
+    int    nodeOffset ;  // pointer to root node 
+    int    tranOffset ; 
+    int    planOffset ; 
 
 #if defined(__CUDACC__) || defined(__CUDABE__)
 #else
     std::string desc() const ; 
+    static PrimSpec MakeSpec( const Prim* prim, unsigned primIdx, unsigned numPrim ) ; 
 #endif
 
 };

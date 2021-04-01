@@ -72,6 +72,21 @@ struct qat4
 #else
 
 
+inline std::ostream& operator<<(std::ostream& os, const float3& v)
+{
+    int w = 10 ; 
+    os 
+       << "(" 
+       << std::setw(w) << v.x 
+       << "," 
+       << std::setw(w) << v.y
+       << "," 
+       << std::setw(w) << v.z 
+       << ") "  
+       ;
+    return os; 
+}
+
 inline std::ostream& operator<<(std::ostream& os, const float4& v)
 {
     int w = 10 ; 

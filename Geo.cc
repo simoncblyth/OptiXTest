@@ -182,8 +182,10 @@ const Solid* Geo::getSolid(int idx) const
 {
     return foundry->getSolid(idx); 
 }
-
-
+const float* Geo::getSolidAABB(unsigned& num_aabb, unsigned& stride_in_floats, unsigned idx) const 
+{
+    return foundry->getAABB(num_aabb, stride_in_floats, idx ); 
+}
 
 
 
