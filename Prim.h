@@ -1,49 +1,49 @@
 #pragma once
 
-#if defined(__CUDACC__) || defined(__CUDABE__)
-#else
-#include <vector>
-#include <string>
-#endif
+#include "Quad.h"
 
-struct PrimSpec
-{
-    float*    aabb ; 
-    unsigned* sbtIndexOffset ;  
-    unsigned  num_prim ; 
-    unsigned  stride_in_bytes ; 
-    bool      device ; 
+#if defined(__CUDACC__) || defined(__CUDABE__)
+   #define PRIM_METHOD __device__
+#else
+   #define PRIM_METHOD 
+#endif 
 
 #if defined(__CUDACC__) || defined(__CUDABE__)
 #else
-    void gather(std::vector<float>& out) const ;
-    static void Dump(std::vector<float>& out);
-    void dump(const char* msg="PrimSpec::Dump") const ; 
-#endif
-};
-
-#if defined(__CUDACC__) // NVCC
-   #define MY_ALIGN(n) __align__(n)
-#elif defined(__GNUC__) // GCC
-  #define MY_ALIGN(n) __attribute__((aligned(n)))
-#elif defined(_MSC_VER) // MSVC
-  #define MY_ALIGN(n) __declspec(align(n))
-#else
-  #error "Please provide a definition for MY_ALIGN macro for your host compiler!"
+#include "PrimSpec.h"
 #endif
 
 
-struct __align__(8) Prim   // (3*4)
+struct Prim  
 {
-    float3   mn ; 
-    float3   mx ; 
-    unsigned sbtIndexOffset ; 
-    float    pad1 ; 
+    quad q0 ; 
+    quad q1 ; 
+    quad q2 ; 
+    quad q3 ; 
 
-    int    numNode    ;  // nodes in the tree 
-    int    nodeOffset ;  // pointer to root node 
-    int    tranOffset ; 
-    int    planOffset ; 
+    PRIM_METHOD int  numNode() const    { return q0.i.x ; } 
+    PRIM_METHOD int  nodeOffset() const { return q0.i.y ; } 
+    PRIM_METHOD int  tranOffset() const { return q0.i.z ; }
+    PRIM_METHOD int  planOffset() const { return q0.i.w ; }
+
+    PRIM_METHOD void setNumNode(   int numNode){    q0.i.x = numNode ; }
+    PRIM_METHOD void setNodeOffset(int nodeOffset){ q0.i.y = nodeOffset ; }
+    PRIM_METHOD void setTranOffset(int tranOffset){ q0.i.z = tranOffset ; }
+    PRIM_METHOD void setPlanOffset(int planOffset){ q0.i.z = planOffset ; }
+
+    PRIM_METHOD unsigned  sbtIndexOffset()    const { return  q1.u.x ; }
+    PRIM_METHOD void  setSbtIndexOffset(unsigned sbtIndexOffset){  q1.u.x = sbtIndexOffset ; }
+
+    PRIM_METHOD const unsigned* sbtIndexOffsetPtr() const { return &q1.u.x ; }
+
+
+
+    PRIM_METHOD void setAABB(  float e  ){                                                   q2.f.x = -e ; q2.f.y = -e ; q2.f.z = -e ; q2.f.w =  e ; q3.f.x =  e ; q3.f.y =  e ; }  
+    PRIM_METHOD void setAABB(  float x0, float y0, float z0, float x1, float y1, float z1){  q2.f.x = x0 ; q2.f.y = y0 ; q2.f.z = z0 ; q2.f.w = x1 ; q3.f.x = y1 ; q3.f.y = z1 ; }  
+    PRIM_METHOD const float* AABB() const {  return &q2.f.x ; }
+    PRIM_METHOD const float3 mn() const {    return make_float3(q2.f.x, q2.f.y, q2.f.z) ; }
+    PRIM_METHOD const float3 mx() const {    return make_float3(q2.f.w, q3.f.x, q3.f.y) ; }
+
 
 #if defined(__CUDACC__) || defined(__CUDABE__)
 #else

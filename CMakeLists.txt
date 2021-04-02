@@ -66,6 +66,7 @@ list(APPEND SOURCES
 
     Solid.cc
     Prim.cc
+    PrimSpec.cc
     Node.cc
 
     Grid.cc

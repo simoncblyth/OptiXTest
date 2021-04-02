@@ -3,7 +3,7 @@
 CUDA_PREFIX=/usr/local/cuda   # just use some CUDA headers, not using GPU 
 
 name=PrimTest
-gcc -g $name.cc Prim.cc CU.cc -std=c++11  -lstdc++ -L${CUDA_PREFIX}/lib -lcudart  -I.  -I${CUDA_PREFIX}/include -o /tmp/$name 
+gcc -g $name.cc Prim.cc PrimSpec.cc CU.cc -std=c++11  -lstdc++ -L${CUDA_PREFIX}/lib -lcudart  -I.  -I${CUDA_PREFIX}/include -o /tmp/$name 
 [ $? -ne 0 ] && echo compile error && exit 1
 
 
