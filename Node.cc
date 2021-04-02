@@ -12,6 +12,10 @@
 #include "OpticksCSG.h"
 #include "Node.h"
 
+
+const float Node::UNBOUNDED_DEFAULT_EXTENT = 100.f ; 
+
+
 std::string Node::desc() const 
 {
     const float* aabb = AABB(); 
@@ -175,6 +179,7 @@ Node Node::Plane(float nx, float ny, float nz, float d)
     Node nd = {} ;
     nd.setParam(nx, ny, nz, d, 0.f, 0.f ) ;
     nd.setTypecode(CSG_PLANE) ; 
+    nd.setAABB( UNBOUNDED_DEFAULT_EXTENT ); 
     return nd ; 
 }
 
@@ -183,6 +188,7 @@ Node Node::Slab(float nx, float ny, float nz, float d1, float d2 )
     Node nd = {} ;
     nd.setParam( nx, ny, nz, 0.f, d1, d2 ); 
     nd.setTypecode(CSG_SLAB) ; 
+    nd.setAABB( UNBOUNDED_DEFAULT_EXTENT ); 
     return nd ; 
 }
 

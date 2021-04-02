@@ -372,16 +372,16 @@ void SBT::createHitgroup(const Geo* geo)
     unsigned sbt_offset = 0 ; 
     for(unsigned i=0 ; i < num_gas ; i++)
     {
-        unsigned solid_idx = i ;    
+        unsigned solidIdx = i ;    
         const GAS& gas = vgas[i] ;    
         unsigned num_bi = gas.bis.size(); 
         if(is_11N) assert( num_bi == 1 ); // 11N mode every GAS has only one BI with aabb for each Prim 
 
-        const Solid* so = geo->getSolid(solid_idx) ;
+        const Solid* so = geo->getSolid(solidIdx) ;
         int numPrim = so->numPrim ; 
         int primOffset = so->primOffset ; 
 
-        std::cout << "SBT::createHitgroup gas_idx " << i << " num_bi " << num_bi << std::endl ; 
+        std::cout << "SBT::createHitgroup solidIdx " << solidIdx << " so.numPrim " << numPrim << " so.primOffset " << primOffset << std::endl ; 
 
         for(unsigned j=0 ; j < num_bi ; j++)
         { 
@@ -394,42 +394,26 @@ void SBT::createHitgroup(const Geo* geo)
 
             for( unsigned k=0 ; k < num_rec ; k++)
             { 
-                unsigned prim_idx = is_1NN ? j : k ;   
-                unsigned check_sbt_offset = getOffset(solid_idx, prim_idx ); 
-                bool expected_sbt_offset = check_sbt_offset == sbt_offset  ;
-
-
-                unsigned globalPrimIdx = primOffset + prim_idx ;   
+                unsigned localPrimIdx = is_1NN ? j : k ;   
+                unsigned globalPrimIdx = primOffset + localPrimIdx ;   
                 const Prim* prim = geo->getPrim( globalPrimIdx ); 
+                setPrimData( hg->data, prim ); 
+                dumpPrimData( hg->data ); 
 
-                int numNode = prim->numNode(); 
-                int nodeOffset = prim->nodeOffset();  
-
+                unsigned check_sbt_offset = getOffset(solidIdx, localPrimIdx ); 
                 std::cout 
                     << "SBT::createHitgroup "
                     << " gas(i) " << i 
                     << " bi(j) " << j
                     << " sbt(k) " << k 
-                    << " solid_idx " << solid_idx 
-                    << " prim_idx " << prim_idx 
+                    << " solidIdx " << solidIdx 
+                    << " localPrimIdx " << localPrimIdx 
+                    << " globalPrimIdx " << globalPrimIdx 
                     << " check_sbt_offset " << check_sbt_offset
                     << " sbt_offset " << sbt_offset
-                    << " numNode " << numNode
-                    << " nodeOffset " << nodeOffset
                     << std::endl 
                     ; 
-
-                if(!expected_sbt_offset) 
-                   std::cout 
-                      << "SBT::createHitgroup FATAL "
-                      << " sbt_offset " << sbt_offset 
-                      << " check_sbt_offset " << check_sbt_offset 
-                      << std::endl
-                      ;
-                assert( expected_sbt_offset ); 
-
-                hg->data.numNode = numNode ; 
-                hg->data.nodeOffset = nodeOffset ; 
+                assert( check_sbt_offset == sbt_offset  ); 
 
                 hg++ ; 
                 sbt_offset++ ; 
@@ -445,74 +429,62 @@ void SBT::createHitgroup(const Geo* geo)
     sbt.hitgroupRecordCount = tot_rec ;
 }
 
-
-/**
-SBT::upload_prim_data
-------------------------
-
-Sets device pointers into HitGroupData *data* CPU struct which is about to be copied to device
-
-
-void SBT::upload_prim_data( HitGroupData& data, const Shape* sh, unsigned prim_idx )
+void SBT::setPrimData( HitGroupData& data, const Prim* prim)
 {
-    unsigned num_prim = 1 ;  // expect this to always be 1 : single prim (aka layer) for each HG SBT record
-   
-    int* prim = sh->get_prim(prim_idx) ; 
-    int* d_prim = CU::UploadArray<int>(prim, Shape::prim_size*num_prim ) ; 
-    data.prim = (Prim*)d_prim ; 
-
-    unsigned num_node = sh->get_num_node( prim_idx ); 
-    assert( num_node == 1 ) ; // only single node "trees" for now 
-    
-    const Node* node = sh->get_node(prim_idx); 
-    Node* d_node = CU::UploadArray<Node>(node, num_node ); 
-    data.node = d_node ; 
-
+    data.numNode = prim->numNode(); 
+    data.nodeOffset = prim->nodeOffset();  
+    //data.tranOffset = prim->tranOffset();  
+    //data.planOffset = prim->planOffset();  
 }
 
-void SBT::check_prim_data( const HitGroupData& data ) const 
+void SBT::checkPrimData( HitGroupData& data, const Prim* prim)
 {
-    std::cout << "SBT::check_prim_data" << std::endl ; 
-
-    unsigned num_prim = 1 ;  // expect this to always be 1  
-    const int* d_prim = (const int*)data.prim ; 
-    int* prim = CU::DownloadArray<int>(d_prim, Shape::prim_size*num_prim );  
-    int num_node = prim[1] ; 
-
-    std::cout << " prim " ; 
-    for(int i=0 ; i < 4 ; i++) std::cout << prim[i] << " " ; 
-    std::cout << std::endl ;  
-
-    std::cout << " num_node " << num_node << std::endl ; 
-    Node* d_node = data.node ; 
-    Node* node = CU::DownloadArray<Node>(d_node, num_node);  
-
-    Node::Dump( node, 1, "SBT::check_prim_data"); 
+    assert( data.numNode == prim->numNode() ); 
+    assert( data.nodeOffset == prim->nodeOffset() );  
+    //assert( data.tranOffset == prim->tranOffset() );  
+    //assert( data.planOffset == prim->planOffset() );  
 }
-
-**/
-
-
+void SBT::dumpPrimData( const HitGroupData& data ) const 
+{
+    std::cout 
+        << "SBT::dumpPrimData"
+        << " data.numNode " << data.numNode
+        << " data.nodeOffset " << data.nodeOffset
+      //  << " data.tranOffset " << data.tranOffset
+      //  << " data.planOffset " << data.planOffset
+        << std::endl 
+        ; 
+}
 
 void SBT::checkHitgroup(const Geo* geo)
 {
-    unsigned tot_sbt = sbt.hitgroupRecordCount ;
+    unsigned num_solid = geo->getNumSolid(); 
+    unsigned num_prim = geo->getNumPrim(); 
+    unsigned num_sbt = sbt.hitgroupRecordCount ;
     std::cout 
         << "SBT::checkHitgroup" 
-        << " tot_sbt " << tot_sbt
+        << " num_sbt " << num_sbt
+        << " num_solid " << num_solid
+        << " num_prim " << num_prim
         << std::endl 
         ; 
 
-    check = new HitGroup[tot_sbt] ; 
+    assert( num_prim == num_sbt ); 
 
-    CUDA_CHECK( cudaMemcpy(check, reinterpret_cast<void*>( sbt.hitgroupRecordBase ), sizeof( HitGroup )*tot_sbt, cudaMemcpyDeviceToHost ));
+    check = new HitGroup[num_prim] ; 
+    CUDA_CHECK( cudaMemcpy(check, reinterpret_cast<void*>( sbt.hitgroupRecordBase ), sizeof( HitGroup )*num_prim, cudaMemcpyDeviceToHost ));
     HitGroup* hg = check ; 
-    for(unsigned i=0 ; i < tot_sbt ; i++)
+    for(unsigned i=0 ; i < num_prim ; i++)
     {
-        //check_prim_data( hg->data ); 
+        unsigned globalPrimIdx = i ; 
+        const Prim* prim = geo->getPrim(globalPrimIdx);         
+
+        dumpPrimData( hg->data ); 
+        checkPrimData( hg->data, prim ); 
+
         hg++ ; 
     }
+
+    delete [] check ; 
 }
-
-
 

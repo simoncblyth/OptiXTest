@@ -180,6 +180,8 @@ float Geo::getTopExtent() const  { return top_extent ;  }
 
 
 unsigned        Geo::getNumSolid() const {                        return foundry->getNumSolid() ;      }
+unsigned        Geo::getNumPrim() const {                         return foundry->getNumPrim() ;      }
+
 const Solid*    Geo::getSolid(         unsigned solidIdx) const { return foundry->getSolid(solidIdx);  }
 PrimSpec        Geo::getPrimSpec(      unsigned solidIdx) const { return foundry->getPrimSpec(solidIdx);  }
 const Prim*     Geo::getPrim(          unsigned primIdx) const  { return foundry->getPrim(primIdx);  }

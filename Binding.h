@@ -12,10 +12,12 @@ struct MissData
     float r, g, b;
 };
 
-struct HitGroupData   // hmm this is now effectively Prim 
+struct HitGroupData   // effectively Prim 
 {
     int numNode ;   
     int nodeOffset ; 
+    //int tranOffset ; 
+    //int planOffset ; 
 };
 
 

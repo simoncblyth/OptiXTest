@@ -1,7 +1,8 @@
 #pragma once
 
-#include <optix.h>
 #include <vector>
+#include <optix.h>
+
 #include "Binding.h"
 #include "GAS.h"
 #include "IAS.h"
@@ -16,6 +17,7 @@ Aim to minimize geometry specifics in here ...
 **/
 struct PIP ; 
 struct Geo ; 
+struct Prim ; 
 
 struct SBT 
 {
@@ -55,8 +57,11 @@ struct SBT
     void createMiss();  
     void updateMiss();  
 
-    void createGAS(const Geo* geo);
     void createIAS(const Geo* geo);
+    void createGAS(const Geo* geo);
+    void setPrimData( HitGroupData& data, const Prim* prim);
+    void dumpPrimData( const HitGroupData& data ) const ;
+    void checkPrimData( HitGroupData& data, const Prim* prim);
 
     const GAS& getGAS(unsigned gas_idx) const ;
     const IAS& getIAS(unsigned ias_idx) const ;
@@ -68,9 +73,6 @@ struct SBT
     void createHitgroup(const Geo* geo);
 
     void checkHitgroup(const Geo* geo); 
-
-    //void check_prim_data( const HitGroupData& data ) const ;
-    //void upload_prim_data( HitGroupData& data, const Shape* sh, unsigned prim_idx );
 
 };
 

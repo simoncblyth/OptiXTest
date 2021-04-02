@@ -6,7 +6,8 @@
 #include "sutil_vec_math.h"
 #include "Foundry.h"
 
-int main(int argc, char** argv)
+
+void test_layered()
 {
     Foundry fd ;  
 
@@ -23,7 +24,16 @@ int main(int argc, char** argv)
     assert( fd.getSolidIdx(s3) == 3 ); 
 
     fd.write("/tmp", "FoundryTest_" ); 
+}
 
+
+
+int main(int argc, char** argv)
+{
+    //test_layered(); 
+
+    Foundry fd ; 
+    fd.makeDemoSolids(); 
     for(unsigned i = 0 ; i < fd.solid.size() ; i++ )
     {
         unsigned solidIdx = i ; 
@@ -31,6 +41,9 @@ int main(int argc, char** argv)
         PrimSpec ps = fd.getPrimSpec(solidIdx);
         ps.dump(""); 
     }
+
+    std::string bmap = fd.getBashMap(); 
+    std::cout  << bmap << std::endl ; 
 
     return 0 ; 
 }

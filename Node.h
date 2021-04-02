@@ -101,6 +101,8 @@ struct Node
     std::string desc() const ; 
     static void Dump(const Node* n, unsigned ni, const char* label);  
 
+    static const float UNBOUNDED_DEFAULT_EXTENT ; 
+
     static Node Sphere(float radius);
     static Node ZSphere(float radius, float z1, float z2);
     static Node Cone(float r1, float z1, float r2, float z2); 

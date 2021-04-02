@@ -31,6 +31,7 @@ struct Geo
     std::string desc() const ;
 
     unsigned getNumSolid() const ; 
+    unsigned getNumPrim() const ; 
 
     const Solid* getSolid(unsigned solidIdx) const ; 
     PrimSpec getPrimSpec(unsigned solidIdx) const ;

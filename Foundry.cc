@@ -47,6 +47,21 @@ void Foundry::makeDemoSolids()
     dump(); 
 }
 
+std::string Foundry::getBashMap()
+{
+    unsigned num_solids = getNumSolid(); 
+    std::stringstream ss ; 
+    ss << "#Foundry::getBashMap " << std::endl ; 
+    ss << "declare -A map " << std::endl ;  
+    for(unsigned i=0 ; i < num_solids ; i++)
+    {
+        const Solid* so = getSolid(i); 
+        ss << "map[" << i << "]=" << so->label << std::endl ; 
+    }
+    return ss.str(); 
+}
+
+
 void Foundry::dump() const 
 {
     for(unsigned idx=0 ; idx < solid.size() ; idx++) dumpSolid(idx); 
@@ -196,17 +211,17 @@ Solid* Foundry::make(char type)
 Solid* Foundry::make(const char* name)
 {
     Solid* so = nullptr ; 
-    if(     strcmp(name, "sphere") == 0)           so = makeSphere(name) ;
-    else if(strcmp(name, "zsphere") == 0)          so = makeZSphere(name) ;
-    else if(strcmp(name, "cone") == 0)             so = makeCone(name) ;
-    else if(strcmp(name, "hyperboloid") == 0)      so = makeHyperboloid(name) ;
-    else if(strcmp(name, "box3") == 0)             so = makeBox3(name) ;
-    else if(strcmp(name, "plane") == 0)            so = makePlane(name) ;
-    else if(strcmp(name, "slab") == 0)             so = makeSlab(name) ;
-    else if(strcmp(name, "cylinder") == 0)         so = makeCylinder(name) ;
-    else if(strcmp(name, "disc") == 0)             so = makeDisc(name) ;
-    else if(strcmp(name, "convexpolyhedron_cube") == 0) so = makeConvexPolyhedronCube(name) ;
-    else if(strcmp(name, "convexpolyhedron_tetrahedron") == 0) so = makeConvexPolyhedronTetrahedron(name) ;
+    if(     strcmp(name, "sphe") == 0) so = makeSphere(name) ;
+    else if(strcmp(name, "zsph") == 0) so = makeZSphere(name) ;
+    else if(strcmp(name, "cone") == 0) so = makeCone(name) ;
+    else if(strcmp(name, "hype") == 0) so = makeHyperboloid(name) ;
+    else if(strcmp(name, "box3") == 0) so = makeBox3(name) ;
+    else if(strcmp(name, "plan") == 0) so = makePlane(name) ;
+    else if(strcmp(name, "slab") == 0) so = makeSlab(name) ;
+    else if(strcmp(name, "cyli") == 0) so = makeCylinder(name) ;
+    else if(strcmp(name, "disc") == 0) so = makeDisc(name) ;
+    else if(strcmp(name, "vcub") == 0) so = makeConvexPolyhedronCube(name) ;
+    else if(strcmp(name, "vtet") == 0) so = makeConvexPolyhedronTetrahedron(name) ;
     assert( so ); 
     return so ;  
 }
@@ -223,8 +238,9 @@ Node* Foundry::addNode(Node nd, const std::vector<float4>* pl )
     unsigned num_planes = pl ? pl->size() : 0 ; 
     if(num_planes > 0)
     {
-        nd.setPlaneNum(num_planes);    
         nd.setTypecode(CSG_CONVEXPOLYHEDRON) ; 
+        nd.setPlaneIdx(plan.size());    
+        nd.setPlaneNum(num_planes);    
         for(unsigned i=0 ; i < num_planes ; i++) addPlan((*pl)[i]);  
     }
 
@@ -232,6 +248,14 @@ Node* Foundry::addNode(Node nd, const std::vector<float4>* pl )
     assert( idx < imax ); 
     node.push_back(nd); 
     return node.data() + idx ; 
+}
+
+float4* Foundry::addPlan(const float4& pl )
+{
+    unsigned idx = plan.size(); 
+    assert( idx < imax ); 
+    plan.push_back(pl); 
+    return plan.data() + idx ; 
 }
 
 Node* Foundry::addNodes(const std::vector<Node>& nds )
@@ -287,14 +311,6 @@ Solid* Foundry::addSolid(unsigned num_prim, const char* label )
 
     solid.push_back(so); 
     return solid.data() + idx  ; 
-}
-
-float4* Foundry::addPlan(const float4& pl )
-{
-    unsigned idx = plan.size(); 
-    assert( idx < imax ); 
-    plan.push_back(pl); 
-    return plan.data() + idx ; 
 }
 
 
@@ -363,71 +379,68 @@ Solid* Foundry::makeSolid11(const char* label, Node nd, const std::vector<float4
     Node* n = addNode(nd, pl ); 
     p->setAABB( n->AABB() ); 
 
-
     float extent = p->extent(); 
     if(extent == 0.f )
-    {
-        std::cout << "Foundry::makeSolid11 WARNING got zero extent, set to 100.f " << std::endl ; 
-        extent = 100.f ; 
-    }
-    so->extent = extent  ; 
-    std::cout << "Foundry::makeSolid11 so->extent " << extent << std::endl ; 
+        std::cout << "Foundry::makeSolid11 : FATAL : " << label << " : got zero extent " << std::endl ; 
+    assert( extent > 0.f ); 
 
+    so->extent = extent  ; 
+    std::cout << "Foundry::makeSolid11 so.label " << so->label << " so.extent " << so->extent << std::endl ; 
     return so ; 
 }
 
 Solid* Foundry::makeSphere(const char* label, float radius)
 {
     Node nd = Node::Sphere(radius); 
-    return makeSolid11(label, nd, nullptr ); 
+    return makeSolid11(label, nd ); 
 }
 
 Solid* Foundry::makeZSphere(const char* label, float radius, float z1, float z2)
 {
     Node nd = Node::ZSphere(radius, z1, z2); 
-    return makeSolid11(label, nd, nullptr ); 
+    return makeSolid11(label, nd ); 
 }
 
 Solid* Foundry::makeCone(const char* label, float r1, float z1, float r2, float z2)
 {
     Node nd = Node::Cone(r1, z1, r2, z2 ); 
-    return makeSolid11(label, nd, nullptr ); 
+    return makeSolid11(label, nd ); 
 }
 
 Solid* Foundry::makeHyperboloid(const char* label, float r0, float zf, float z1, float z2)
 {
     Node nd = Node::Hyperboloid( r0, zf, z1, z2 ); 
-    return makeSolid11(label, nd, nullptr ); 
+    return makeSolid11(label, nd ); 
 }
 
 Solid* Foundry::makeBox3(const char* label, float fx, float fy, float fz )
 {
     Node nd = Node::Box3(fx, fy, fz); 
-    return makeSolid11(label, nd, nullptr ); 
+    return makeSolid11(label, nd ); 
 }
 
 Solid* Foundry::makePlane(const char* label, float nx, float ny, float nz, float d)
 {
     Node nd = Node::Plane(nx, ny, nz, d ); 
-    return makeSolid11(label, nd, nullptr ); 
+    return makeSolid11(label, nd ); 
 }
 
 Solid* Foundry::makeSlab(const char* label, float nx, float ny, float nz, float d1, float d2 )
 {
     Node nd = Node::Slab( nx, ny, nz, d1, d1 ); 
-    return makeSolid11(label, nd, nullptr ); 
+    return makeSolid11(label, nd ); 
 }
 
 Solid* Foundry::makeCylinder(const char* label, float px, float py, float radius, float z1, float z2)
 {
     Node nd = Node::Cylinder( px, py, radius, z1, z2 ); 
-    return makeSolid11(label, nd, nullptr ); 
+    return makeSolid11(label, nd ); 
 }
 
 Solid* Foundry::makeDisc(const char* label, float px, float py, float ir, float r, float z1, float z2)
 {
     Node nd = Node::Disc(px, py, ir, r, z1, z2 ); 
-    return makeSolid11(label, nd, nullptr ); 
+    return makeSolid11(label, nd ); 
 }
 
 

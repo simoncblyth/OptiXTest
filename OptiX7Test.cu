@@ -146,14 +146,18 @@ extern "C" __global__ void __miss__ms()
 extern "C" __global__ void __intersection__is()
 {
     HitGroupData* hg  = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
+    const Prim* prim = NULL ; // "hg" is effectively Prim  
 
     //int numNode = hg->numNode ; 
     int nodeOffset = hg->nodeOffset ; 
+    //int planOffset = hg->planOffset ; 
 
-    const Prim* prim = NULL ;  
+    //int tranOffset = hg->tranOffset ; 
+    // hmm nodes that reference planes could use global planIdx and numPlan  which would avoid this planOffset 
+    // hmm nodes that reference transforms could use global tranIdx which would avoid the tranOffset 
+
     const Node* node = params.node + nodeOffset ;  
-    const float4* plan = params.plan + 0 ;    // hmm global planOffsets simplify 
-
+    const float4* plan = params.plan ;  // + planOffset ;
 
     const float3 ray_origin = optixGetObjectRayOrigin();
     const float3 ray_direction = optixGetObjectRayDirection();

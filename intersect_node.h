@@ -169,7 +169,7 @@ bool intersect_node_zsphere(float4& isect, const quad& q0, const quad& q1, const
 
 
 INTERSECT_FUNC
-bool intersect_node_convexpolyhedron( float4& isect, const Prim* prim, const Node* node, const float4* plan, const float t_min , const float3& ray_origin, const float3& ray_direction )
+bool intersect_node_convexpolyhedron( float4& isect, const Node* node, const float4* plan, const float t_min , const float3& ray_origin, const float3& ray_direction )
 {
     float t0 = -CUDART_INF_F ; 
     float t1 =  CUDART_INF_F ; 
@@ -177,11 +177,12 @@ bool intersect_node_convexpolyhedron( float4& isect, const Prim* prim, const Nod
     float3 t0_normal = make_float3(0.f);
     float3 t1_normal = make_float3(0.f);
 
-    unsigned num_plan = node->planeNum() ; 
+    unsigned planeIdx = node->planeIdx() ; 
+    unsigned planeNum = node->planeNum() ; 
 
-    for(unsigned i=0 ; i < num_plan ; i++) 
+    for(unsigned i=0 ; i < planeNum ; i++) 
     {    
-        float4 plane = plan[i];    // TODO: may need offsets from prim here 
+        const float4& plane = plan[planeIdx+i];   
         float3 n = make_float3(plane);
         float dplane = plane.w ;
 
@@ -999,7 +1000,7 @@ bool intersect_node_disc(float4& isect, const quad& q0, const quad& q1, const fl
 
 
 INTERSECT_FUNC
-bool intersect_node( float4& isect, const Prim* prim, const Node* node, const float4* plan, const float t_min , const float3& ray_origin, const float3& ray_direction )
+bool intersect_node( float4& isect, const Prim*, const Node* node, const float4* plan, const float t_min , const float3& ray_origin, const float3& ray_direction )
 {
     const unsigned typecode = node->typecode() ;  
     bool valid_isect = false ; 
@@ -1007,7 +1008,7 @@ bool intersect_node( float4& isect, const Prim* prim, const Node* node, const fl
     {
         case CSG_SPHERE:           valid_isect = intersect_node_sphere(           isect, node->q0,               t_min, ray_origin, ray_direction ) ; break ; 
         case CSG_ZSPHERE:          valid_isect = intersect_node_zsphere(          isect, node->q0, node->q1,     t_min, ray_origin, ray_direction ) ; break ; 
-        case CSG_CONVEXPOLYHEDRON: valid_isect = intersect_node_convexpolyhedron( isect, prim, node, plan,       t_min, ray_origin, ray_direction ) ; break ;
+        case CSG_CONVEXPOLYHEDRON: valid_isect = intersect_node_convexpolyhedron( isect, node, plan,             t_min, ray_origin, ray_direction ) ; break ;
         case CSG_CONE:             valid_isect = intersect_node_cone(             isect, node->q0,               t_min, ray_origin, ray_direction ) ; break ;
         case CSG_HYPERBOLOID:      valid_isect = intersect_node_hyperboloid(      isect, node->q0,               t_min, ray_origin, ray_direction ) ; break ;
         case CSG_BOX3:             valid_isect = intersect_node_box3(             isect, node->q0,               t_min, ray_origin, ray_direction ) ; break ;
