@@ -168,13 +168,9 @@ void SBT::createGAS(const Geo* geo)
     unsigned num_solid = geo->getNumSolid(); 
     for(unsigned solidIdx=0 ; solidIdx < num_solid ; solidIdx++)
     {
-        const Solid* so = geo->getSolid(solidIdx); 
         PrimSpec ps = geo->getPrimSpec(solidIdx); 
-
         GAS gas = {} ;  
-        gas.so = so ; 
         GAS_Builder::Build(gas, ps);
-
         vgas.push_back(gas);  
     }
 }
@@ -251,10 +247,8 @@ AS* SBT::getAS(const char* spec) const
 SBT::getOffset
 ----------------
 
-The layer_idx_ within the shape_idx_ composite shape 
-could also be called prim_idx_.
-
-
+The layer_idx_ within the shape_idx_ composite shape.
+NB layer_idx is local to the solid. 
 
 **/
 
@@ -381,11 +375,9 @@ void SBT::createHitgroup(const Geo* geo)
         unsigned solid_idx = i ;    
         const GAS& gas = vgas[i] ;    
         unsigned num_bi = gas.bis.size(); 
-        if(is_11N) assert( num_bi == 1 ); // 11N mode every GAS has only one BI with multiple aabb 
+        if(is_11N) assert( num_bi == 1 ); // 11N mode every GAS has only one BI with aabb for each Prim 
 
         const Solid* so = geo->getSolid(solid_idx) ;
-        assert( gas.so == so );   
-
         int numPrim = so->numPrim ; 
         int primOffset = so->primOffset ; 
 
@@ -438,8 +430,6 @@ void SBT::createHitgroup(const Geo* geo)
 
                 hg->data.numNode = numNode ; 
                 hg->data.nodeOffset = nodeOffset ; 
-  
-                //upload_prim_data( hg->data, sh, prim_idx );                 
 
                 hg++ ; 
                 sbt_offset++ ; 

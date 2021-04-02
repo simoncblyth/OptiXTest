@@ -45,17 +45,21 @@ void Geo::init()
     {
         init_sphere_containing_grid_of_spheres(tminf, tmaxf, layers );
     }
-    else if(strcmp(geometry.c_str(), "sphere") == 0 )
+    else if(strcmp(geometry.c_str(), "parade") == 0)
     {
-        init_sphere(tminf, tmaxf, layers);
+        init_parade(tminf, tmaxf);
     }
-    else if(strcmp(geometry.c_str(), "zsphere") == 0 )
+    else if(strcmp(geometry.c_str(), "layered_sphere") == 0 )
     {
-        init_zsphere(tminf, tmaxf, layers);
+        init_layered("sphere", tminf, tmaxf, layers);
+    }
+    else if(strcmp(geometry.c_str(), "layered_zsphere") == 0 )
+    {
+        init_layered("zsphere", tminf, tmaxf, layers);
     }
     else
     {
-        assert(0); 
+        init(geometry.c_str(), tminf, tmaxf); 
     }
 
     float top_extent = getTopExtent(); 
@@ -101,8 +105,8 @@ void Geo::init_sphere_containing_grid_of_spheres(float& tminf, float& tmaxf, uns
     std::cout << "Geo::init_sphere_containing_grid_of_spheres : layers " << layers << std::endl ; 
 
     unsigned ias_idx = grids.size(); 
-    unsigned num_shape = 3 ; 
-    Grid* grid = new Grid(ias_idx, num_shape) ; 
+    unsigned num_solid = 3 ; 
+    Grid* grid = new Grid(ias_idx, num_solid) ; 
     addGrid(grid); 
 
     float big_radius = float(grid->extent())*sqrtf(3.f) ;
@@ -110,41 +114,57 @@ void Geo::init_sphere_containing_grid_of_spheres(float& tminf, float& tmaxf, uns
 
     foundry->makeLayered("sphere", 0.7f, layers ); 
     foundry->makeLayered("sphere", 1.0f, layers ); 
-    foundry->makeLayered("sphere", big_radius, 1 ); 
+    Solid* so = foundry->makeLayered("sphere", big_radius, 1 ); 
 
     top = strdup("i0") ; 
 
-    setTopExtent(big_radius); 
+    setTopExtent(so->extent); 
 
     tminf = 0.75f ; 
     tmaxf = 10000.f ; 
 }
 
-void Geo::init_sphere(float& tminf, float& tmaxf, unsigned layers)
+void Geo::init_parade(float& tminf, float& tmaxf )
 {
-    std::cout << "Geo::init_sphere" << std::endl ; 
+    foundry->makeDemoSolids();  
+    unsigned num_solid = foundry->getNumSolid() ; 
 
-    foundry->makeLayered("sphere", 100.f, layers ); 
+    unsigned ias_idx = grids.size(); 
+    Grid* grid = new Grid(ias_idx, num_solid) ; 
+    addGrid(grid); 
 
-    setTopExtent(100.f); 
+    top = strdup("i0") ; 
+    setTopExtent(grid->extent()); 
+
+    tminf = 0.75f ;   
+    tmaxf = 10000.f ; 
+}
+
+
+void Geo::init_layered(const char* name, float& tminf, float& tmaxf, unsigned layers)
+{
+    Solid* so = foundry->makeLayered(name, 100.f, layers ); 
+    std::cout << "Geo::init_layered" << name << " so.extent " << so->extent << std::endl ; 
+    setTopExtent(so->extent); 
     top = strdup("g0") ; 
 
     tminf = 1.60f ;   //  hmm depends on viewpoint, aiming to cut into the sphere with the tmin
     tmaxf = 10000.f ; 
 }
 
-void Geo::init_zsphere(float& tminf, float& tmaxf, unsigned layers)
+void Geo::init(const char* name, float& tminf, float& tmaxf )
 {
-    std::cout << "Geo::init_zsphere" << std::endl ; 
-
-    foundry->makeLayered("zsphere", 100.f, layers ); 
-
-    setTopExtent(100.f); 
+    Solid* so = foundry->make(name) ; 
+    std::cout << "Geo::init" << name << " so.extent " << so->extent << std::endl ; 
+    setTopExtent(so->extent); 
     top = strdup("g0") ; 
 
     tminf = 1.60f ;   //  hmm depends on viewpoint, aiming to cut into the sphere with the tmin
     tmaxf = 10000.f ; 
+
 }
+
+
 
 
 std::string Geo::desc() const

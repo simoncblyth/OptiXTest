@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <iostream>
 
-void Params::setView(const glm::vec3& eye_, const glm::vec3& U_, const glm::vec3& V_, const glm::vec3& W_, float tmin_, float tmax_, unsigned cameratype )
+void Params::setView(const glm::vec3& eye_, const glm::vec3& U_, const glm::vec3& V_, const glm::vec3& W_, float tmin_, float tmax_, unsigned cameratype_ )
 {
     eye.x = eye_.x ;
     eye.y = eye_.y ;
@@ -24,11 +24,11 @@ void Params::setView(const glm::vec3& eye_, const glm::vec3& U_, const glm::vec3
 
     tmin = tmin_ ; 
     tmax = tmax_ ; 
-    cameratype = cameratype ; 
+    cameratype = cameratype_ ; 
 
     std::cout << "Params::setView"
-              << " tmin " << tmin_  
-              << " tmax " << tmax_
+              << " tmin " << tmin  
+              << " tmax " << tmax
               << " cameratype " << cameratype
               << std::endl 
               ;  

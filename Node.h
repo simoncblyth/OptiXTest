@@ -72,10 +72,19 @@ struct Node
 
     NODE_METHOD void setParam( float x , float y , float z , float w , float z1, float z2 ){ q0.f.x = x  ; q0.f.y = y  ; q0.f.z = z  ; q0.f.w = w  ; q1.f.x = z1 ; q1.f.y = z2 ;  }
     NODE_METHOD void setAABB(  float x0, float y0, float z0, float x1, float y1, float z1){  q2.f.x = x0 ; q2.f.y = y0 ; q2.f.z = z0 ; q2.f.w = x1 ; q3.f.x = y1 ; q3.f.y = z1 ; }  
+    NODE_METHOD void setAABB(  float e ){                                                    q2.f.x = -e ; q2.f.y = -e ; q2.f.z = -e ; q2.f.w =  e ; q3.f.x =  e ; q3.f.y =  e ; }  
 
     NODE_METHOD const float* AABB() const {  return &q2.f.x ; }
     NODE_METHOD const float3 mn() const {    return make_float3(q2.f.x, q2.f.y, q2.f.z) ; }
     NODE_METHOD const float3 mx() const {    return make_float3(q2.f.w, q3.f.x, q3.f.y) ; }
+    NODE_METHOD float extent() const 
+    {
+        float3 d = make_float3( q2.f.w - q2.f.x, q3.f.x - q2.f.y, q3.f.y - q2.f.z ); 
+        return fmaxf(fmaxf(d.x, d.y), d.z) /2.f ; 
+    }
+
+
+
 
 
     NODE_METHOD unsigned index()     const {      return q1.u.w ; }  //  

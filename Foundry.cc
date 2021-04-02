@@ -353,16 +353,25 @@ Foundry::makeSolid11 makes 1-Prim with 1-Node
 ------------------------------------------------
 **/
 
-Solid* Foundry::makeSolid11(float extent, const char* label, Node nd, const std::vector<float4>* pl  ) 
+Solid* Foundry::makeSolid11(const char* label, Node nd, const std::vector<float4>* pl  ) 
 {
     unsigned numPrim = 1 ; 
     Solid* so = addSolid(numPrim, label);
-    so->extent = extent ;  
 
     unsigned numNode = 1 ; 
     Prim* p = addPrim(numNode); 
     Node* n = addNode(nd, pl ); 
     p->setAABB( n->AABB() ); 
+
+
+    float extent = p->extent(); 
+    if(extent == 0.f )
+    {
+        std::cout << "Foundry::makeSolid11 WARNING got zero extent, set to 100.f " << std::endl ; 
+        extent = 100.f ; 
+    }
+    so->extent = extent  ; 
+    std::cout << "Foundry::makeSolid11 so->extent " << extent << std::endl ; 
 
     return so ; 
 }
@@ -370,69 +379,56 @@ Solid* Foundry::makeSolid11(float extent, const char* label, Node nd, const std:
 Solid* Foundry::makeSphere(const char* label, float radius)
 {
     Node nd = Node::Sphere(radius); 
-    float extent = radius ;  // TODO: get from AABB
-    return makeSolid11(extent, label, nd, nullptr ); 
+    return makeSolid11(label, nd, nullptr ); 
 }
 
 Solid* Foundry::makeZSphere(const char* label, float radius, float z1, float z2)
 {
     Node nd = Node::ZSphere(radius, z1, z2); 
-    float extent = radius ;  // TODO: get from AABB
-    return makeSolid11(extent, label, nd, nullptr ); 
+    return makeSolid11(label, nd, nullptr ); 
 }
 
 Solid* Foundry::makeCone(const char* label, float r1, float z1, float r2, float z2)
 {
-    float extent = 500.f ;  // guess 
     Node nd = Node::Cone(r1, z1, r2, z2 ); 
-    return makeSolid11(extent, label, nd, nullptr ); 
+    return makeSolid11(label, nd, nullptr ); 
 }
 
 Solid* Foundry::makeHyperboloid(const char* label, float r0, float zf, float z1, float z2)
 {
-    float extent = r0*sqrt(2.) ;  // guess  TODO: get from AABB
     Node nd = Node::Hyperboloid( r0, zf, z1, z2 ); 
-    return makeSolid11(extent, label, nd, nullptr ); 
+    return makeSolid11(label, nd, nullptr ); 
 }
 
 Solid* Foundry::makeBox3(const char* label, float fx, float fy, float fz )
 {
-    float extent = 150.f ; 
     Node nd = Node::Box3(fx, fy, fz); 
-    return makeSolid11(extent, label, nd, nullptr ); 
+    return makeSolid11(label, nd, nullptr ); 
 }
 
 Solid* Foundry::makePlane(const char* label, float nx, float ny, float nz, float d)
 {
-    float extent = 150.f ;    // its unbounded 
     Node nd = Node::Plane(nx, ny, nz, d ); 
-    return makeSolid11(extent, label, nd, nullptr ); 
+    return makeSolid11(label, nd, nullptr ); 
 }
 
 Solid* Foundry::makeSlab(const char* label, float nx, float ny, float nz, float d1, float d2 )
 {
-    float extent = 150.f ;   // hmm: its unbounded 
     Node nd = Node::Slab( nx, ny, nz, d1, d1 ); 
-    return makeSolid11(extent, label, nd, nullptr ); 
+    return makeSolid11(label, nd, nullptr ); 
 }
 
 Solid* Foundry::makeCylinder(const char* label, float px, float py, float radius, float z1, float z2)
 {
-    float extent = 100.f ; 
     Node nd = Node::Cylinder( px, py, radius, z1, z2 ); 
-    return makeSolid11(extent, label, nd, nullptr ); 
+    return makeSolid11(label, nd, nullptr ); 
 }
 
 Solid* Foundry::makeDisc(const char* label, float px, float py, float ir, float r, float z1, float z2)
 {
     Node nd = Node::Disc(px, py, ir, r, z1, z2 ); 
-    float extent = 100.f ; 
-    return makeSolid11(extent, label, nd, nullptr ); 
+    return makeSolid11(label, nd, nullptr ); 
 }
-
-
-
-
 
 
 float4 Foundry::TriPlane( const std::vector<float3>& v, unsigned i, unsigned j, unsigned k )  // static 
@@ -449,11 +445,11 @@ float4 Foundry::TriPlane( const std::vector<float3>& v, unsigned i, unsigned j, 
     return plane ;  
 }
 
-Solid* Foundry::makeConvexPolyhedronCube(const char* label)
+Solid* Foundry::makeConvexPolyhedronCube(const char* label, float extent)
 {
-    float hx = 10.f ; 
-    float hy = 20.f ; 
-    float hz = 30.f ; 
+    float hx = extent ; 
+    float hy = extent/2.f ; 
+    float hz = extent/3.f ; 
 
     std::vector<float4> pl ; 
     pl.push_back( make_float4(  1.f,  0.f,  0.f, hx ) ); 
@@ -463,9 +459,9 @@ Solid* Foundry::makeConvexPolyhedronCube(const char* label)
     pl.push_back( make_float4(  0.f,  0.f,  1.f, hz ) ); 
     pl.push_back( make_float4(  0.f,  0.f, -1.f, hz ) );
 
-    float extent = 30.f ;  
     Node nd = {} ;
-    return makeSolid11(extent, label, nd, &pl ); 
+    nd.setAABB(-hx, -hy, -hz, hx, hy, hz); 
+    return makeSolid11(label, nd, &pl ); 
 }
 
 
@@ -500,14 +496,12 @@ Solid* Foundry::makeConvexPolyhedronCube(const char* label)
          | /
          |/
          +---> x
-
 */
 
-
-Solid* Foundry::makeConvexPolyhedronTetrahedron(const char* label)
+Solid* Foundry::makeConvexPolyhedronTetrahedron(const char* label, float extent)
 {
-    float s = 100.f*sqrt(3) ; 
-    float extent = s ; 
+    //extent = 100.f*sqrt(3); 
+    float s = extent ; 
 
     std::vector<float3> vtx ; 
     vtx.push_back(make_float3( s, s, s));  
@@ -524,7 +518,8 @@ Solid* Foundry::makeConvexPolyhedronTetrahedron(const char* label)
     //for(unsigned i=0 ; i < pl.size() ; i++) std::cout << " pl (" << pl[i].x << "," << pl[i].y << "," << pl[i].z << "," << pl[i].w << ") " << std::endl ;
  
     Node nd = {} ;
-    return makeSolid11(extent, label, nd, &pl ); 
+    nd.setAABB(extent); 
+    return makeSolid11(label, nd, &pl ); 
 }
 
 

@@ -59,7 +59,7 @@ struct Foundry
     Solid* make(const char* name); 
     Solid* makeLayered(const char* label, float outer_radius, unsigned layers ) ;
 
-    Solid* makeSolid11(float extent, const char* label, Node nd, const std::vector<float4>* pl  );
+    Solid* makeSolid11(const char* label, Node nd, const std::vector<float4>* pl  );
     Solid* makeSphere(     const char* label="sphere",      float r=100.f ); 
     Solid* makeZSphere(    const char* label="zsphere",     float r=100.f,  float z1=-50.f , float z2=50.f ); 
     Solid* makeCone(       const char* label="cone",        float r1=300.f, float z1=-300.f, float r2=100.f,   float z2=-100.f ); 
@@ -71,8 +71,8 @@ struct Foundry
     Solid* makeDisc(       const char* label="disc",        float px=0.f,   float py=0.f,    float ir=50.f,    float r=100.f,  float z1=-2.f, float z2=2.f);
 
     static float4 TriPlane( const std::vector<float3>& v, unsigned i, unsigned j, unsigned k );
-    Solid* makeConvexPolyhedronCube(const char* label="convexpolyhedron_cube");
-    Solid* makeConvexPolyhedronTetrahedron(const char* label="convexpolyhedron_tetrahedron");
+    Solid* makeConvexPolyhedronCube(const char* label="convexpolyhedron_cube", float extent=100.f );
+    Solid* makeConvexPolyhedronTetrahedron(const char* label="convexpolyhedron_tetrahedron", float extent=100.f);
 
     void write(const char* base, const char* rel) const ;
     void upload();

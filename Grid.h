@@ -7,14 +7,17 @@
 struct Grid
 { 
     unsigned               ias_idx ; 
-    unsigned               num_shape ; 
+    unsigned               num_solid ; 
+    float                  gridscale ; 
+
     std::array<int,9>      grid ; 
-    std::vector<unsigned>  shape_modulo ;  
-    std::vector<unsigned>  shape_single ;  
+    std::vector<unsigned>  solid_modulo ;  
+    std::vector<unsigned>  solid_single ;  
     std::vector<glm::mat4> trs ;  
 
-    Grid(unsigned ias_idx, unsigned num_shape);
-    int extent() const ;
+    Grid(unsigned ias_idx, unsigned num_solid);
+
+    float extent() const ;
     std::string desc() const ;
 
     void init(); 

@@ -27,30 +27,33 @@ Currently a 3D grid of translate transforms with all available GAS repeated modu
 **/
 
 
-Grid::Grid( unsigned ias_idx_, unsigned num_shape_ )
+Grid::Grid( unsigned ias_idx_, unsigned num_solid_ )
     :
     ias_idx(ias_idx_),
-    num_shape(num_shape_)
+    num_solid(num_solid_),
+    gridscale(Util::GetEValue<float>("GRIDSCALE", 1.f))
 {
     std::string gridspec = Util::GetEValue<std::string>("GRIDSPEC","-10:11,2,-10:11:2,-10:11,2") ; 
-    Util::ParseGridSpec(grid, gridspec.c_str());     
-    Util::GetEVector(shape_modulo, "MODULO", "0,1" ); 
-    Util::GetEVector(shape_single, "SINGLE", "2" ); 
+    Util::ParseGridSpec(grid, gridspec.c_str());      // string parsed into array of 9 ints 
+    Util::GetEVector(solid_modulo, "GRIDMODULO", "0,1" ); 
+    Util::GetEVector(solid_single, "GRIDSINGLE", "2" ); 
 
     std::cout << "GRIDSPEC " << gridspec << std::endl ; 
-    std::cout << "MODULO " << Util::Present(shape_modulo) << std::endl ; 
-    std::cout << "SINGLE " << Util::Present(shape_single) << std::endl ; 
+    std::cout << "GRIDSCALE " << gridscale << std::endl ; 
+    std::cout << "GRIDMODULO " << Util::Present(solid_modulo) << std::endl ; 
+    std::cout << "GRIDSINGLE " << Util::Present(solid_single) << std::endl ; 
 
     init(); 
 }
 
-int Grid::extent() const 
+float Grid::extent() const 
 {
     int mn(0); 
     int mx(0); 
     Util::GridMinMax(grid, mn, mx); 
-    int grid_extent_ = std::max( std::abs(mn), std::abs(mx) );  // half side
-    return grid_extent_ ; 
+   
+    int iextent = std::max( std::abs(mn), std::abs(mx) );  // half side
+    return gridscale*float(iextent) ; 
 }
 
 std::string Grid::desc() const 
@@ -64,25 +67,25 @@ std::string Grid::desc() const
 
 void Grid::init()
 {
-    unsigned num_shape_modulo = shape_modulo.size() ; 
-    unsigned num_shape_single = shape_single.size() ; 
+    unsigned num_solid_modulo = solid_modulo.size() ; 
+    unsigned num_solid_single = solid_single.size() ; 
 
-    // check the input shape_idx are valid 
-    for(unsigned i=0 ; i < num_shape_modulo ; i++ ) assert(shape_modulo[i] < num_shape) ; 
-    for(unsigned i=0 ; i < num_shape_single ; i++ ) assert(shape_single[i] < num_shape) ; 
+    // check the input solid_idx are valid 
+    for(unsigned i=0 ; i < num_solid_modulo ; i++ ) assert(solid_modulo[i] < num_solid) ; 
+    for(unsigned i=0 ; i < num_solid_single ; i++ ) assert(solid_single[i] < num_solid) ; 
 
     std::cout 
         << "Grid::init"
-        << " num_shape_modulo " << num_shape_modulo
-        << " num_shape_single " << num_shape_single
-        << " num_shape " << num_shape
+        << " num_solid_modulo " << num_solid_modulo
+        << " num_solid_single " << num_solid_single
+        << " num_solid " << num_solid
         << std::endl
         ;
 
-    for(int i=0 ; i < int(num_shape_single) ; i++)
+    for(int i=0 ; i < int(num_solid_single) ; i++)
     {
         unsigned ins_idx = trs.size() ;        // 0-based index within the Grid
-        unsigned gas_idx = shape_single[i] ;   // 0-based shape index
+        unsigned gas_idx = solid_single[i] ;   // 0-based solid index
         unsigned id = InstanceId::Encode( ins_idx, gas_idx ); 
 
         glm::mat4 tr(1.f) ;  // identity transform for the large sphere 
@@ -98,13 +101,13 @@ void Grid::init()
     for(int j=grid[3] ; j < grid[4] ; j+=grid[5] ){
     for(int k=grid[6] ; k < grid[7] ; k+=grid[8] ){
 
-        glm::vec3 tlat(i*1.f,j*1.f,k*1.f) ;  // grid translation 
+        glm::vec3 tlat(i*gridscale,j*gridscale,k*gridscale) ;  // grid translation 
         glm::mat4 tr(1.f) ;
         tr = glm::translate(tr, tlat );
 
         unsigned ins_idx = trs.size() ;     
-        unsigned shape_modulo_idx = ins_idx % num_shape_modulo ; 
-        unsigned gas_idx = shape_modulo[shape_modulo_idx] ; 
+        unsigned solid_modulo_idx = ins_idx % num_solid_modulo ; 
+        unsigned gas_idx = solid_modulo[solid_modulo_idx] ; 
         unsigned id = InstanceId::Encode( ins_idx, gas_idx ); 
 
         tr[0][3] = Sys::unsigned_as_float(id); 
