@@ -4,8 +4,10 @@
 #include <string>
 
 
-#include "Prim.h"
+#include "PrimSpec.h"
+
 struct Solid ; 
+struct Prim ; 
 struct Grid ; 
 struct Foundry ; 
 
@@ -19,9 +21,6 @@ Can Foundry replace Geo ?
 
 struct Geo
 {
-    //static Geo* fGeo ; 
-    //static Geo* Get();  
-
     Geo(Foundry* foundry_);
 
     void init();
@@ -34,7 +33,7 @@ struct Geo
 
     const Solid* getSolid(unsigned solidIdx) const ; 
     PrimSpec getPrimSpec(unsigned solidIdx) const ;
-    PrimSpec getPrimSpecDevice(unsigned solidIdx) const ;
+    const Prim* getPrim(unsigned primIdx) const ; 
 
     unsigned getNumGrid() const ; 
     const Grid*  getGrid(unsigned gridIdx) const ; 
@@ -53,7 +52,6 @@ struct Geo
     Foundry*                  foundry ; 
     std::vector<const Grid*>  grids ; 
     const char*               top ;  
-
 
 };
 

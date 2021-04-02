@@ -77,6 +77,7 @@ int main(int argc, char** argv)
     params.setView(eye, U, V, W, geo.tmin, geo.tmax, cameratype ); 
     params.setSize(width, height, depth); 
 
+    foundry.dump(); 
     foundry.upload();   // uploads nodes, planes, transforms
     params.node = foundry.d_node ; 
     params.plan = foundry.d_plan ; 

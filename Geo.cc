@@ -18,15 +18,11 @@
 #include "Grid.h"
 #include "InstanceId.h"
 
-//Geo* Geo::fGeo = NULL ; 
-//Geo* Geo::Get(){  return fGeo ;  }
-
 Geo::Geo(Foundry* foundry_)
     :
     foundry(foundry_),
     top("i0")
 {
- //   fGeo = this ; 
     init();
 }
 
@@ -124,7 +120,6 @@ void Geo::init_sphere_containing_grid_of_spheres(float& tminf, float& tmaxf, uns
     tmaxf = 10000.f ; 
 }
 
-
 void Geo::init_sphere(float& tminf, float& tmaxf, unsigned layers)
 {
     std::cout << "Geo::init_sphere" << std::endl ; 
@@ -137,7 +132,6 @@ void Geo::init_sphere(float& tminf, float& tmaxf, unsigned layers)
     tminf = 1.60f ;   //  hmm depends on viewpoint, aiming to cut into the sphere with the tmin
     tmaxf = 10000.f ; 
 }
-
 
 void Geo::init_zsphere(float& tminf, float& tmaxf, unsigned layers)
 {
@@ -153,8 +147,6 @@ void Geo::init_zsphere(float& tminf, float& tmaxf, unsigned layers)
 }
 
 
-
-
 std::string Geo::desc() const
 {
     std::stringstream ss ; 
@@ -163,21 +155,14 @@ std::string Geo::desc() const
     return s ; 
 }
 
-
-void Geo::setTopExtent(float top_extent_)
-{
-    top_extent = top_extent_ ; 
-}
-float Geo::getTopExtent() const 
-{
-    return top_extent ; 
-}
+void Geo::setTopExtent(float top_extent_){ top_extent = top_extent_ ;  }
+float Geo::getTopExtent() const  { return top_extent ;  }
 
 
 unsigned        Geo::getNumSolid() const {                        return foundry->getNumSolid() ;      }
 const Solid*    Geo::getSolid(         unsigned solidIdx) const { return foundry->getSolid(solidIdx);  }
-PrimSpec        Geo::getPrimSpecDevice(unsigned solidIdx) const { return foundry->getPrimSpecDevice(solidIdx);  }
 PrimSpec        Geo::getPrimSpec(      unsigned solidIdx) const { return foundry->getPrimSpec(solidIdx);  }
+const Prim*     Geo::getPrim(          unsigned primIdx) const  { return foundry->getPrim(primIdx);  }
 
 
 
@@ -186,13 +171,10 @@ void Geo::addGrid(const Grid* grid)
 {
     grids.push_back(grid); 
 }
-
 unsigned Geo::getNumGrid() const 
 {
     return grids.size() ; 
 }
-
-
 const Grid* Geo::getGrid_(int gridIdx_) const
 {
     unsigned gridIdx = gridIdx_ < 0 ? grids.size() + unsigned(gridIdx_) : unsigned(gridIdx_) ;  

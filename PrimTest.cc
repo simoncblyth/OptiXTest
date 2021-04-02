@@ -42,6 +42,19 @@ void DownloadDump( const PrimSpec& d_ps )
 }
  
 
+void test_AABB()
+{
+    Prim p0 = {} ; 
+    p0.setAABB( 42.42f ); 
+    std::cout << "p0 " << p0.desc() << std::endl ; 
+
+    Prim p1 = {} ;
+    p1.setAABB( p0.AABB() ); 
+    std::cout << "p1 " << p1.desc() << std::endl ; 
+}
+
+
+
 void test_offsets()
 {
      std::cout << "test_offsets " << std::endl ; 
@@ -116,6 +129,8 @@ PrimSpec test_dspec( Prim* d_prim , unsigned num)
      return d_ps ; 
 }
 
+
+
 void test_pointer( const void* d, const char* label )
 {
      std::cout << "test_pointer " << label << std::endl ; 
@@ -131,6 +146,7 @@ void test_pointer( const void* d, const char* label )
 
 int main(int argc, char** argv)
 {
+     test_AABB(); 
      test_offsets(); 
 
      std::vector<Prim> prim ; 

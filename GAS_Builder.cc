@@ -70,6 +70,7 @@ BI GAS_Builder::MakeCustomPrimitivesBI_11N(const PrimSpec& ps)
         << "GAS_Builder::MakeCustomPrimitivesBI_11N"
         << " ps.num_prim " << ps.num_prim
         << " ps.stride_in_bytes " << ps.stride_in_bytes 
+        << " ps.device " << ps.device
         << " stride_in_floats " << stride_in_floats 
         << std::endl
         ; 
@@ -87,6 +88,7 @@ BI GAS_Builder::MakeCustomPrimitivesBI_11N(const PrimSpec& ps)
         std::vector<float> tmp ; 
         ps.gather(tmp); 
         PrimSpec::Dump(tmp); 
+        std::cout << "GAS_Builder::MakeCustomPrimitivesBI_11N : YUCK : RE-UPLOADING bbox/sbtIndexOffset " << std::endl ; 
 
         bi.sbt_index = new unsigned[ps.num_prim];
         for(unsigned i=0 ; i < ps.num_prim ; i++) bi.sbt_index[i] = i ; 
@@ -103,6 +105,9 @@ BI GAS_Builder::MakeCustomPrimitivesBI_11N(const PrimSpec& ps)
         // http://www.cudahandbook.com/2013/08/why-does-cuda-cudeviceptr-use-unsigned-int-instead-of-void/ 
         // CUdeviceptr is typedef to unsigned long long 
         // uintptr_t is an unsigned integer type that is capable of storing a data pointer.
+
+        std::cout << "GAS_Builder::MakeCustomPrimitivesBI_11N using pre-uploaded Prim bbox/sbtIndexOffset " << std::endl ; 
+
         bi.d_aabb = (CUdeviceptr) (uintptr_t) ps.aabb ; 
         bi.d_sbt_index = (CUdeviceptr) (uintptr_t) ps.sbtIndexOffset ; 
     }
@@ -117,10 +122,21 @@ BI GAS_Builder::MakeCustomPrimitivesBI_11N(const PrimSpec& ps)
     buildInputCPA.numSbtRecords = ps.num_prim ;              // number of sbt records available to sbt index offset override. 
     buildInputCPA.sbtIndexOffsetBuffer  = bi.d_sbt_index ;   // Device pointer to per-primitive local sbt index offset buffer, Every entry must be in range [0,numSbtRecords-1]
     buildInputCPA.sbtIndexOffsetSizeInBytes  = sizeof(unsigned);  // Size of type of the sbt index offset. Needs to be 0,     1, 2 or 4    
-    buildInputCPA.sbtIndexOffsetStrideInBytes = sizeof(unsigned); // Stride between the index offsets. If set to zero, the offsets are assumed to be tightly packed.
+    buildInputCPA.sbtIndexOffsetStrideInBytes = ps.stride_in_bytes ; // Stride between the index offsets. If set to zero, the offsets are assumed to be tightly packed.
     buildInputCPA.primitiveIndexOffset = primitiveIndexOffset ;  // Primitive index bias, applied in optixGetPrimitiveIndex()
 
-    std::cout << " buildInputCPA.aabbBuffers[0]  " <<  buildInputCPA.aabbBuffers[0] << std::endl ; 
+    std::cout 
+        << " buildInputCPA.aabbBuffers[0] " 
+        << " " << std::dec << buildInputCPA.aabbBuffers[0] 
+        << " " << std::hex << buildInputCPA.aabbBuffers[0]  << std::dec
+        << std::endl
+        << " buildInputCPA.sbtIndexOffsetBuffer " 
+        << " " << std::dec << buildInputCPA.sbtIndexOffsetBuffer
+        << " " << std::hex << buildInputCPA.sbtIndexOffsetBuffer << std::dec
+        << std::endl
+        << " buildInputCPA.strideInBytes " << buildInputCPA.strideInBytes
+        << " buildInputCPA.sbtIndexOffsetStrideInBytes " << buildInputCPA.sbtIndexOffsetStrideInBytes
+        ; 
        
     return bi ; 
 } 

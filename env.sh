@@ -12,7 +12,8 @@ export PATH=$PREFIX/bin:$PATH
 export BIN=$(which $name)
 
 #tmin=2.0
-tmin=1.0
+tmin=1.5
+#tmin=1.0
 #tmin=0.5
 #tmin=0.1
 
@@ -30,16 +31,9 @@ gridspec=-10:11:2,-10:11:2,-10:11:2
 #gridspec=-40:41:10,-40:41:10,0:1:1
 
 #eye=-0.5,-0.5,0.0
-eye=-0.5,-0.5,0.5
+#eye=-0.5,-0.5,0.5
 #eye=-0.5,-0.5,-0.5
-#eye=-1.0,-1.0,1.0
-
-# when non-zero repeats outer aabb for all layers of compound shape (optix 7 only)
-kludge_outer_aabb=0
-#kludge_outer_aabb=1
-
-#gas_bi_aabb=0  # 1NN : has bbox clipping issue for multi-layer GAS  
-gas_bi_aabb=1  # 11N  
+eye=-1.0,-1.0,0.0
 
 cameratype=0
 
@@ -58,8 +52,8 @@ export EYE=${EYE:-$eye}
 export MODULO=${MODULO:-$modulo}
 export SINGLE=${SINGLE:-$single}
 export LAYERS=${LAYERS:-$layers}
-export KLUDGE_OUTER_AABB=${KLUDGE_OUTER_AABB:-$kludge_outer_aabb}
-export GAS_BI_AABB=${GAS_BI_AABB:-$gas_bi_aabb}
+#export KLUDGE_OUTER_AABB=${KLUDGE_OUTER_AABB:-$kludge_outer_aabb}
+#export GAS_BI_AABB=${GAS_BI_AABB:-$gas_bi_aabb}
 export OUTDIR=$PREFIX/$GEOMETRY/TMIN_${TMIN}
 
 fmt="%-20s : %s \n"

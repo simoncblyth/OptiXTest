@@ -166,18 +166,15 @@ prim extent is used.
 void SBT::createGAS(const Geo* geo)
 {
     unsigned num_solid = geo->getNumSolid(); 
-    for(unsigned i=0 ; i < num_solid ; i++)
+    for(unsigned solidIdx=0 ; solidIdx < num_solid ; solidIdx++)
     {
-        unsigned solidIdx = i ; 
-
-        //PrimSpec ps = geo->getPrimSpecDevice(solidIdx); 
-        //assert( ps.device == true ); 
-
+        const Solid* so = geo->getSolid(solidIdx); 
         PrimSpec ps = geo->getPrimSpec(solidIdx); 
-        assert( ps.device == false ); 
 
         GAS gas = {} ;  
+        gas.so = so ; 
         GAS_Builder::Build(gas, ps);
+
         vgas.push_back(gas);  
     }
 }
@@ -386,7 +383,11 @@ void SBT::createHitgroup(const Geo* geo)
         unsigned num_bi = gas.bis.size(); 
         if(is_11N) assert( num_bi == 1 ); // 11N mode every GAS has only one BI with multiple aabb 
 
-        //const Shape* sh = gas.sh ; 
+        const Solid* so = geo->getSolid(solid_idx) ;
+        assert( gas.so == so );   
+
+        int numPrim = so->numPrim ; 
+        int primOffset = so->primOffset ; 
 
         std::cout << "SBT::createHitgroup gas_idx " << i << " num_bi " << num_bi << std::endl ; 
 
@@ -395,13 +396,22 @@ void SBT::createHitgroup(const Geo* geo)
             const BI& bi = gas.bis[j] ; 
             const OptixBuildInputCustomPrimitiveArray& buildInputCPA = bi.buildInput.aabbArray ;
             unsigned num_rec = buildInputCPA.numSbtRecords ; 
-            if(is_1NN) assert( num_rec == 1 );  // 1NN mode : every BI has one aabb 
+            assert( num_rec == numPrim ) ; 
+
+            if(is_1NN) assert( num_rec == 1 );  // 1NN mode : every BI has one aabb : THIS WAY CHOPS TO SMALLEST BBOX AND IS NO LONGER USED 
 
             for( unsigned k=0 ; k < num_rec ; k++)
             { 
                 unsigned prim_idx = is_1NN ? j : k ;   
                 unsigned check_sbt_offset = getOffset(solid_idx, prim_idx ); 
                 bool expected_sbt_offset = check_sbt_offset == sbt_offset  ;
+
+
+                unsigned globalPrimIdx = primOffset + prim_idx ;   
+                const Prim* prim = geo->getPrim( globalPrimIdx ); 
+
+                int numNode = prim->numNode(); 
+                int nodeOffset = prim->nodeOffset();  
 
                 std::cout 
                     << "SBT::createHitgroup "
@@ -412,6 +422,8 @@ void SBT::createHitgroup(const Geo* geo)
                     << " prim_idx " << prim_idx 
                     << " check_sbt_offset " << check_sbt_offset
                     << " sbt_offset " << sbt_offset
+                    << " numNode " << numNode
+                    << " nodeOffset " << nodeOffset
                     << std::endl 
                     ; 
 
@@ -424,11 +436,10 @@ void SBT::createHitgroup(const Geo* geo)
                       ;
                 assert( expected_sbt_offset ); 
 
-                //upload_prim_data( hg->data, sh, prim_idx );                 
-
-                hg->data.numNode = 1 ; 
-                hg->data.nodeOffset = 0 ; 
+                hg->data.numNode = numNode ; 
+                hg->data.nodeOffset = nodeOffset ; 
   
+                //upload_prim_data( hg->data, sh, prim_idx );                 
 
                 hg++ ; 
                 sbt_offset++ ; 

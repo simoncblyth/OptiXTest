@@ -16,10 +16,10 @@ int main(int argc, char** argv)
 
     std::cout 
         << " InstanceId::ins_bits " << std::dec << InstanceId::ins_bits
-        << " InstanceId::ins_mask " << std::hex << InstanceId::ins_mask 
+        << " InstanceId::ins_mask " << std::hex << InstanceId::ins_mask << std::dec
         << std::endl 
         << " InstanceId::gas_bits " << std::dec << InstanceId::gas_bits
-        << " InstanceId::gas_mask " << std::hex << InstanceId::gas_mask
+        << " InstanceId::gas_mask " << std::hex << InstanceId::gas_mask << std::dec
         << std::endl 
         ;
 
@@ -35,11 +35,11 @@ int main(int argc, char** argv)
        if( count % 1000000 == 0 || !gas_match || !ins_match )
        std::cout 
            << " count "     << std::setw(10) << std::dec << count
-           << " ins_idx "   << std::setw(10) << std::hex << ins_idx 
-           << " ins_idx_ "  << std::setw(10) << std::hex << ins_idx_ 
-           << " gas_idx "   << std::setw(10) << std::hex << gas_idx 
-           << " gas_idx_ "  << std::setw(10) << std::hex << gas_idx_
-           << " id "        << std::setw(10) << std::hex << id
+           << " ins_idx "   << std::setw(10) << std::hex << ins_idx  << std::dec
+           << " ins_idx_ "  << std::setw(10) << std::hex << ins_idx_ << std::dec 
+           << " gas_idx "   << std::setw(10) << std::hex << gas_idx  << std::dec 
+           << " gas_idx_ "  << std::setw(10) << std::hex << gas_idx_ << std::dec 
+           << " id "        << std::setw(10) << std::hex << id       << std::dec
            << std::endl
            ;
         

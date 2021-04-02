@@ -2,6 +2,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cassert>
+#include <cstring>
 
 #include "PrimSpec.h"
 

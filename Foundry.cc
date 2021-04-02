@@ -23,7 +23,7 @@ Foundry::Foundry()
 
 void Foundry::init()
 {
-    // without reserve the vectors may reallocate on any push_back invalidating prior pointers 
+    // without sufficient reserved the vectors may reallocate on any push_back invalidating prior pointers 
     solid.reserve(imax); 
     prim.reserve(imax); 
     node.reserve(imax); 
@@ -68,7 +68,7 @@ void Foundry::dumpSolid(unsigned solidIdx) const
             << std::endl 
             ; 
 
-        for(unsigned nodeIdx=pr->nodeOffset ; nodeIdx < pr->nodeOffset+pr->numNode ; nodeIdx++)
+        for(unsigned nodeIdx=pr->nodeOffset() ; nodeIdx < pr->nodeOffset()+pr->numNode() ; nodeIdx++)
         {
             const Node* nd = node.data() + nodeIdx ; 
             std::cout << nd->desc() << std::endl ; 
@@ -96,19 +96,24 @@ that the strides are irregular.
 
 PrimSpec Foundry::getPrimSpec(unsigned solidIdx) const 
 {
+    PrimSpec ps = d_prim ? getPrimSpecDevice(solidIdx) : getPrimSpecHost(solidIdx) ; 
+    if(ps.device == false) std::cout << "Foundry::getPrimSpec WARNING using host PrimSpec " << std::endl ; 
+    return ps ; 
+}
+PrimSpec Foundry::getPrimSpecHost(unsigned solidIdx) const 
+{
     const Solid* so = solid.data() + solidIdx ; 
     PrimSpec ps = Prim::MakeSpec( prim.data(),  so->primOffset, so->numPrim ); ; 
     ps.device = false ; 
     return ps ; 
 }
-
 PrimSpec Foundry::getPrimSpecDevice(unsigned solidIdx) const 
 {
     assert( d_prim ); 
     const Solid* so = solid.data() + solidIdx ; 
-    PrimSpec psd = Prim::MakeSpec( d_prim,  so->primOffset, so->numPrim ); ; 
-    psd.device = true ; 
-    return psd ; 
+    PrimSpec ps = Prim::MakeSpec( d_prim,  so->primOffset, so->numPrim ); ; 
+    ps.device = true ; 
+    return ps ; 
 }
 
 
@@ -256,11 +261,11 @@ tran or plan needed for a prim.
 Prim* Foundry::addPrim(int num_node)  
 {
     Prim pr = {} ;
-    pr.numNode = num_node ; 
-    pr.nodeOffset = node.size(); 
-    pr.tranOffset = tran.size(); 
-    pr.planOffset = plan.size(); 
-    pr.sbtIndexOffset = 0 ; 
+    pr.setNumNode(num_node) ; 
+    pr.setNodeOffset(node.size()); 
+    pr.setTranOffset(tran.size()); 
+    pr.setPlanOffset(plan.size()); 
+    pr.setSbtIndexOffset(0) ; 
 
     unsigned primIdx = prim.size(); 
     assert( primIdx < imax ); 
@@ -336,9 +341,8 @@ Solid* Foundry::makeLayered(const char* label, float outer_radius, unsigned laye
             assert( 0 && "layered only implemented for sphere and zsphere currently" ); 
         } 
 
-        p->sbtIndexOffset = i ; 
-        p->mn = n->mn(); 
-        p->mx = n->mx(); 
+        p->setSbtIndexOffset(i) ; 
+        p->setAABB( n->AABB() ); 
     }
     return so ; 
 }
@@ -358,8 +362,7 @@ Solid* Foundry::makeSolid11(float extent, const char* label, Node nd, const std:
     unsigned numNode = 1 ; 
     Prim* p = addPrim(numNode); 
     Node* n = addNode(nd, pl ); 
-    p->mn = n->mn(); 
-    p->mx = n->mx(); 
+    p->setAABB( n->AABB() ); 
 
     return so ; 
 }
