@@ -47,9 +47,9 @@ geometry=parade
 #geometry=vtet # 10
 
 
-#gridmodulo=0,1,2,3,4,5,6,7,8,9,10
+gridmodulo=0,1,2,3,4,5,6,7,8,9,10
 #gridmodulo=9,10
-gridmodulo=5,6
+#gridmodulo=5,6
 #gridmodulo=10
 #gridmodulo=2
 #gridsingle=2

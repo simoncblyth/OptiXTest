@@ -19,6 +19,13 @@ except ImportError:
 pass
 
 def plot3d(pos, grid=False):
+    """
+    https://docs.pyvista.org/plotting/plotting.html
+
+    q:close
+    v:isometric camera
+    +/-: increase/decrease point size
+    """
     pl = pv.Plotter()
     pl.add_points(pos, color='#FFFFFF', point_size=2.0 )  
     if grid:
@@ -58,17 +65,18 @@ class ScanTest(object):
 if __name__ == '__main__':
 
 
-    #solid = "sphere"
-    #solid = "zsphere"
+    #solid = "sphe"
+    #solid = "zsph"
     #solid = "cone"
-    #solid = "convexpolyhedron_cube" 
-    #solid = "convexpolyhedron_tetrahedron" 
-    solid = "hyperboloid"
+    #solid = "vcub" 
+    #solid = "vtet" 
+    #solid = "hype"
     #solid = "box3"
-    #solid = "plane"
+    #solid = "plan"
     #solid = "slab"
-    #solid = "cylinder"
+    #solid = "cyli"
     #solid = "disc"
+    solid = "elli"
 
     #scan = "circle"
     scan = "rectangle"

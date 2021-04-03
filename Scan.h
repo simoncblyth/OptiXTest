@@ -14,6 +14,8 @@ struct Scan
     void trace(const float t_min, const float3& ray_origin, const float3& ray_direction );
     void trace(const float t_min, const float3& ray_origin, const std::vector<float3>& dirs );
 
+    void record(bool valid_isect, const float4& isect,  const float3& ray_origin, const float3& ray_direction ) ;
+
     void circle_scan(); 
     void axis_scan(); 
     void rectangle_scan(); 

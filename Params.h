@@ -15,6 +15,7 @@ struct Params
     Node*      node ; 
     float4*    plan ; 
     qat4*      tran ; 
+    qat4*      itra ; 
 
     uchar4*    pixels ;
     float4*    isect ;

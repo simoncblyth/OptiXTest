@@ -1,18 +1,16 @@
-// name=NodeTest ; gcc $name.cc Node.cc -std=c++11 -lstdc++ -o /tmp/$name && /tmp/$name 
+// ./NodeTest.sh 
 
 #include <vector>
 #include <iomanip>
 #include <iostream>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <vector_types.h>
+#include "sutil_vec_math.h"
 #include "Node.h"
 #include "Sys.h"
 
-int main(int argc, char** argv)
+void test_copy()
 {
-   std::cout << argv[0] << std::endl ; 
-
    glm::mat4 m0(1.f); 
    glm::mat4 m1(2.f); 
    glm::mat4 m2(3.f); 
@@ -32,6 +30,30 @@ int main(int argc, char** argv)
 
    Node* n_ = node_.data(); 
    Node::Dump( n_, node_.size(), "NodeTest" );  
+}
+
+
+
+int main(int argc, char** argv)
+{
+   std::cout << argv[0] << std::endl ; 
+
+   //Node nd = Node::Sphere(); 
+
+   Node nd = {} ; 
+   assert( nd.gtransformIdx() == 0u );  
+   assert( nd.complement() == false );  
+
+   unsigned tr = 42u ; 
+   nd.setTransform( tr ); 
+
+   assert( nd.gtransformIdx() == tr ); 
+   assert( nd.complement() == false ); 
+
+   nd.setComplement(true); 
+   assert( nd.gtransformIdx() == tr ); 
+   assert( nd.complement() == true ); 
+
 
    return 0 ; 
 }

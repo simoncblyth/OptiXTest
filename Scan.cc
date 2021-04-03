@@ -1,4 +1,5 @@
 #include "sutil_vec_math.h"
+#include "qat4.h"
 #include "intersect_node.h"
 
 #include "NP.hh"
@@ -14,43 +15,42 @@ Scan::Scan( const char* dir_, const Foundry* foundry_, const Solid* solid_ )
 {
 }
 
+void Scan::record(bool valid_isect, const float4& isect,  const float3& ray_origin, const float3& ray_direction )
+{
+    quad4 rec ;  
+    rec.q0.f = make_float4(ray_origin); 
+    rec.q0.i.w = int(valid_isect) ; 
+
+    rec.q1.f = make_float4(ray_direction); 
+    rec.q2.f = make_float4(0.f); 
+    rec.q3.f = isect ; 
+
+    if(valid_isect)
+    {
+        float t = isect.w ; 
+        float3 pos = ray_origin + t*ray_direction ; 
+        rec.q2.f = make_float4(pos, t ); 
+    }
+    recs.push_back(rec);  
+    //dump(rec); 
+}
+
+
 void Scan::trace(const float t_min, const float3& ray_origin, const float3& ray_direction )
 {
     for(unsigned primIdx=solid->primOffset ; primIdx < solid->primOffset+solid->numPrim ; primIdx++)
     {
-        const Prim* prim = foundry->getPrim(primIdx);   // numNode,nodeOffset,tranOffset,planOffset
-        const float4* plan = foundry->getPlan(prim->planOffset); 
-        const quad4* tran = foundry->getTran(prim->tranOffset); 
-        assert( tran == NULL ); 
+        const Prim* prim = foundry->getPrim(primIdx);  
+        int numNode = prim->numNode(); 
+        int nodeOffset = prim->nodeOffset(); 
+
+        const Node* node = foundry->getNode(0) + nodeOffset ; 
+        const float4* plan = foundry->getPlan(0); 
+        const qat4* itra   = foundry->getItra(0); 
         
-        //std::cout << prim->desc() << std::endl ; 
-
-        for(unsigned nodeIdx=prim->nodeOffset ; nodeIdx < prim->nodeOffset+prim->numNode ; nodeIdx++)
-        {
-            const Node* node = foundry->getNode(nodeIdx); 
-            //std::cout << node->desc() << std::endl ; 
-
-            float4 isect = make_float4( 0.f, 0.f, 0.f, 0.f ) ; 
-            bool valid_isect = intersect_node( isect, prim, node, plan, t_min, ray_origin, ray_direction ); 
-
-            quad4 rec ;  
-            rec.q0.f = make_float4(ray_origin); 
-            rec.q0.i.w = int(valid_isect) ; 
-
-            rec.q1.f = make_float4(ray_direction); 
-            rec.q2.f = make_float4(0.f); 
-            rec.q3.f = isect ; 
-            //rec.q3.f = make_int4( valid_isect, 0, 0, 0);         
-
-            if(valid_isect)
-            {
-                float t = isect.w ; 
-                float3 pos = ray_origin + t*ray_direction ; 
-                rec.q2.f = make_float4(pos, t ); 
-            }
-            recs.push_back(rec);  
-            //dump(rec); 
-        }
+        float4 isect = make_float4( 0.f, 0.f, 0.f, 0.f ) ; 
+        bool valid_isect = intersect_prim(isect, numNode, node, plan, itra, t_min, ray_origin, ray_direction );
+        record(valid_isect, isect, ray_origin, ray_direction );  
     } 
 }
 
@@ -205,7 +205,7 @@ void Scan::save(const char* sub)
     //std::cout << " recs.size " << recs.size() << std::endl ; 
     if(recs.size() == 0 ) return ; 
 
-    std::string name = solid->label ; 
+    std::string name(solid->label,4) ;  // not NULL terminated, so give label size
     name += ".npy" ; 
 
     std::stringstream ss ; 

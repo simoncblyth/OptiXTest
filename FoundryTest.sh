@@ -1,12 +1,22 @@
 #!/bin/bash -l
 
+source ./env.sh 
+
 CUDA_PREFIX=/usr/local/cuda   # just use some CUDA headers, not using GPU 
 
 #opts="-DDEBUG=1"
 opts=""
 
 name=FoundryTest
-gcc -g $name.cc Foundry.cc Solid.cc Prim.cc PrimSpec.cc Node.cc CU.cc -std=c++11 -L${CUDA_PREFIX}/lib -lcudart -lstdc++ $opts -I.  -I${CUDA_PREFIX}/include -o /tmp/$name 
+gcc -g $name.cc Foundry.cc Solid.cc Prim.cc PrimSpec.cc Node.cc CU.cc \
+       -std=c++11 \
+       -I. \
+       -I${CUDA_PREFIX}/include \
+       -I$PREFIX/externals/glm/glm \
+       -L${CUDA_PREFIX}/lib -lcudart \
+       -lstdc++ $opts \
+       -o /tmp/$name 
+
 [ $? -ne 0 ] && echo compile error && exit 1
 
 

@@ -1,6 +1,10 @@
 #include <iostream>
 #include <iomanip>
 
+#include <glm/glm.hpp>
+#include <glm/gtx/string_cast.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "sutil_vec_math.h"
 #include "OpticksCSG.h"
 #include "Solid.h"
@@ -16,7 +20,8 @@ Foundry::Foundry()
     d_prim(nullptr),
     d_node(nullptr),
     d_plan(nullptr),
-    d_tran(nullptr)
+    d_tran(nullptr),
+    d_itra(nullptr)
 {
     init(); 
 }
@@ -29,6 +34,7 @@ void Foundry::init()
     node.reserve(imax); 
     plan.reserve(imax); 
     tran.reserve(imax); 
+    itra.reserve(imax); 
 }
 
 void Foundry::makeDemoSolids()
@@ -137,12 +143,14 @@ unsigned Foundry::getNumPrim() const  { return prim.size();  }
 unsigned Foundry::getNumNode() const  { return node.size(); }
 unsigned Foundry::getNumPlan() const  { return plan.size(); }
 unsigned Foundry::getNumTran() const  { return tran.size(); }
+unsigned Foundry::getNumItra() const  { return itra.size(); }
 
 const Solid*  Foundry::getSolid(unsigned solidIdx) const { return solidIdx < solid.size() ? solid.data() + solidIdx  : nullptr ; } 
 const Prim*   Foundry::getPrim(unsigned primIdx)   const { return primIdx  < prim.size()  ? prim.data()  + primIdx  : nullptr ; } 
 const Node*   Foundry::getNode(unsigned nodeIdx)   const { return nodeIdx  < node.size()  ? node.data()  + nodeIdx  : nullptr ; }  
 const float4* Foundry::getPlan(unsigned planIdx)   const { return planIdx  < plan.size()  ? plan.data()  + planIdx  : nullptr ; }
 const qat4*   Foundry::getTran(unsigned tranIdx)   const { return tranIdx  < tran.size()  ? tran.data()  + tranIdx  : nullptr ; }
+const qat4*   Foundry::getItra(unsigned itraIdx)   const { return itraIdx  < itra.size()  ? itra.data()  + itraIdx  : nullptr ; }
 
 
 const Solid*  Foundry::getSolid_(int solidIdx_) const { 
@@ -183,31 +191,6 @@ unsigned Foundry::getSolidIdx(const Solid* so) const
 
 
 
-
-
-
-
-Solid* Foundry::make(char type)
-{
-    Solid* so = nullptr ; 
-    switch(type)
-    {
-       case 'S':  so = makeSphere()         ; break ;    
-       case 'Z':  so = makeZSphere()        ; break ;    
-       case 'O':  so = makeCone()           ; break ;    
-       case 'H':  so = makeHyperboloid()    ; break ;    
-       case 'B':  so = makeBox3()           ; break ;    
-       case 'P':  so = makePlane()          ; break ;    
-       case 'A':  so = makeSlab()           ; break ;    
-       case 'Y':  so = makeCylinder()       ; break ;    
-       case 'D':  so = makeDisc()                        ; break ;    
-       case 'U':  so = makeConvexPolyhedronCube()        ; break ;    
-       case 'T':  so = makeConvexPolyhedronTetrahedron() ; break ;    
-    }
-    assert( so  ); 
-    return so ; 
-}
-
 Solid* Foundry::make(const char* name)
 {
     Solid* so = nullptr ; 
@@ -222,6 +205,7 @@ Solid* Foundry::make(const char* name)
     else if(strcmp(name, "disc") == 0) so = makeDisc(name) ;
     else if(strcmp(name, "vcub") == 0) so = makeConvexPolyhedronCube(name) ;
     else if(strcmp(name, "vtet") == 0) so = makeConvexPolyhedronTetrahedron(name) ;
+    else if(strcmp(name, "elli") == 0) so = makeEllipsoid(name) ;
     assert( so ); 
     return so ;  
 }
@@ -257,6 +241,23 @@ float4* Foundry::addPlan(const float4& pl )
     plan.push_back(pl); 
     return plan.data() + idx ; 
 }
+
+unsigned Foundry::addTran( const glm::mat4& tra_ )
+{
+    glm::mat4 tra(tra_); 
+    glm::mat4 itr = glm::inverse(tra); 
+    qat4 qtra(glm::value_ptr(tra)); 
+    qat4 qitr(glm::value_ptr(itr)); 
+    unsigned idx = tran.size(); 
+    assert( tran.size() == itra.size()) ; 
+    tran.push_back(qtra); 
+    itra.push_back(qitr); 
+    return idx ;  
+}
+
+
+
+
 
 Node* Foundry::addNodes(const std::vector<Node>& nds )
 {
@@ -296,6 +297,7 @@ Prim* Foundry::addPrim(int num_node)
     prim.push_back(pr); 
     return prim.data() + primIdx ; 
 }
+
 
 Solid* Foundry::addSolid(unsigned num_prim, const char* label )
 {
@@ -394,6 +396,21 @@ Solid* Foundry::makeSphere(const char* label, float radius)
     Node nd = Node::Sphere(radius); 
     return makeSolid11(label, nd ); 
 }
+Solid* Foundry::makeEllipsoid(  const char* label, float rx, float ry, float rz )
+{
+    Node nd = Node::Sphere(rx);
+
+    glm::vec3 sc(1.f, ry/rx, rz/rx ); 
+    glm::mat4 m(1.f); 
+    //m = glm::translate(  m, glm::vec3(tx, ty, tz) );             std::cout << " t " << glm::to_string(m) << std::endl ;  
+    //m = glm::rotate(     m, radians, glm::vec3(ax, ay, az)  );   std::cout << " rt " << glm::to_string(m) << std::endl ;  
+    m = glm::scale(      m, glm::vec3(sc.x, sc.y, sc.z) );         std::cout << " srt " << glm::to_string(m) << std::endl ;
+
+    unsigned idx = 1 + addTran(m);  
+    nd.setTransform(idx); 
+    return makeSolid11(label, nd ); 
+}
+
 
 Solid* Foundry::makeZSphere(const char* label, float radius, float z1, float z2)
 {
@@ -555,6 +572,7 @@ void Foundry::write(const char* base, const char* rel) const
     NP::Write(dir.c_str(), "node.npy",   (float*)node.data(), node.size(), 4, 4 ); 
     NP::Write(dir.c_str(), "plan.npy",   (float*)plan.data(), plan.size(), 4 ); 
     NP::Write(dir.c_str(), "tran.npy",   (float*)tran.data(), tran.size(), 4, 4 ); 
+    NP::Write(dir.c_str(), "itra.npy",   (float*)itra.data(), itra.size(), 4, 4 ); 
 }
 
 void Foundry::upload()
@@ -564,6 +582,7 @@ void Foundry::upload()
     unsigned num_node = node.size(); 
     unsigned num_plan = plan.size(); 
     unsigned num_tran = tran.size(); 
+    unsigned num_itra = itra.size(); 
 
     std::cout 
         << "Foundry::upload"
@@ -572,13 +591,17 @@ void Foundry::upload()
         << " num_node " << num_node
         << " num_plan " << num_plan
         << " num_tran " << num_tran
+        << " num_itra " << num_itra
         << std::endl
         ;
+
+    assert( num_tran == num_itra ); 
 
     d_solid = num_solid > 0 ? CU::UploadArray<Solid>(solid.data(), num_solid ) : nullptr ; 
     d_prim = num_prim > 0 ? CU::UploadArray<Prim>(prim.data(), num_prim ) : nullptr ; 
     d_node = num_node > 0 ? CU::UploadArray<Node>(node.data(), num_node ) : nullptr ; 
     d_plan = num_plan > 0 ? CU::UploadArray<float4>(plan.data(), num_plan ) : nullptr ; 
     d_tran = num_tran > 0 ? CU::UploadArray<qat4>(tran.data(), num_tran ) : nullptr ; 
+    d_itra = num_itra > 0 ? CU::UploadArray<qat4>(itra.data(), num_itra ) : nullptr ; 
 }
 

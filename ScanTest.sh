@@ -1,14 +1,24 @@
 #!/bin/bash 
 
+source ./env.sh 
+
 CUDA_PREFIX=/usr/local/cuda   # just use some CUDA headers, not using GPU 
 
-
-#opts="-DDEBUG=1"
-opts=""
+opts="-DDEBUG=1"
+#opts=""
 
 name=ScanTest 
-gcc $name.cc Foundry.cc Solid.cc Prim.cc Node.cc Scan.cc  -std=c++11 -lstdc++ $opts -I. -I${CUDA_PREFIX}/include -o /tmp/$name 
+gcc $name.cc Foundry.cc Solid.cc Prim.cc Node.cc Scan.cc CU.cc  \
+          -std=c++11 \
+          $opts \
+          -I. \
+          -I${CUDA_PREFIX}/include \
+          -I$PREFIX/externals/glm/glm \
+          -L${CUDA_PREFIX}/lib -lcudart -lstdc++ \
+          -o /tmp/$name 
+
 [ $? -ne 0 ] && echo compile error && exit 1
+#exit 0
 
 base=/tmp/ScanTest_scans
 
@@ -18,7 +28,14 @@ for scan in $scans ; do
     mkdir -p $tmpdir 
 done 
 
-/tmp/$name $*
+
+case $(uname) in
+  Darwin) var=DYLD_LIBRARY_PATH ;;
+  Linux)  var=LD_LIBRARY_PATH ;;
+esac
+cmd="$var=${CUDA_PREFIX}/lib /tmp/$name $*"
+echo $cmd
+eval $cmd
 [ $? -ne 0 ] && echo run error && exit 2
 
 for scan in $scans ; do 

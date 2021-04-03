@@ -1000,22 +1000,81 @@ bool intersect_node_disc(float4& isect, const quad& q0, const quad& q1, const fl
 
 
 INTERSECT_FUNC
-bool intersect_node( float4& isect, const Prim*, const Node* node, const float4* plan, const float t_min , const float3& ray_origin, const float3& ray_direction )
+bool intersect_node( float4& isect, const Node* node, const float4* plan, const qat4* itra, const float t_min , const float3& ray_origin , const float3& ray_direction )
 {
     const unsigned typecode = node->typecode() ;  
+    const unsigned gtransformIdx = node->gtransformIdx() ;  //  gtransformIdx is 1-based, 0 meaning None
+    const bool complement = node->complement();
+
+    const qat4* q = gtransformIdx > 0 ? itra + gtransformIdx - 1 : nullptr ; 
+
+    float3 origin    = q ? q->right_multiply(ray_origin, 1.f) : ray_origin ;  
+    float3 direction = q ? q->right_multiply(direction, 0.f)  : ray_direction ;   
+
+#ifdef DEBUG
+    printf(" typecode %d gtransformIdx %d \n", typecode, gtransformIdx ); 
+    printf(" ray_origin (%10.4f,%10.4f,%10.4f) \n",  ray_origin.x, ray_origin.y, ray_origin.z ); 
+    printf(" ray_direction (%10.4f,%10.4f,%10.4f) \n",  ray_direction.x, ray_direction.y, ray_direction.z ); 
+
+    if(q) 
+    {
+        printf(" q.q0.f (%10.4f,%10.4f,%10.4f,%10.4f)  \n", q->q0.f.x,q->q0.f.y,q->q0.f.z,q->q0.f.w  ); 
+        printf(" q.q1.f (%10.4f,%10.4f,%10.4f,%10.4f)  \n", q->q1.f.x,q->q1.f.y,q->q1.f.z,q->q1.f.w  ); 
+        printf(" q.q2.f (%10.4f,%10.4f,%10.4f,%10.4f)  \n", q->q2.f.x,q->q2.f.y,q->q2.f.z,q->q2.f.w  ); 
+        printf(" q.q3.f (%10.4f,%10.4f,%10.4f,%10.4f)  \n", q->q3.f.x,q->q3.f.y,q->q3.f.z,q->q3.f.w  ); 
+
+        printf(" origin (%10.4f,%10.4f,%10.4f) \n",  origin.x, origin.y, origin.z ); 
+        printf(" direction (%10.4f,%10.4f,%10.4f) \n",  direction.x, direction.y, direction.z ); 
+    }
+#endif
+
+
+
+
+
     bool valid_isect = false ; 
     switch(typecode)
     {
-        case CSG_SPHERE:           valid_isect = intersect_node_sphere(           isect, node->q0,               t_min, ray_origin, ray_direction ) ; break ; 
-        case CSG_ZSPHERE:          valid_isect = intersect_node_zsphere(          isect, node->q0, node->q1,     t_min, ray_origin, ray_direction ) ; break ; 
-        case CSG_CONVEXPOLYHEDRON: valid_isect = intersect_node_convexpolyhedron( isect, node, plan,             t_min, ray_origin, ray_direction ) ; break ;
-        case CSG_CONE:             valid_isect = intersect_node_cone(             isect, node->q0,               t_min, ray_origin, ray_direction ) ; break ;
-        case CSG_HYPERBOLOID:      valid_isect = intersect_node_hyperboloid(      isect, node->q0,               t_min, ray_origin, ray_direction ) ; break ;
-        case CSG_BOX3:             valid_isect = intersect_node_box3(             isect, node->q0,               t_min, ray_origin, ray_direction ) ; break ;
-        case CSG_PLANE:            valid_isect = intersect_node_plane(            isect, node->q0,               t_min, ray_origin, ray_direction ) ; break ;
-        case CSG_SLAB:             valid_isect = intersect_node_slab(             isect, node->q0, node->q1,     t_min, ray_origin, ray_direction ) ; break ;
-        case CSG_CYLINDER:         valid_isect = intersect_node_cylinder(         isect, node->q0, node->q1,     t_min, ray_origin, ray_direction ) ; break ;
-        case CSG_DISC:             valid_isect = intersect_node_disc(             isect, node->q0, node->q1,     t_min, ray_origin, ray_direction ) ; break ;
+        case CSG_SPHERE:           valid_isect = intersect_node_sphere(           isect, node->q0,               t_min, origin, direction ) ; break ; 
+        case CSG_ZSPHERE:          valid_isect = intersect_node_zsphere(          isect, node->q0, node->q1,     t_min, origin, direction ) ; break ; 
+        case CSG_CONVEXPOLYHEDRON: valid_isect = intersect_node_convexpolyhedron( isect, node, plan,             t_min, origin, direction ) ; break ;
+        case CSG_CONE:             valid_isect = intersect_node_cone(             isect, node->q0,               t_min, origin, direction ) ; break ;
+        case CSG_HYPERBOLOID:      valid_isect = intersect_node_hyperboloid(      isect, node->q0,               t_min, origin, direction ) ; break ;
+        case CSG_BOX3:             valid_isect = intersect_node_box3(             isect, node->q0,               t_min, origin, direction ) ; break ;
+        case CSG_PLANE:            valid_isect = intersect_node_plane(            isect, node->q0,               t_min, origin, direction ) ; break ;
+        case CSG_SLAB:             valid_isect = intersect_node_slab(             isect, node->q0, node->q1,     t_min, origin, direction ) ; break ;
+        case CSG_CYLINDER:         valid_isect = intersect_node_cylinder(         isect, node->q0, node->q1,     t_min, origin, direction ) ; break ;
+        case CSG_DISC:             valid_isect = intersect_node_disc(             isect, node->q0, node->q1,     t_min, origin, direction ) ; break ;
     }
-   return valid_isect ; 
+    if(valid_isect && q )
+    {
+        q->left_multiply_inplace( isect, 0.f ) ;  // normals transform differently 
+    }   
+    if(complement)  // flip normal, even for miss need to signal the complement with a -0.f  
+    {
+        isect.x = -isect.x ;
+        isect.y = -isect.y ;
+        isect.z = -isect.z ;
+    }
+    return valid_isect ; 
 }
+
+INTERSECT_FUNC
+bool intersect_tree( float4& isect, int numNode, const Node* node, const float4* plan, const qat4* itra, const float t_min , const float3& ray_origin, const float3& ray_direction )
+{
+    return false ; 
+}
+
+INTERSECT_FUNC
+bool intersect_prim( float4& isect, int numNode, const Node* node, const float4* plan, const qat4* itra, const float t_min , const float3& ray_origin, const float3& ray_direction )
+{
+    return numNode == 1 
+               ? 
+                  intersect_node(isect,          node, plan, itra, t_min, ray_origin, ray_direction )
+               :
+                  intersect_tree(isect, numNode, node, plan, itra, t_min, ray_origin, ray_direction )
+               ;
+}
+
+
+

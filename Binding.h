@@ -16,8 +16,6 @@ struct HitGroupData   // effectively Prim
 {
     int numNode ;   
     int nodeOffset ; 
-    //int tranOffset ; 
-    //int planOffset ; 
 };
 
 

@@ -15,7 +15,13 @@ int main(int argc, char** argv)
     Foundry fd ;  
     fd.init(); 
 
-    for(unsigned i=0 ; i < fd.getNumSolid() ; i++)
+    //fd.makeDemoSolids(); 
+    fd.makeEllipsoid(); 
+
+    unsigned numSolid = fd.getNumSolid() ; 
+    std::cout << "numSolid " << numSolid << std::endl ; 
+
+    for(unsigned i=0 ; i < numSolid ; i++)
     {
         const Solid* solid = fd.getSolid(i); 
 

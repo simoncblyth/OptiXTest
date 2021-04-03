@@ -79,9 +79,11 @@ int main(int argc, char** argv)
 
     foundry.dump(); 
     foundry.upload();   // uploads nodes, planes, transforms
+
     params.node = foundry.d_node ; 
     params.plan = foundry.d_plan ; 
     params.tran = foundry.d_tran ; 
+    params.itra = foundry.d_itra ; 
     
 
 #if OPTIX_VERSION < 70000
