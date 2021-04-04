@@ -8,8 +8,6 @@
 
 #include "qat4.h"
 
-
-
 #include <glm/mat4x4.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
@@ -46,21 +44,21 @@ void check( const glm::vec4& a , const glm::vec4& b, const char* msg )
     if(!chk) std::cout << msg << std::endl ;  
     assert(chk); 
 }
-void check( const float4& a , const float4& b, const char* msg )
+void check( const float3& a , const float3& b, const char* msg )
 {
-    bool chk = check(a.x,b.x,"x") && check(a.y,b.y,"y") && check(a.z,b.z,"z") && check(a.w,b.w,"w") ;
+    bool chk = check(a.x,b.x,"x") && check(a.y,b.y,"y") && check(a.z,b.z,"z")  ;
     if(!chk) std::cout << msg << std::endl ;  
     assert(chk); 
 }
-void check( const float4& a , const glm::vec4& b, const char* msg )
+void check( const float3& a , const glm::vec4& b, const char* msg )
 {
-    bool chk = check(a.x,b.x,"x") && check(a.y,b.y,"y") && check(a.z,b.z,"z") && check(a.w,b.w,"w") ;
+    bool chk = check(a.x,b.x,"x") && check(a.y,b.y,"y") && check(a.z,b.z,"z")  ;
     if(!chk) std::cout << msg << std::endl ;  
     assert(chk); 
 }
-void check( const glm::vec4& a , const float4& b, const char* msg  )
+void check( const glm::vec4& a , const float3& b, const char* msg  )
 {
-    bool chk = check(a.x,b.x,"x") && check(a.y,b.y,"y") && check(a.z,b.z,"z") && check(a.w,b.w,"w") ;
+    bool chk = check(a.x,b.x,"x") && check(a.y,b.y,"y") && check(a.z,b.z,"z") ;
     if(!chk) std::cout << msg << std::endl ;  
     assert(chk); 
 }
@@ -71,13 +69,13 @@ void check( const glm::vec4& a , const float4& b, const char* msg  )
 struct points
 {
     std::vector<std::string> vn ; 
-    std::vector<glm::vec4>   vv ; 
-    std::vector<float4>      ff ; 
+    std::vector<glm::vec3>   vv ; 
+    std::vector<float3>      ff ; 
 
-    void add(float x, float y, float z, float w, const char* label )
+    void add(float x, float y, float z, const char* label )
     {
-        ff.push_back(make_float4(x,y,z,w));  
-        vv.push_back(glm::vec4(x,y,z,w)) ;
+        ff.push_back(make_float3(x,y,z));  
+        vv.push_back(glm::vec3(x,y,z)) ;
         vn.push_back(label); 
     } 
 
@@ -109,32 +107,40 @@ struct points
         std::cout << "q " << q << std::endl ;  
         std::cout << "r " << r << std::endl ;  
 
+        float w = 1.f ; 
 
         for(unsigned i=0 ; i < vn.size() ; i++)
         {
-            const glm::vec4& v = vv[i] ; 
-            const float4&    f = ff[i] ; 
+            const glm::vec3& v = vv[i] ; 
+            const float3&    f = ff[i] ; 
+
+            glm::vec4 v4( v.x, v.y, v.z, w ); 
+
 
             //            mat*vec
-            float4    qf = q * f ;   
-            glm::vec4 gv = g * v ; 
+            float3    qf = q.right_multiply(f, w) ;   
+            glm::vec4 gv = g * v4 ; 
+
             check(qf, gv, "qf == gv : glm/qat consistency for mat*vec "); 
 
             //            vec*transposed(mat)
-            float4    fr = f * r ; 
-            glm::vec4 vt = v * t ; 
+            float3    fr = r.left_multiply(f, w) ; 
+            glm::vec4 vt = v4 * t ; 
+
             check(fr, vt, "fr == vt : glm/qat consisency of vec*transposed(mat)"); 
             check(qf, fr, "qf == fr : qat consistency  mat*vec == vec*transposed(mat) ");    
             check(gv, vt, "gv == vt : glm consistency  mat*vec == vec*transposed(mat)");    
 
             //            vec*mat
-            float4    fq = f * q ; 
-            glm::vec4 vg = v * g ; 
+            float3    fq = q.left_multiply(f, w) ; 
+            glm::vec4 vg = v4 * g ; 
+
             check(fq, vg, "fq == vg : glm/qat consisency of vec*mat"); 
 
             //transposed(mat)*vec  
-            float4    rf = r * f; 
-            glm::vec4 tv = t * v ; 
+            float3    rf = r.right_multiply(f, w); 
+            glm::vec4 tv = t * v4 ; 
+
             check(rf, tv,  "rf == tv : glm/qat consistency  vec*mat == transposed(mat)*vec ");    
             check(fq, rf,  "fq == rf : qat consistency      vec*mat == transposed(mat)*vec ");
             check(vg, tv,  "vg == tv : glm consistency      vec*mat == transposted(mat)*vec " );  
@@ -216,15 +222,15 @@ glm::mat4 make_transform_1()
 void test_multiply()
 {
     points p ; 
-    p.add(0.f, 0.f, 0.f, 1.f, "po"); 
-    p.add(1.f, 0.f, 0.f, 1.f, "px"); 
-    p.add(0.f, 1.f, 0.f, 1.f, "py"); 
-    p.add(0.f, 0.f, 1.f, 1.f, "pz"); 
+    p.add(0.f, 0.f, 0.f, "po"); 
+    p.add(1.f, 0.f, 0.f, "px"); 
+    p.add(0.f, 1.f, 0.f, "py"); 
+    p.add(0.f, 0.f, 1.f, "pz"); 
 
     for(unsigned i=0 ; i < 100 ; i++)
     {
         glm::vec3 r = glm::sphericalRand(20000.f); 
-        p.add( r.x, r.y, r.z, 1.0, "r" ); 
+        p.add( r.x, r.y, r.z, "r" ); 
     } 
     p.dump("points.p"); 
     glm::mat4 t0 = make_transform_0(); 
@@ -239,8 +245,7 @@ void test_multiply()
 */
 }
 
-
-int main(int argc, char** argv)
+void test_multiply_inplace()
 {
     glm::mat4 m(1.f); 
     glm::vec3 s(1.f, 1.f, 1.f) ; 
@@ -252,6 +257,39 @@ int main(int argc, char** argv)
     float4 isect = make_float4(10.f, 10.f, 10.f, 42.f ); 
     q.right_multiply_inplace( isect, 0.f ) ;
     printf("isect: (%10.4f, %10.4f, %10.4f, %10.4f) \n", isect.x, isect.y, isect.z, isect.w ); 
+}
 
+
+
+struct AABB{ float3 mn, mx ; } ;
+
+inline std::ostream& operator<<(std::ostream& os, const AABB& v)
+{
+    os << " mn " << v.mn  << " mx " << v.mx ;
+    return os; 
+}
+
+
+void test_transform_aabb_inplace()
+{
+    float tx = 100.f ; 
+    float ty = 200.f ; 
+    float tz = 300.f ; 
+
+    glm::mat4 m(1.f); 
+    m = glm::translate(m, glm::vec3(tx, ty, tz)); 
+
+    qat4 q(glm::value_ptr(m)); 
+    std::cout << q << std::endl ; 
+
+    AABB aabb = { -100.f, -100.f, -100.f, 100.f, 100.f, 100.f } ; 
+    std::cout << "aabb " << aabb << std::endl ; 
+    q.transform_aabb_inplace((float*)&aabb);
+    std::cout << "aabb " << aabb << std::endl ; 
+}
+
+int main(int argc, char** argv)
+{
+    test_transform_aabb_inplace();
     return 0 ; 
 }

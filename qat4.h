@@ -89,6 +89,34 @@ struct qat4
     {
         return &q0.f.x ;
     }
+
+    QAT4_METHOD void transform_aabb_inplace( float* aabb ) const 
+    {
+        float4 xa = q0.f * *(aabb+0) ; 
+        float4 xb = q0.f * *(aabb+3) ;
+        float4 xmi = fminf(xa, xb);
+        float4 xma = fmaxf(xa, xb);
+
+        float4 ya = q1.f * *(aabb+1) ; 
+        float4 yb = q1.f * *(aabb+4) ;
+        float4 ymi = fminf(ya, yb);
+        float4 yma = fmaxf(ya, yb);
+
+        float4 za = q2.f * *(aabb+2) ; 
+        float4 zb = q2.f * *(aabb+5) ;
+        float4 zmi = fminf(za, zb);
+        float4 zma = fmaxf(za, zb);
+
+        float4 tmi = xmi + ymi + zmi + q3.f ; 
+        float4 tma = xma + yma + zma + q3.f ; 
+
+        *(aabb + 0) = tmi.x ; 
+        *(aabb + 1) = tmi.y ; 
+        *(aabb + 2) = tmi.z ; 
+        *(aabb + 3) = tma.x ; 
+        *(aabb + 4) = tma.y ; 
+        *(aabb + 5) = tma.z ; 
+    }
 #endif
 
 }; 

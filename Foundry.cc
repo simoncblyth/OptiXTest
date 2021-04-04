@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iomanip>
+#include <array>
 
 #include <glm/glm.hpp>
 #include <glm/gtx/string_cast.hpp>
@@ -11,6 +12,7 @@
 #include "CU.h"
 #include "NP.hh"
 #include "Foundry.h"
+#include "Util.h"
 
 
 Foundry::Foundry()
@@ -98,7 +100,37 @@ void Foundry::dumpSolid(unsigned solidIdx) const
     } 
 }
 
+void Foundry::dumpPrim(unsigned solidIdx) const 
+{
+    std::cout << "Foundry::dumpPrim" << solidIdx << std::endl ; 
+    const Solid* so = solid.data() + solidIdx ; 
+    std::cout << so->desc() << std::endl ; 
+    for(unsigned primIdx=so->primOffset ; primIdx < so->primOffset+so->numPrim ; primIdx++)
+    {
+        const Prim* pr = prim.data() + primIdx ; 
+        std::cout 
+            << " primIdx " << std::setw(3) << primIdx << " "
+            << pr->desc() 
+            << std::endl 
+            ; 
+    } 
+}
 
+void Foundry::dumpNode(unsigned solidIdx) const 
+{
+    std::cout << "Foundry::dumpNode" << solidIdx << std::endl ; 
+    const Solid* so = solid.data() + solidIdx ; 
+    std::cout << so->desc() << std::endl ; 
+    for(unsigned primIdx=so->primOffset ; primIdx < so->primOffset+so->numPrim ; primIdx++)
+    {
+        const Prim* pr = prim.data() + primIdx ; 
+        for(unsigned nodeIdx=pr->nodeOffset() ; nodeIdx < pr->nodeOffset()+pr->numNode() ; nodeIdx++)
+        {
+            const Node* nd = node.data() + nodeIdx ; 
+            std::cout << nd->desc() << std::endl ; 
+        }
+    } 
+}
 
 
 
@@ -371,19 +403,26 @@ Solid* Foundry::makeLayered(const char* label, float outer_radius, unsigned laye
     return so ; 
 }
 
-
-
-Solid* Foundry::makeCluster(const char* name,  int i0, int i1, int is, int j0, int j1, int js, int k0, int k1, int ks, float unit ) 
+Solid* Foundry::makeClustered(const char* name,  int i0, int i1, int is, int j0, int j1, int js, int k0, int k1, int ks, double unit ) 
 {
+    std::array<int, 9> cluster = {i0,i1,is,j0,j1,js,k0,k1,ks} ; 
+    int mn(0); 
+    int mx(0); 
+    Util::GridMinMax(cluster, mn, mx);   
+    double extent = double(mx)*unit ;    // TODO: this is too small, as does not account for the AABB, better to get from all the AABB
+    
     unsigned numPrim = 0 ; 
     for(int i=i0 ; i < i1 ; i+=is ) 
     for(int j=j0 ; j < j1 ; j+=js ) 
     for(int k=k0 ; k < k1 ; k+=ks ) 
     {
+        std::cout << std::setw(2) << numPrim << " (i,j,k) " << "(" << i << "," << j << "," << k << ") " << std::endl ; 
         numPrim += 1 ; 
     }
-        
+       
+    std::cout << "Foundry::makeClustered numPrim " << numPrim << " extent " << extent << std::endl ;  
     Solid* so = addSolid(numPrim, name);
+    so->extent = float(extent) ; 
     unsigned idx = 0 ; 
  
     for(int i=i0 ; i < i1 ; i+=is ) 
@@ -392,13 +431,16 @@ Solid* Foundry::makeCluster(const char* name,  int i0, int i1, int is, int j0, i
     {
         unsigned numNode = 1 ; 
         Prim* p = addPrim(numNode); 
- 
-        Node nd = Node::Make(name) ; 
-        Node* n = addNode(nd) ;     
+        Node* n = addNode(Node::Make(name)) ;
+    
+        const Tran<double>* translate = Tran<double>::make_translate( double(i)*unit, double(j)*unit, double(k)*unit ); 
+        unsigned idx = 1 + addTran(*translate);      // 1-based idx, 0 meaning None
+        n->setTransform(idx); 
 
+        const qat4* t = getTran(idx-1u) ; 
 
-        // TODO: set the Node transform based on i,j,k, unit  and use that to transform the bbox 
-
+        float* aabb = n->AABB(); 
+        t->transform_aabb_inplace( aabb ); 
 
         p->setSbtIndexOffset(idx) ; 
         p->setAABB( n->AABB() ); 
@@ -406,8 +448,6 @@ Solid* Foundry::makeCluster(const char* name,  int i0, int i1, int is, int j0, i
     }
     return so ; 
 }
-
-
 
 
 
@@ -454,6 +494,7 @@ Solid* Foundry::makeEllipsoid(  const char* label, float rx, float ry, float rz 
     double sz = dz/dx ; 
 
     const Tran<double>* tr = Tran<double>::make_scale(sx, sy, sz ); 
+
     unsigned idx = 1 + addTran(*tr);      // 1-based idx, 0 meaning None
     std::cout << "Foundry::makeEllipsoid " << *tr << std::endl ;
 

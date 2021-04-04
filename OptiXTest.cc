@@ -16,6 +16,8 @@ OptiXTest
 #include <cuda_runtime.h>
 #include <glm/glm.hpp>
 
+#include "sutil_vec_math.h"
+
 #include "Util.h"
 #include "Prim.h"
 #include "Geo.h"

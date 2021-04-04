@@ -19,6 +19,11 @@ geometry=parade
 #geometry=sphere_containing_grid_of_spheres
 #geometry=layered_sphere
 #geometry=layered_zsphere
+#geometry=clustered_sphere
+
+clusterspec=-3:4:1,-3:4:1,-3:4:1
+clusterunit=500
+
 
 #geometry=sphe # 0
 #geometry=zsph # 1 
@@ -57,6 +62,8 @@ eye=-0.7,-0.7,0.15
 #eye=-1.0,-1.0,0.0
 #eye=-1.0,-1.0,0.5
 
+
+
 cameratype=0
 #cameratype=1
 
@@ -87,6 +94,9 @@ EOB
 export GEOMETRY=${GEOMETRY:-$geometry}
 export TMIN=${TMIN:-$tmin}
 export CAMERATYPE=${CAMERATYPE:-$cameratype}
+
+export CLUSTERSPEC=${CLUSTERSPEC:-$clusterspec}
+export CLUSTERUNIT=${CLUSTERUNIT:-$clusterunit}
 
 export GRIDSPEC=${GRIDSPEC:-$gridspec}
 export GRIDMODULO=${GRIDMODULO:-$gridmodulo}

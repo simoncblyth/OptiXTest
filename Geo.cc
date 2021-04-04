@@ -49,7 +49,7 @@ void Geo::init()
     {
         init_parade(tminf, tmaxf);
     }
-    else if(Util::Startswith(geometry.c_str(), "clustered_"))
+    else if(Util::StartsWith(geometry.c_str(), "clustered_"))
     {
         init_clustered( geometry.c_str() + strlen("clustered_"), tminf, tmaxf ); 
     }
@@ -156,7 +156,7 @@ to the bbox at Prim+Node(?) level.
 **/
 void Geo::init_clustered(const char* name, float& tminf, float& tmaxf )
 {
-    float unit = Util::GetEValue<float>("CLUSTERUNIT", 100.f ); 
+    float unit = Util::GetEValue<float>("CLUSTERUNIT", 200.f ); 
     std::string clusterspec = Util::GetEValue<std::string>("CLUSTERSPEC","-1:2:1,-1:2:1,-1:2:1") ; 
     std::array<int,9> cl ; 
     Util::ParseGridSpec(cl, clusterspec.c_str()); // string parsed into array of 9 ints 

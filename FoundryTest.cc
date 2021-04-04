@@ -26,12 +26,8 @@ void test_layered()
     fd.write("/tmp", "FoundryTest_" ); 
 }
 
-
-
-int main(int argc, char** argv)
+void test_PrimSpec()
 {
-    //test_layered(); 
-
     Foundry fd ; 
     fd.makeDemoSolids(); 
     for(unsigned i = 0 ; i < fd.solid.size() ; i++ )
@@ -44,6 +40,41 @@ int main(int argc, char** argv)
 
     std::string bmap = fd.getBashMap(); 
     std::cout  << bmap << std::endl ; 
+}
+
+void test_addTran()
+{
+    Foundry fd ; 
+    const Tran<double>* tr = Tran<double>::make_translate( 100., 200., 300. ) ; 
+    unsigned idx = fd.addTran( *tr ); 
+    assert( idx == 1u ); 
+    const qat4* t = idx == 0 ? nullptr : fd.getTran(idx-1u) ; 
+    const qat4* v = idx == 0 ? nullptr : fd.getItra(idx-1u) ; 
+ 
+    std::cout << "idx " << idx << std::endl ; 
+    std::cout << "t" << *t << std::endl ; 
+    std::cout << "v" << *v << std::endl ; 
+}
+
+void test_makeClustered()
+{
+    std::cout << "[test_makeClustered" << std::endl ; 
+    Foundry fd ; 
+    fd.makeClustered("sphe", -1,2,1, -1,2,1, -1,2,1, 1000. ); 
+    fd.dumpPrim(0); 
+    std::cout << "]test_makeClustered" << std::endl ; 
+}
+
+
+
+
+
+int main(int argc, char** argv)
+{
+    //test_layered(); 
+    //test_PrimSpec(); 
+    //test_addTran(); 
+    test_makeClustered(); 
 
     return 0 ; 
 }

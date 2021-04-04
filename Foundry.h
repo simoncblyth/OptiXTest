@@ -30,6 +30,8 @@ struct Foundry
 
     void dump() const ;
     void dumpSolid(unsigned solidIdx ) const ;
+    void dumpPrim(unsigned solidIdx ) const ;
+    void dumpNode(unsigned solidIdx ) const ;
 
     PrimSpec getPrimSpec(       unsigned solidIdx) const ;
     PrimSpec getPrimSpecHost(   unsigned solidIdx) const ;
@@ -58,11 +60,12 @@ struct Foundry
     Node*  addNode(Node nd, const std::vector<float4>* pl=nullptr );
     Node*  addNodes(const std::vector<Node>& nds );
     float4* addPlan(const float4& pl );
+
     unsigned addTran( const Tran<double>& tr  );
 
     Solid* make(const char* name); 
-    Solid* makeLayered(const char* label, float outer_radius, unsigned layers ) ;
-    Solid* makeCluster(const char* name,  int i0, int i1, int is, int j0, int j1, int js, int k0, int k1, int ks, float unit ) ;
+    Solid* makeLayered( const char* label, float outer_radius, unsigned layers ) ;
+    Solid* makeClustered(const char* name,  int i0, int i1, int is, int j0, int j1, int js, int k0, int k1, int ks, double unit ) ;
 
     Solid* makeSolid11(const char* label, Node nd, const std::vector<float4>* pl=nullptr  );
 

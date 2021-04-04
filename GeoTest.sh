@@ -13,7 +13,7 @@ opts=""
 
 
 name=GeoTest
-srcs="GeoTest.cc Geo.cc Sys.cc Util.cc Grid.cc Foundry.cc Solid.cc Prim.cc Node.cc CU.cc"
+srcs="GeoTest.cc Geo.cc Sys.cc Util.cc Grid.cc Foundry.cc Solid.cc Prim.cc Node.cc CU.cc Tran.cc"
 
 
 gcc $srcs -std=c++11 \
