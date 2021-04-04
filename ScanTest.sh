@@ -4,11 +4,11 @@ source ./env.sh
 
 CUDA_PREFIX=/usr/local/cuda   # just use some CUDA headers, not using GPU 
 
-opts="-DDEBUG=1"
-#opts=""
+#opts="-DDEBUG=1"
+opts=""
 
 name=ScanTest 
-gcc $name.cc Foundry.cc Solid.cc Prim.cc Node.cc Scan.cc CU.cc  \
+gcc $name.cc Foundry.cc Solid.cc Prim.cc Node.cc Scan.cc CU.cc Tran.cc \
           -std=c++11 \
           $opts \
           -I. \
@@ -38,11 +38,25 @@ echo $cmd
 eval $cmd
 [ $? -ne 0 ] && echo run error && exit 2
 
-for scan in $scans ; do 
-    tmpdir=$base/${scan}_scan
-    echo $tmpdir
-    ls -l $tmpdir
-done 
+
+scan-all()
+{
+    echo $FUNCNAME $*
+    local scan
+    for scan in $* ; do 
+       tmpdir=$base/${scan}_scan
+       echo $tmpdir
+       ls -l $tmpdir
+    done 
+}
+scan-recent(){
+   echo $FUNCNAME 
+   find $base -newer ScanTest.cc -exec ls -l {} \; 
+}
+
+#scan-all $scans
+scan-recent 
+
 
 
 exit 0 

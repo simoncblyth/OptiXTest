@@ -161,7 +161,6 @@ void Geo::init(const char* name, float& tminf, float& tmaxf )
 
     tminf = 1.60f ;   //  hmm depends on viewpoint, aiming to cut into the sphere with the tmin
     tmaxf = 10000.f ; 
-
 }
 
 

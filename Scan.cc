@@ -18,19 +18,12 @@ Scan::Scan( const char* dir_, const Foundry* foundry_, const Solid* solid_ )
 void Scan::record(bool valid_isect, const float4& isect,  const float3& ray_origin, const float3& ray_direction )
 {
     quad4 rec ;  
-    rec.q0.f = make_float4(ray_origin); 
-    rec.q0.i.w = int(valid_isect) ; 
 
-    rec.q1.f = make_float4(ray_direction); 
-    rec.q2.f = make_float4(0.f); 
+    rec.q0.f = make_float4(ray_origin);     rec.q0.i.w = int(valid_isect) ; 
+    rec.q1.f = make_float4(ray_direction); // .w spare
+    rec.q2.f = valid_isect ?  make_float4( ray_origin + isect.w*ray_direction, isect.w )  : make_float4(0.f) ; 
     rec.q3.f = isect ; 
 
-    if(valid_isect)
-    {
-        float t = isect.w ; 
-        float3 pos = ray_origin + t*ray_direction ; 
-        rec.q2.f = make_float4(pos, t ); 
-    }
     recs.push_back(rec);  
     //dump(rec); 
 }
@@ -189,10 +182,11 @@ void Scan::axis_scan()
 
     std::vector<float3> dirs ; 
     dirs.push_back( make_float3( 1.f, 0.f, 0.f));
-    dirs.push_back( make_float3(-1.f, 0.f, 0.f));
     dirs.push_back( make_float3( 0.f, 1.f, 0.f));
-    dirs.push_back( make_float3( 0.f,-1.f, 0.f));
     dirs.push_back( make_float3( 0.f, 0.f, 1.f));
+
+    dirs.push_back( make_float3(-1.f, 0.f, 0.f));
+    dirs.push_back( make_float3( 0.f,-1.f, 0.f));
     dirs.push_back( make_float3( 0.f, 0.f,-1.f));
 
     trace(t_min, origin, dirs );     

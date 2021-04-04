@@ -994,28 +994,22 @@ bool intersect_node_disc(float4& isect, const quad& q0, const quad& q1, const fl
 
 
 
-
-
-
-
-
 INTERSECT_FUNC
 bool intersect_node( float4& isect, const Node* node, const float4* plan, const qat4* itra, const float t_min , const float3& ray_origin , const float3& ray_direction )
 {
     const unsigned typecode = node->typecode() ;  
-    const unsigned gtransformIdx = node->gtransformIdx() ;  //  gtransformIdx is 1-based, 0 meaning None
+    const unsigned gtransformIdx = node->gtransformIdx() ; 
     const bool complement = node->complement();
 
-    const qat4* q = gtransformIdx > 0 ? itra + gtransformIdx - 1 : nullptr ; 
+    const qat4* q = gtransformIdx > 0 ? itra + gtransformIdx - 1 : nullptr ;  // gtransformIdx is 1-based, 0 meaning None
 
-    float3 origin    = q ? q->right_multiply(ray_origin, 1.f) : ray_origin ;  
-    float3 direction = q ? q->right_multiply(direction, 0.f)  : ray_direction ;   
+    float3 origin    = q ? q->right_multiply(ray_origin,    1.f) : ray_origin ;  
+    float3 direction = q ? q->right_multiply(ray_direction, 0.f) : ray_direction ;   
 
 #ifdef DEBUG
-    printf(" typecode %d gtransformIdx %d \n", typecode, gtransformIdx ); 
+    printf("intersect_node: typecode %d gtransformIdx %d \n", typecode, gtransformIdx ); 
     printf(" ray_origin (%10.4f,%10.4f,%10.4f) \n",  ray_origin.x, ray_origin.y, ray_origin.z ); 
     printf(" ray_direction (%10.4f,%10.4f,%10.4f) \n",  ray_direction.x, ray_direction.y, ray_direction.z ); 
-
     if(q) 
     {
         printf(" q.q0.f (%10.4f,%10.4f,%10.4f,%10.4f)  \n", q->q0.f.x,q->q0.f.y,q->q0.f.z,q->q0.f.w  ); 
@@ -1027,10 +1021,6 @@ bool intersect_node( float4& isect, const Node* node, const float4* plan, const 
         printf(" direction (%10.4f,%10.4f,%10.4f) \n",  direction.x, direction.y, direction.z ); 
     }
 #endif
-
-
-
-
 
     bool valid_isect = false ; 
     switch(typecode)
@@ -1048,7 +1038,10 @@ bool intersect_node( float4& isect, const Node* node, const float4* plan, const 
     }
     if(valid_isect && q )
     {
-        q->left_multiply_inplace( isect, 0.f ) ;  // normals transform differently 
+        q->left_multiply_inplace( isect, 0.f ) ;  
+        // normals transform differently : with inverse-transform-transposed 
+        // so left_multiply the normal by the inverse-transform rather than the right_multiply 
+        // done above to get the inverse transformed origin and direction
     }   
     if(complement)  // flip normal, even for miss need to signal the complement with a -0.f  
     {

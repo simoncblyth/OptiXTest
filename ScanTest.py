@@ -35,25 +35,44 @@ def plot3d(pos, grid=False):
     return cp
 
 
+def plot3d_arrows(pos, nrm, mag=1, grid=False):
+    """
+    """
+    pl = pv.Plotter()
+    pl.add_arrows(pos, nrm, mag=mag, color='#FFFFFF', point_size=2.0 )  
+    if grid:
+        pl.show_grid()
+    pass
+    cp = pl.show()
+    return cp
+
+
+
+
+
+
 class ScanTest(object):
     def __init__(self, path):
         a = np.load(path) 
 
-        ori = a[:,0]
+        ori = a[:,0]  ; valid_isect = a[:,0,3].view(np.int32)  
         dir = a[:,1]
         post = a[:,2]
-        isect = a[:,0,3].view(np.int32)  
+        isect = a[:,3]
 
         tot = len(a)
-        hit = np.count_nonzero( isect == 1 )  
-        miss = np.count_nonzero( isect == 0 )  
+        hit = np.count_nonzero( valid_isect == 1 )  
+        miss = np.count_nonzero( valid_isect == 0 )  
+
 
         self.path = path 
         self.a = a
-        self.ori = ori
+
+        self.ori = ori    ; self.valid_isect = valid_isect
         self.dir = dir
         self.post = post
         self.isect = isect
+
         self.tot = tot 
         self.hit = hit 
         self.miss = miss
@@ -98,6 +117,7 @@ if __name__ == '__main__':
     ax.scatter( st.ori[:,0] + st.dir[:,0]*scale, st.ori[:,2]+st.dir[:,2]*scale )
     fig.show()
 
-    plot3d( st.post[:,:3] )
+    #plot3d( st.post[:,:3] )   # intersect position 
+    plot3d_arrows( st.post[:,:3], st.isect[:,:3], mag=10 )  # intersect position and normal direction arrows
 
 

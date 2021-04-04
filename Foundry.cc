@@ -50,6 +50,7 @@ void Foundry::makeDemoSolids()
     makeDisc(); 
     makeConvexPolyhedronCube(); 
     makeConvexPolyhedronTetrahedron(); 
+    makeEllipsoid(); 
     dump(); 
 }
 
@@ -242,16 +243,21 @@ float4* Foundry::addPlan(const float4& pl )
     return plan.data() + idx ; 
 }
 
-unsigned Foundry::addTran( const glm::mat4& tra_ )
+unsigned Foundry::addTran( const Tran<double>& tr  )
 {
-    glm::mat4 tra(tra_); 
-    glm::mat4 itr = glm::inverse(tra); 
-    qat4 qtra(glm::value_ptr(tra)); 
-    qat4 qitr(glm::value_ptr(itr)); 
+    qat4 t(glm::value_ptr(tr.t));  // narrowing 
+    qat4 v(glm::value_ptr(tr.v)); 
+
     unsigned idx = tran.size(); 
+
+    std::cout << "Foundry::addTran idx " << idx << std::endl ; 
+    std::cout << " t " << t << std::endl ; 
+    std::cout << " v " << v << std::endl ; 
+
     assert( tran.size() == itra.size()) ; 
-    tran.push_back(qtra); 
-    itra.push_back(qitr); 
+    tran.push_back(t); 
+    itra.push_back(v); 
+
     return idx ;  
 }
 
@@ -400,13 +406,18 @@ Solid* Foundry::makeEllipsoid(  const char* label, float rx, float ry, float rz 
 {
     Node nd = Node::Sphere(rx);
 
-    glm::vec3 sc(1.f, ry/rx, rz/rx ); 
-    glm::mat4 m(1.f); 
-    //m = glm::translate(  m, glm::vec3(tx, ty, tz) );             std::cout << " t " << glm::to_string(m) << std::endl ;  
-    //m = glm::rotate(     m, radians, glm::vec3(ax, ay, az)  );   std::cout << " rt " << glm::to_string(m) << std::endl ;  
-    m = glm::scale(      m, glm::vec3(sc.x, sc.y, sc.z) );         std::cout << " srt " << glm::to_string(m) << std::endl ;
+    double dx = double(rx) ; 
+    double dy = double(ry) ; 
+    double dz = double(rz) ; 
+ 
+    double sx = double(1.) ; 
+    double sy = dy/dx ; 
+    double sz = dz/dx ; 
 
-    unsigned idx = 1 + addTran(m);  
+    const Tran<double>* tr = Tran<double>::make_scale(sx, sy, sz ); 
+    unsigned idx = 1 + addTran(*tr);      // 1-based idx, 0 meaning None
+    std::cout << "Foundry::makeEllipsoid " << *tr << std::endl ;
+
     nd.setTransform(idx); 
     return makeSolid11(label, nd ); 
 }

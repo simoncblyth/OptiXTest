@@ -8,7 +8,7 @@
 #include "Node.h"
 #include "Quad.h"
 #include "qat4.h"
-
+#include "Tran.h"
 
 /**
 Foundry
@@ -58,14 +58,14 @@ struct Foundry
     Node*  addNode(Node nd, const std::vector<float4>* pl=nullptr );
     Node*  addNodes(const std::vector<Node>& nds );
     float4* addPlan(const float4& pl );
-    unsigned addTran(const glm::mat4& tr ); 
+    unsigned addTran( const Tran<double>& tr  );
 
     Solid* make(const char* name); 
     Solid* makeLayered(const char* label, float outer_radius, unsigned layers ) ;
     Solid* makeSolid11(const char* label, Node nd, const std::vector<float4>* pl=nullptr  );
 
     Solid* makeSphere(     const char* label="sphe", float r=100.f ); 
-    Solid* makeEllipsoid(  const char* label="elli", float rx=100.f, float ry=100.f, float rz=100.f ); 
+    Solid* makeEllipsoid(  const char* label="elli", float rx=100.f, float ry=100.f, float rz=50.f ); 
     Solid* makeZSphere(    const char* label="zsph", float r=100.f,  float z1=-50.f , float z2=50.f ); 
     Solid* makeCone(       const char* label="cone", float r1=300.f, float z1=-300.f, float r2=100.f,   float z2=-100.f ); 
     Solid* makeHyperboloid(const char* label="hype", float r0=100.f, float zf=50.f,   float z1=-50.f,   float z2=50.f );

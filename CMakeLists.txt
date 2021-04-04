@@ -75,6 +75,7 @@ list(APPEND SOURCES
     Frame.cc 
     Params.cc 
     Foundry.cc
+    Tran.cc
     CU.cc
 )
 

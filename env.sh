@@ -9,20 +9,6 @@ source $PREFIX/build/buildenv.sh
 export PATH=$PREFIX/bin:$PATH
 export BIN=$(which $name)
 
-#Foundry::getBashMap 
-declare -A map 
-map[0]=sphe
-map[1]=zsph
-map[2]=cone
-map[3]=hype
-map[4]=box3
-map[5]=plan
-map[6]=slab
-map[7]=cyli
-map[8]=disc
-map[9]=vcub
-map[10]=vtet
-
 #tmin=2.0
 #tmin=1.5
 #tmin=1.0
@@ -45,9 +31,9 @@ geometry=parade
 #geometry=disc # 8 
 #geometry=vcub # 9
 #geometry=vtet # 10
+#geometry=elli # 11
 
-
-gridmodulo=0,1,2,3,4,5,6,7,8,9,10
+gridmodulo=0,1,2,3,4,5,6,7,8,9,10,11
 #gridmodulo=9,10
 #gridmodulo=5,6
 #gridmodulo=10
