@@ -150,6 +150,12 @@ std::string Util::Present(std::vector<T>& vec)
     return ss.str();
 }
 
+bool Util::StartsWith( const char* s, const char* q)  // static
+{
+    return strlen(q) <= strlen(s) && strncmp(s, q, strlen(q)) == 0 ; 
+}
+
+
 
 template float       Util::GetEValue<float>(const char* key, float fallback); 
 template int         Util::GetEValue<int>(const char* key,   int  fallback); 

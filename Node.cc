@@ -192,7 +192,6 @@ Node Node::Slab(float nx, float ny, float nz, float d1, float d2 )
     return nd ; 
 }
 
-
 Node Node::Cylinder(float px, float py, float radius, float z1, float z2)
 {
     Node nd = {} ; 
@@ -211,10 +210,20 @@ Node Node::Disc(float px, float py, float ir, float r, float z1, float z2)
     return nd ; 
 } 
 
-
- 
-
-
+Node Node::Make(const char* name) // static
+{
+    if(strncmp(name, "sphe", 4) == 0) return Node::Sphere(100.f) ; 
+    if(strncmp(name, "zsph", 4) == 0) return Node::ZSphere(100.f, -50.f, 50.f) ; 
+    if(strncmp(name, "cone", 4) == 0) return Node::Cone(150.f, -150.f, 50.f, -50.f) ; 
+    if(strncmp(name, "hype", 4) == 0) return Node::Hyperboloid(100.f, 50.f, -50.f, 50.f) ; 
+    if(strncmp(name, "box3", 4) == 0) return Node::Box3(50.f, 100.f, 150.f) ; 
+    if(strncmp(name, "plan", 4) == 0) return Node::Plane(1.f, 0.f, 0.f, 0.f) ; 
+    if(strncmp(name, "slab", 4) == 0) return Node::Slab(1.f, 0.f, 0.f, -10.f, 10.f ) ; 
+    if(strncmp(name, "cyli", 4) == 0) return Node::Cylinder(0.f, 0.f, 100.f, -50.f, 50.f ) ; 
+    if(strncmp(name, "disc", 4) == 0) return Node::Disc(    0.f, 0.f, 50.f, 100.f, -2.f, 2.f ) ; 
+    assert(0); 
+    return Node::Sphere(1.0); 
+}
 
 #endif
 

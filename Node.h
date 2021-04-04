@@ -113,6 +113,7 @@ struct Node
     static Node Slab(float nx, float ny, float nz, float d1, float d2 ) ;
     static Node Cylinder(float px, float py, float radius, float z1, float z2) ;
     static Node Disc(float px, float py, float ir, float r, float z1, float z2);
+    static Node Make(const char* name); 
 
 #endif
 

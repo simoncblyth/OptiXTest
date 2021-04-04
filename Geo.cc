@@ -49,6 +49,10 @@ void Geo::init()
     {
         init_parade(tminf, tmaxf);
     }
+    else if(Util::Startswith(geometry.c_str(), "clustered_"))
+    {
+        init_clustered( geometry.c_str() + strlen("clustered_"), tminf, tmaxf ); 
+    }
     else if(strcmp(geometry.c_str(), "layered_sphere") == 0 )
     {
         init_layered("sphere", tminf, tmaxf, layers);
@@ -140,6 +144,32 @@ void Geo::init_parade(float& tminf, float& tmaxf )
     tmaxf = 10000.f ; 
 }
 
+/**
+Geo::init_clustered
+--------------------
+
+Aiming to test a GAS containing multiple spread (non-concentric) 
+placements of the same type of single node Prim.  
+Will need to assign appropriate node transforms and get those applied 
+to the bbox at Prim+Node(?) level.
+
+**/
+void Geo::init_clustered(const char* name, float& tminf, float& tmaxf )
+{
+    float unit = Util::GetEValue<float>("CLUSTERUNIT", 100.f ); 
+    std::string clusterspec = Util::GetEValue<std::string>("CLUSTERSPEC","-1:2:1,-1:2:1,-1:2:1") ; 
+    std::array<int,9> cl ; 
+    Util::ParseGridSpec(cl, clusterspec.c_str()); // string parsed into array of 9 ints 
+    Solid* so = foundry->makeClustered(name, cl[0],cl[1],cl[2],cl[3],cl[4],cl[5],cl[6],cl[7],cl[8], unit ); 
+    std::cout << "Geo::init_layered" << name << " so.extent " << so->extent << std::endl ; 
+
+    setTopExtent(so->extent); 
+    top = strdup("g0") ; 
+
+    tminf = 1.60f ;  
+    tmaxf = 10000.f ; 
+}
+
 
 void Geo::init_layered(const char* name, float& tminf, float& tmaxf, unsigned layers)
 {
@@ -148,7 +178,7 @@ void Geo::init_layered(const char* name, float& tminf, float& tmaxf, unsigned la
     setTopExtent(so->extent); 
     top = strdup("g0") ; 
 
-    tminf = 1.60f ;   //  hmm depends on viewpoint, aiming to cut into the sphere with the tmin
+    tminf = 1.60f ; 
     tmaxf = 10000.f ; 
 }
 

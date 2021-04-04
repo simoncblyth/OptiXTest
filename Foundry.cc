@@ -372,6 +372,45 @@ Solid* Foundry::makeLayered(const char* label, float outer_radius, unsigned laye
 }
 
 
+
+Solid* Foundry::makeCluster(const char* name,  int i0, int i1, int is, int j0, int j1, int js, int k0, int k1, int ks, float unit ) 
+{
+    unsigned numPrim = 0 ; 
+    for(int i=i0 ; i < i1 ; i+=is ) 
+    for(int j=j0 ; j < j1 ; j+=js ) 
+    for(int k=k0 ; k < k1 ; k+=ks ) 
+    {
+        numPrim += 1 ; 
+    }
+        
+    Solid* so = addSolid(numPrim, name);
+    unsigned idx = 0 ; 
+ 
+    for(int i=i0 ; i < i1 ; i+=is ) 
+    for(int j=j0 ; j < j1 ; j+=js ) 
+    for(int k=k0 ; k < k1 ; k+=ks ) 
+    {
+        unsigned numNode = 1 ; 
+        Prim* p = addPrim(numNode); 
+ 
+        Node nd = Node::Make(name) ; 
+        Node* n = addNode(nd) ;     
+
+
+        // TODO: set the Node transform based on i,j,k, unit  and use that to transform the bbox 
+
+
+        p->setSbtIndexOffset(idx) ; 
+        p->setAABB( n->AABB() ); 
+        idx += 1 ; 
+    }
+    return so ; 
+}
+
+
+
+
+
 /**
 Foundry::makeSolid11 makes 1-Prim with 1-Node
 ------------------------------------------------

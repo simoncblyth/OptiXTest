@@ -23,9 +23,9 @@ struct Util
 
     static void GetEVec(glm::vec3& v, const char* key, const char* fallback );
 
-
     template <typename T>
     static std::string Present(std::vector<T>& vec);
 
+    static bool StartsWith( const char* s, const char* q);
 
 };

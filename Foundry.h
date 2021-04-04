@@ -62,6 +62,8 @@ struct Foundry
 
     Solid* make(const char* name); 
     Solid* makeLayered(const char* label, float outer_radius, unsigned layers ) ;
+    Solid* makeCluster(const char* name,  int i0, int i1, int is, int j0, int j1, int js, int k0, int k1, int ks, float unit ) ;
+
     Solid* makeSolid11(const char* label, Node nd, const std::vector<float4>* pl=nullptr  );
 
     Solid* makeSphere(     const char* label="sphe", float r=100.f ); 

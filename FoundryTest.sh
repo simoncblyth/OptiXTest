@@ -8,7 +8,7 @@ CUDA_PREFIX=/usr/local/cuda   # just use some CUDA headers, not using GPU
 opts=""
 
 name=FoundryTest
-gcc -g $name.cc Foundry.cc Solid.cc Prim.cc PrimSpec.cc Node.cc CU.cc \
+gcc -g $name.cc Foundry.cc Solid.cc Prim.cc PrimSpec.cc Node.cc CU.cc Tran.cc \
        -std=c++11 \
        -I. \
        -I${CUDA_PREFIX}/include \
