@@ -64,6 +64,11 @@ bool intersect_node_sphere(float4& isect, const quad& q0, const float& t_min, co
     float3 center = make_float3(q0.f);
     float radius = q0.f.w;
 
+#ifdef DEBUG
+    printf("//intersect_node.h:sphere radius %10.4f \n", radius );  
+#endif
+
+
     float3 O = ray_origin - center;
     float3 D = ray_direction;
 
@@ -91,6 +96,11 @@ bool intersect_node_sphere(float4& isect, const quad& q0, const float& t_min, co
         isect.z = (O.z + t_cand*D.z)/radius ;
         isect.w = t_cand ;
     }
+
+
+#ifdef DEBUG
+    printf("//intersect_node.h:sphere valid_isect %d  isect ( %10.4f %10.4f %10.4f %10.4f)  \n", valid_isect, isect.x, isect.y, isect.z, isect.w ); 
+#endif
     return valid_isect ;
 }
 
@@ -296,7 +306,7 @@ bool intersect_node_cone( float4& isect, const quad& q0, const float t_min , con
     float z0 = (z2*r1-z1*r2)/(r1-r2) ;  // apex
 
 #ifdef DEBUG
-    printf(" r1 %10.4f z1 %10.4f r2 %10.4f z2 %10.4f : z0 %10.4f \n", r1, z1, r2, z2, z0 );  
+    printf("//intersect_node.h:cone r1 %10.4f z1 %10.4f r2 %10.4f z2 %10.4f : z0 %10.4f \n", r1, z1, r2, z2, z0 );  
 #endif
  
     float r1r1 = r1*r1 ; 
@@ -322,7 +332,7 @@ bool intersect_node_cone( float4& isect, const quad& q0, const float t_min , con
     float disc = c1*c1 - c0*c2 ; 
 
 #ifdef DEBUG
-    printf(" c2 %10.4f c1 %10.4f c0 %10.4f disc %10.4f : tth %10.4f \n", c2, c1, c0, disc, tth  );  
+    printf("//intersect_node.h:cone c2 %10.4f c1 %10.4f c0 %10.4f disc %10.4f : tth %10.4f \n", c2, c1, c0, disc, tth  );  
 #endif
  
 
@@ -525,6 +535,10 @@ bool intersect_node_box3(float4& isect, const quad& q0, const float t_min, const
    const float3 bmax = make_float3( q0.f.x/2.f,  q0.f.y/2.f,  q0.f.z/2.f ); 
    const float3 bcen = make_float3( 0.f, 0.f, 0.f ) ;    
 
+#ifdef DEBUG
+    printf("//intersect_node.h:box3  bmin (%10.4f,%10.4f,%10.4f) bmax (%10.4f,%10.4f,%10.4f)  \n", bmin.x, bmin.y, bmin.z, bmax.x, bmax.y, bmax.z );  
+#endif
+
    float3 idir = make_float3(1.f)/ray_direction ; 
 
    // the below t-parameter float3 are intersects with the x, y and z planes of
@@ -547,17 +561,29 @@ bool intersect_node_box3(float4& isect, const quad& q0, const float t_min, const
    bool in_y = ray_origin.y > bmin.y && ray_origin.y < bmax.y  ;
    bool in_z = ray_origin.z > bmin.z && ray_origin.z < bmax.z  ;
 
+
+
+
    bool has_intersect ;
    if(     along_x) has_intersect = in_y && in_z ;
    else if(along_y) has_intersect = in_x && in_z ; 
    else if(along_z) has_intersect = in_x && in_y ; 
    else             has_intersect = ( t_far > t_near && t_far > 0.f ) ;  // segment of ray intersects box, at least one is ahead
 
+
+#ifdef DEBUG
+    printf("//intersect_node.h:box3  along_xyz (%d,%d,%d) in_xyz (%d,%d,%d)   has_intersect %d  \n", along_x, along_y, along_z, in_x, in_y, in_z, has_intersect  );  
+    //printf("//intersect_node_box3 t_min %10.4f t_near %10.4f t_far %10.4f \n", t_min, t_near, t_far ); 
+#endif
+
+
    bool has_valid_intersect = false ; 
    if( has_intersect ) 
    {
        float t_cand = t_min < t_near ?  t_near : ( t_min < t_far ? t_far : t_min ) ; 
-
+#ifdef DEBUG
+       printf("//intersect_node.h:box3 t_min %10.4f t_near %10.4f t_far %10.4f t_cand %10.4f \n", t_min, t_near, t_far, t_cand ); 
+#endif
 
        float3 p = ray_origin + t_cand*ray_direction - bcen ; 
 
@@ -583,6 +609,10 @@ bool intersect_node_box3(float4& isect, const quad& q0, const float t_min, const
            isect.w = t_cand ; 
        }
    }
+
+#ifdef DEBUG
+   printf("//intersect_node.h:box3 has_valid_intersect %d  isect ( %10.4f %10.4f %10.4f %10.4f)  \n", has_valid_intersect, isect.x, isect.y, isect.z, isect.w ); 
+#endif
    return has_valid_intersect ; 
 }
 
@@ -1007,9 +1037,9 @@ bool intersect_node( float4& isect, const Node* node, const float4* plan, const 
     float3 direction = q ? q->right_multiply(ray_direction, 0.f) : ray_direction ;   
 
 #ifdef DEBUG
-    printf("intersect_node: typecode %d gtransformIdx %d \n", typecode, gtransformIdx ); 
-    printf(" ray_origin (%10.4f,%10.4f,%10.4f) \n",  ray_origin.x, ray_origin.y, ray_origin.z ); 
-    printf(" ray_direction (%10.4f,%10.4f,%10.4f) \n",  ray_direction.x, ray_direction.y, ray_direction.z ); 
+    printf("//intersect_node.h typecode %d gtransformIdx %d \n", typecode, gtransformIdx ); 
+    printf("//intersect_node.h ray_origin (%10.4f,%10.4f,%10.4f) \n",  ray_origin.x, ray_origin.y, ray_origin.z ); 
+    printf("//intersect_node.h ray_direction (%10.4f,%10.4f,%10.4f) \n",  ray_direction.x, ray_direction.y, ray_direction.z ); 
     if(q) 
     {
         printf(" q.q0.f (%10.4f,%10.4f,%10.4f,%10.4f)  \n", q->q0.f.x,q->q0.f.y,q->q0.f.z,q->q0.f.w  ); 
@@ -1052,11 +1082,9 @@ bool intersect_node( float4& isect, const Node* node, const float4* plan, const 
     return valid_isect ; 
 }
 
+
 INTERSECT_FUNC
-bool intersect_tree( float4& isect, int numNode, const Node* node, const float4* plan, const qat4* itra, const float t_min , const float3& ray_origin, const float3& ray_direction )
-{
-    return false ; 
-}
+bool intersect_tree( float4& isect, int numNode, const Node* node, const float4* plan0, const qat4* itra0, const float t_min , const float3& ray_origin, const float3& ray_direction );
 
 INTERSECT_FUNC
 bool intersect_prim( float4& isect, int numNode, const Node* node, const float4* plan, const qat4* itra, const float t_min , const float3& ray_origin, const float3& ray_direction )

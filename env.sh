@@ -15,11 +15,11 @@ export BIN=$(which $name)
 #tmin=0.5
 tmin=0.1
 
-geometry=parade
+#geometry=parade
 #geometry=sphere_containing_grid_of_spheres
 #geometry=layered_sphere
 #geometry=layered_zsphere
-#geometry=clustered_sphere
+geometry=clustered_sphere
 
 clusterspec=-3:4:1,-3:4:1,-3:4:1
 clusterunit=500

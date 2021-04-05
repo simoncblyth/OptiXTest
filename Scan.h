@@ -26,9 +26,18 @@ struct Scan
     void save(const char* sub);
 
 
-    const char* dir ; 
+    const char*    dir ; 
     const Foundry* foundry ; 
+    const Prim*    prim0 ; 
+    const Node*    node0 ; 
+    const float4*  plan0 ; 
+    const qat4*    itra0 ; 
+
     const Solid* solid ; 
+    unsigned primIdx0 ; 
+    unsigned primIdx1 ; 
+
+
     std::vector<quad4> recs ; 
 };
 

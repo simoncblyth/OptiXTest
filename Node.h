@@ -105,6 +105,10 @@ struct Node
 
     static const float UNBOUNDED_DEFAULT_EXTENT ; 
 
+    static Node Union(); 
+    static Node Intersection(); 
+    static Node Difference(); 
+
     static Node Sphere(float radius);
     static Node ZSphere(float radius, float z1, float z2);
     static Node Cone(float r1, float z1, float r2, float z2); 
@@ -114,6 +118,7 @@ struct Node
     static Node Slab(float nx, float ny, float nz, float d1, float d2 ) ;
     static Node Cylinder(float px, float py, float radius, float z1, float z2) ;
     static Node Disc(float px, float py, float ir, float r, float z1, float z2);
+
     static Node Make(const char* name); 
 
 #endif

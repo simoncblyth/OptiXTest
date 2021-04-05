@@ -8,7 +8,7 @@ CUDA_PREFIX=/usr/local/cuda   # just use some CUDA headers, not using GPU
 opts=""
 
 name=ScanTest 
-gcc $name.cc Foundry.cc Solid.cc Prim.cc Node.cc Scan.cc CU.cc Tran.cc \
+gcc $name.cc Foundry.cc Solid.cc Prim.cc Node.cc Scan.cc CU.cc Tran.cc Util.cc Geo.cc Grid.cc \
           -std=c++11 \
           $opts \
           -I. \

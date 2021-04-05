@@ -110,6 +110,27 @@ void Node::Dump(const Node* n_, unsigned ni, const char* label)
 }
 
 
+
+
+Node Node::Union()  // static
+{
+    Node nd = {} ;
+    nd.setTypecode(CSG_UNION) ; 
+    return nd ; 
+}
+Node Node::Intersection()  // static
+{
+    Node nd = {} ;
+    nd.setTypecode(CSG_INTERSECTION) ; 
+    return nd ; 
+}
+Node Node::Difference()  // static
+{
+    Node nd = {} ;
+    nd.setTypecode(CSG_DIFFERENCE) ; 
+    return nd ; 
+}
+
 Node Node::Sphere(float radius)  // static
 {
     assert( radius > 0.f); 

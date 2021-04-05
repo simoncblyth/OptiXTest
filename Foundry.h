@@ -37,7 +37,7 @@ struct Foundry
     PrimSpec getPrimSpecHost(   unsigned solidIdx) const ;
     PrimSpec getPrimSpecDevice( unsigned solidIdx) const ;
 
-    const Solid*   getSolid(const char* name) const ;
+    const Solid*   getSolidByName(const char* name) const ;
     const Solid*   getSolid_(int solidIdx) const ;   // -ve counts from back 
     unsigned       getSolidIdx(const Solid* so) const ; 
 

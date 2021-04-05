@@ -191,7 +191,7 @@ const Solid*  Foundry::getSolid_(int solidIdx_) const {
     return getSolid(solidIdx); 
 }   
 
-const Solid* Foundry::getSolid(const char* name) const  // caution stored labels truncated to 4 char 
+const Solid* Foundry::getSolidByName(const char* name) const  // caution stored labels truncated to 4 char 
 {
     unsigned missing = ~0u ; 
     unsigned idx = missing ; 

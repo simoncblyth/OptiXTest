@@ -11,7 +11,13 @@ Scan::Scan( const char* dir_, const Foundry* foundry_, const Solid* solid_ )
     :
     dir(strdup(dir_)),
     foundry(foundry_),
-    solid(solid_)
+    prim0(foundry->getPrim(0)),
+    node0(foundry->getNode(0)),
+    plan0(foundry->getPlan(0)),
+    itra0(foundry->getItra(0)),
+    solid(solid_),
+    primIdx0(solid->primOffset),
+    primIdx1(solid->primOffset+solid->numPrim)
 {
 }
 
@@ -31,18 +37,15 @@ void Scan::record(bool valid_isect, const float4& isect,  const float3& ray_orig
 
 void Scan::trace(const float t_min, const float3& ray_origin, const float3& ray_direction )
 {
-    for(unsigned primIdx=solid->primOffset ; primIdx < solid->primOffset+solid->numPrim ; primIdx++)
+    for(unsigned primIdx=primIdx0 ; primIdx < primIdx1 ; primIdx++)
     {
-        const Prim* prim = foundry->getPrim(primIdx);  
+        const Prim* prim = prim0 + primIdx ;  
         int numNode = prim->numNode(); 
         int nodeOffset = prim->nodeOffset(); 
-
-        const Node* node = foundry->getNode(0) + nodeOffset ; 
-        const float4* plan = foundry->getPlan(0); 
-        const qat4* itra   = foundry->getItra(0); 
+        const Node* node = node0 + nodeOffset ; 
         
         float4 isect = make_float4( 0.f, 0.f, 0.f, 0.f ) ; 
-        bool valid_isect = intersect_prim(isect, numNode, node, plan, itra, t_min, ray_origin, ray_direction );
+        bool valid_isect = intersect_prim(isect, numNode, node, plan0, itra0, t_min, ray_origin, ray_direction );
         record(valid_isect, isect, ray_origin, ray_direction );  
     } 
 }

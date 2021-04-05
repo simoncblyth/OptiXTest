@@ -63,7 +63,6 @@ int main(int argc, char** argv)
 
 
     Foundry foundry ; 
-
     Geo geo(&foundry) ;  
     geo.write(outdir);  
 

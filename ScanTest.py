@@ -81,10 +81,27 @@ class ScanTest(object):
         return "%s : tot %d hit %d miss %d " % (self.path, self.tot, self.hit, self.miss)
  
 
+
+
+def plot2d(st):
+    plt.ion()
+    fig, axs = plt.subplots(1)
+    if not type(axs) is np.ndarray: axs = [axs] 
+
+    ax = axs[0]
+    ax.set_aspect('equal')
+    ax.scatter( st.post[:,0], st.post[:,2], s=0.1 )
+    ax.scatter( st.ori[:,0],  st.ori[:,2] )
+    scale = 10.
+    ax.scatter( st.ori[:,0] + st.dir[:,0]*scale, st.ori[:,2]+st.dir[:,2]*scale )
+    fig.show()
+
+
+
 if __name__ == '__main__':
 
 
-    #solid = "sphe"
+    solid = "sphe"
     #solid = "zsph"
     #solid = "cone"
     #solid = "vcub" 
@@ -95,7 +112,7 @@ if __name__ == '__main__':
     #solid = "slab"
     #solid = "cyli"
     #solid = "disc"
-    solid = "elli"
+    #solid = "elli"
 
     #scan = "circle"
     scan = "rectangle"
@@ -103,21 +120,11 @@ if __name__ == '__main__':
     base = "/tmp/ScanTest_scans"
     path = "%(base)s/%(scan)s_scan/%(solid)s.npy" % locals()
 
-    fig, axs = plt.subplots(1)
-    if not type(axs) is np.ndarray: axs = [axs] 
-
     st = ScanTest(path)
     print(st)
 
-    ax = axs[0]
-    ax.set_aspect('equal')
-    ax.scatter( st.post[:,0], st.post[:,2], s=0.1 )
-    ax.scatter( st.ori[:,0],  st.ori[:,2] )
-    scale = 10.
-    ax.scatter( st.ori[:,0] + st.dir[:,0]*scale, st.ori[:,2]+st.dir[:,2]*scale )
-    fig.show()
-
-    #plot3d( st.post[:,:3] )   # intersect position 
-    plot3d_arrows( st.post[:,:3], st.isect[:,:3], mag=10 )  # intersect position and normal direction arrows
+    #plot2d( st );
+    plot3d( st.post[:,:3] )   # intersect position 
+    #plot3d_arrows( st.post[:,:3], st.isect[:,:3], mag=10 )  # intersect position and normal direction arrows
 
 
