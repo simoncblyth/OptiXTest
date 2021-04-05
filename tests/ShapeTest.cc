@@ -1,9 +1,9 @@
-// PREFIX=/tmp/$USER/opticks/OptiXTest name=ShapeTest ; mkdir -p /tmp/ShapeTestWrite/{0,1} ; gcc -g $name.cc Shape.cc Sys.cc -lstdc++ -std=c++11 -I. -I$PREFIX/externals/glm/glm  -o /tmp/$name && lldb_ /tmp/$name
 
 #include <cassert>
 #include <iostream>
 #include <vector>
-#include <vector_types.h>
+
+#include "sutil_vec_math.h"
 
 #include "Shape.h"
 

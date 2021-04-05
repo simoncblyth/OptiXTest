@@ -1,4 +1,4 @@
-// name=InstanceIdTest ; gcc $name.cc -std=c++11 -lstdc++ -o /tmp/$name && /tmp/$name
+// ./InstanceIdTest.sh
 
 #include <iostream>
 #include <iomanip>

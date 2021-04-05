@@ -1,5 +1,5 @@
 #include <sstream>
-#include <vector_types.h>
+#include "sutil_vec_math.h"
 
 #include "OpticksCSG.h"
 #include "Sys.h"

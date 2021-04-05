@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-source ./env.sh 
+source ../env.sh 
 
 echo PREFIX $PREFIX
 
@@ -13,11 +13,11 @@ opts=""
 
 
 name=GeoTest
-srcs="GeoTest.cc Geo.cc Sys.cc Util.cc Grid.cc Foundry.cc Solid.cc Prim.cc Node.cc CU.cc Tran.cc"
+srcs="GeoTest.cc ../Geo.cc ../Sys.cc ../Util.cc ../Grid.cc ../Foundry.cc ../Solid.cc ../Prim.cc ../Node.cc ../CU.cc ../Tran.cc"
 
 
 gcc $srcs -std=c++11 \
-      -I. \
+      -I.. \
       -I${CUDA_PREFIX}/include  \
       -I${GLM_PREFIX} \
       -L${CUDA_PREFIX}/lib -lcudart \

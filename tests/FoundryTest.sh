@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-source ./env.sh 
+source ../env.sh 
 
 CUDA_PREFIX=/usr/local/cuda   # just use some CUDA headers, not using GPU 
 
@@ -8,12 +8,12 @@ CUDA_PREFIX=/usr/local/cuda   # just use some CUDA headers, not using GPU
 opts=""
 
 name=FoundryTest
-srcs="$name.cc Foundry.cc Solid.cc Prim.cc PrimSpec.cc Node.cc CU.cc Tran.cc Util.cc"
+srcs="$name.cc ../Foundry.cc ../Solid.cc ../Prim.cc ../PrimSpec.cc ../Node.cc ../CU.cc ../Tran.cc ../Util.cc"
 echo compiling $srcs
 gcc -g \
        $srcs \
        -std=c++11 \
-       -I. \
+       -I.. \
        -I${CUDA_PREFIX}/include \
        -I$PREFIX/externals/glm/glm \
        -L${CUDA_PREFIX}/lib -lcudart \

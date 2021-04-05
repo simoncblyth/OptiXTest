@@ -4,7 +4,7 @@ glm-
 name=qat4 
 
 gcc $name.cc \
-     -I. \
+     -I.. \
      -I/usr/local/cuda/include \
      -I$(glm-prefix) \
      -std=c++11 \
@@ -16,7 +16,6 @@ cmd="/tmp/$name"
 echo $cmd
 eval $cmd
 [ $? -ne 0 ] && echo run fail && exit 2
-
 
 exit 0 
 

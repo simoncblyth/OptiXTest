@@ -1,4 +1,5 @@
-//  name=csg ; gcc $name.cc -std=c++11 -lstdc++ -I/usr/local/cuda/include  -o /tmp/$name && /tmp/$name
+// ./csg.sh 
+
 
 #include <vector>
 #include <iostream>

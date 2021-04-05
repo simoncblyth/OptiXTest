@@ -1,4 +1,4 @@
-// name=qat4 ; glm- ; gcc $name.cc -I. -I/usr/local/cuda/include -I$(glm-prefix) -std=c++11 -lstdc++ -o /tmp/$name && /tmp/$name
+// ./qat4.sh 
 
 #include "sutil_vec_math.h"
 

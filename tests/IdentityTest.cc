@@ -1,4 +1,4 @@
-// name=IdentityTest ; gcc $name.cc -lstdc++ -o /tmp/$name && /tmp/$name
+// ./IdentityTest.sh
 
 #include <iostream>
 #include <iomanip>

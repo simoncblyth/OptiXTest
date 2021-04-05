@@ -3,7 +3,15 @@
 CUDA_PREFIX=/usr/local/cuda  
 
 name=CUTest
-gcc $name.cc CU.cc -std=c++11 -L${CUDA_PREFIX}/lib -lcudart -lstdc++ -I.  -I${CUDA_PREFIX}/include -o /tmp/$name 
+
+srcs="$name.cc ../CU.cc"
+gcc $srcs \
+    -I.. \
+    -I${CUDA_PREFIX}/include \
+    -std=c++11 \
+    -L${CUDA_PREFIX}/lib -lcudart \
+    -lstdc++ \
+    -o /tmp/$name 
 [ $? -ne 0 ] && echo compile error && exit 1
 
 case $(uname) in

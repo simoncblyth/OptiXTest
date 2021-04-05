@@ -1,4 +1,4 @@
-// name=intersect_tree ; gcc $name.cc Node.cc -DDEBUG=1 -std=c++11 -lstdc++ -I/usr/local/cuda/include -o /tmp/$name && /tmp/$name
+// ./intersect_tree.sh
 
 #include <vector>
 #include <iostream>

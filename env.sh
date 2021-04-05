@@ -1,8 +1,7 @@
 #!/bin/bash 
 
 sdir=$(pwd)
-name=$(basename $sdir)
-
+name=OptiXTest
 export PREFIX=/tmp/$USER/opticks/$name
 source $PREFIX/build/buildenv.sh 
 
