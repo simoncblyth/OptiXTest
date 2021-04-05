@@ -69,6 +69,11 @@ struct Foundry
 
     Solid* makeSolid11(const char* label, Node nd, const std::vector<float4>* pl=nullptr  );
 
+    Solid* makeBooleanBoxSphere( const char* label, char op, float radius, float fullside ) ;
+    Solid* makeUnionBoxSphere(        const char* label="ubsp", float radius=100.f, float fullside=150.f );
+    Solid* makeIntersectionBoxSphere( const char* label="ibsp", float radius=100.f, float fullside=150.f );
+    Solid* makeDifferenceBoxSphere(   const char* label="dbsp", float radius=100.f, float fullside=150.f );
+
     Solid* makeSphere(     const char* label="sphe", float r=100.f ); 
     Solid* makeEllipsoid(  const char* label="elli", float rx=100.f, float ry=100.f, float rz=50.f ); 
     Solid* makeZSphere(    const char* label="zsph", float r=100.f,  float z1=-50.f , float z2=50.f ); 

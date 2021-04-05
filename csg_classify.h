@@ -9,6 +9,15 @@ enum {
      CTRL_LOOP_B         = 5
 };  
 
+
+typedef enum { 
+     UNDEFINED=0, 
+     CONTINUE=1, 
+     BREAK=2 
+} Action_t ;
+
+
+
 #ifdef DEBUG
 static const char* CTRL_RETURN_MISS_   = "RETURN_MISS" ; 
 static const char* CTRL_RETURN_A_      = "RETURN_A" ; 
@@ -66,6 +75,12 @@ struct IntersectionState
 #endif
 
 
+#if defined(__CUDACC__) || defined(__CUDABE__)
+   #define LUT_METHOD __device__ __forceinline__ 
+#else
+   #define LUT_METHOD inline
+#endif 
+
 
 struct LUT
 {
@@ -73,6 +88,7 @@ struct LUT
     unsigned packed_boolean_lut_ACloser[4] = { 0x22121141, 0x00014014, 0x00141141, 0x00000000 } ;
     unsigned packed_boolean_lut_BCloser[4] = { 0x22115122, 0x00022055, 0x00133155, 0x00000000 } ;
 
+    LUT_METHOD
     int lookup( OpticksCSG_t operation, IntersectionState_t stateA, IntersectionState_t stateB, bool ACloser )
     {
         const unsigned* lut = ACloser ? packed_boolean_lut_ACloser : packed_boolean_lut_BCloser ;  
@@ -82,7 +98,5 @@ struct LUT
     }
 
 };
-
-
 
 

@@ -111,25 +111,16 @@ void Node::Dump(const Node* n_, unsigned ni, const char* label)
 
 
 
+Node Node::Union(){         return Node::BooleanOperator('U') ; }  // static
+Node Node::Intersection(){  return Node::BooleanOperator('I') ; }
+Node Node::Difference(){    return Node::BooleanOperator('D') ; }
+Node Node::BooleanOperator(char op)   // static 
+{
+    Node nd = {} ;
+    nd.setTypecode(CSG::BooleanOperator(op)) ; 
+    return nd ; 
+}
 
-Node Node::Union()  // static
-{
-    Node nd = {} ;
-    nd.setTypecode(CSG_UNION) ; 
-    return nd ; 
-}
-Node Node::Intersection()  // static
-{
-    Node nd = {} ;
-    nd.setTypecode(CSG_INTERSECTION) ; 
-    return nd ; 
-}
-Node Node::Difference()  // static
-{
-    Node nd = {} ;
-    nd.setTypecode(CSG_DIFFERENCE) ; 
-    return nd ; 
-}
 
 Node Node::Sphere(float radius)  // static
 {
@@ -182,6 +173,11 @@ Node Node::Hyperboloid(float r0, float zf, float z1, float z2) // static
     return nd ; 
 }
 
+
+Node Node::Box3(float fullside)  // static 
+{
+    return Box3(fullside, fullside, fullside); 
+}
 Node Node::Box3(float fx, float fy, float fz )  // static 
 {
     assert( fx > 0.f ); 

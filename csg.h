@@ -1,7 +1,7 @@
 #pragma once
 
 #if defined(__CUDACC__) || defined(__CUDABE__)
-#    define CSG_FUNC __forceinline__ CSG_FUNC
+#    define CSG_FUNC __forceinline__ __device__ __host__
 #else
 #    define CSG_FUNC inline
 #endif

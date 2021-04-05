@@ -239,6 +239,9 @@ Solid* Foundry::make(const char* name)
     else if(strcmp(name, "vcub") == 0) so = makeConvexPolyhedronCube(name) ;
     else if(strcmp(name, "vtet") == 0) so = makeConvexPolyhedronTetrahedron(name) ;
     else if(strcmp(name, "elli") == 0) so = makeEllipsoid(name) ;
+    else if(strcmp(name, "ubsp") == 0) so = makeUnionBoxSphere(name) ;
+    else if(strcmp(name, "ibsp") == 0) so = makeIntersectionBoxSphere(name) ;
+    else if(strcmp(name, "dbsp") == 0) so = makeDifferenceBoxSphere(name) ;
     assert( so ); 
     return so ;  
 }
@@ -476,6 +479,43 @@ Solid* Foundry::makeSolid11(const char* label, Node nd, const std::vector<float4
     return so ; 
 }
 
+Solid* Foundry::makeBooleanBoxSphere( const char* label, char op_, float radius, float fullside )
+{
+    Node op = Node::BooleanOperator(op_); 
+    Node bx = Node::Box3(fullside) ; 
+    Node sp = Node::Sphere(radius); 
+
+    unsigned numPrim = 1 ; 
+    Solid* so = addSolid(numPrim, label);
+
+    unsigned numNode = 3 ; 
+    Prim* p = addPrim(numNode); 
+
+    addNode(op); 
+    addNode(bx); 
+    addNode(sp); 
+     
+    p->setAABB( sp.AABB() );   // TODO: automate getting the bbox from boolean tree
+    
+    float extent = p->extent(); 
+    assert( extent > 0.f ); 
+
+    so->extent = extent  ; 
+    std::cout << "Foundry::makeUnionBoxSphere so.label " << so->label << " so.extent " << so->extent << std::endl ; 
+    return so ; 
+}
+
+Solid* Foundry::makeUnionBoxSphere( const char* label, float radius, float fullside ){
+    return makeBooleanBoxSphere(label, 'U', radius, fullside ); 
+}
+Solid* Foundry::makeIntersectionBoxSphere( const char* label, float radius, float fullside ){
+    return makeBooleanBoxSphere(label, 'I', radius, fullside ); 
+}
+Solid* Foundry::makeDifferenceBoxSphere( const char* label, float radius, float fullside ){
+    return makeBooleanBoxSphere(label, 'D', radius, fullside ); 
+}
+
+
 Solid* Foundry::makeSphere(const char* label, float radius)
 {
     Node nd = Node::Sphere(radius); 
@@ -501,6 +541,8 @@ Solid* Foundry::makeEllipsoid(  const char* label, float rx, float ry, float rz 
     nd.setTransform(idx); 
     return makeSolid11(label, nd ); 
 }
+
+
 
 
 Solid* Foundry::makeZSphere(const char* label, float radius, float z1, float z2)

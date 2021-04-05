@@ -1,6 +1,8 @@
 #include "sutil_vec_math.h"
 #include "qat4.h"
+
 #include "intersect_node.h"
+#include "intersect_tree.h"
 
 #include "NP.hh"
 #include "Foundry.h"

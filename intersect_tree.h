@@ -19,13 +19,10 @@ TREE_FUNC
 bool intersect_tree( float4& isect, int numNode, const Node* node, const float4* plan0, const qat4* itra0, const float t_min , const float3& ray_origin, const float3& ray_direction )
 {
     unsigned height = TREE_HEIGHT(numNode) ; // 1->0, 3->1, 7->2, 15->3, 31->4 
-
-
+    float propagate_epsilon = 0.0001f ;  // ? 
     int ierr = 0 ;  
 
     LUT lut ; 
-
-
     Tranche tr ; 
     tr.curr = -1 ;
 
@@ -37,12 +34,8 @@ bool intersect_tree( float4& isect, int numNode, const Node* node, const float4*
 
     tranche_push( tr, fullTree, t_min );
 
-
-
-
     CSG_Stack csg ;  
     csg.curr = -1 ;
-
     int tloop = -1 ; 
 
     while (tr.curr > -1)
@@ -69,15 +62,12 @@ bool intersect_tree( float4& isect, int numNode, const Node* node, const float4*
 #ifdef DEBUG
             printf("//intersect_tree.h nodeIdx %d CSG::Name %10s depth %d elevation %d \n", nodeIdx, CSG::Name(typecode), depth, elevation ); 
 #endif
-
             if( typecode == CSG_ZERO )
             {
                 nodeIdx = POSTORDER_NEXT( nodeIdx, elevation ) ;
                 continue ; 
             }
-
             bool primitive = typecode >= CSG_SPHERE ; 
-           
 #ifdef DEBUG
             printf("//intersect_tree.h nodeIdx %d primitive %d \n", nodeIdx, primitive ); 
 #endif
@@ -128,8 +118,6 @@ bool intersect_tree( float4& isect, int numNode, const Node* node, const float4*
                 float t_right = fabsf( csg.data[right].w );
 
                 bool leftIsCloser = t_left <= t_right ;
-
-
 #ifdef DEBUG
                 printf("//intersect_tree.h nodeIdx %4d left %d right %d l_state %d r_state %d  (0/1/2:Enter/Exit/Miss) t_left %10.4f t_right %10.4f leftIsCloser %d \n", 
                        nodeIdx,left,right,l_state,r_state, t_left, t_right, leftIsCloser ); 
@@ -155,35 +143,87 @@ bool intersect_tree( float4& isect, int numNode, const Node* node, const float4*
                     leftIsCloser = false ; 
                 } 
 
-
                 int ctrl = lut.lookup( typecode , l_state, r_state, leftIsCloser ) ;
 
-                enum { UNDEFINED=0, CONTINUE=1, BREAK=2 } ;
-                int act = UNDEFINED ; 
+                Action_t act = UNDEFINED ; 
 
+                if(ctrl < CTRL_LOOP_A) // CTRL_RETURN_MISS/CTRL_RETURN_A/CTRL_RETURN_B/CTRL_RETURN_FLIP_B "returning" with a push 
+                {
+                    float4 result = ctrl == CTRL_RETURN_MISS ?  make_float4(0.f, 0.f, 0.f, 0.f ) : csg.data[ctrl == CTRL_RETURN_A ? left : right] ;
+                    if(ctrl == CTRL_RETURN_FLIP_B)
+                    {
+                        result.x = -result.x ;     
+                        result.y = -result.y ;     
+                        result.z = -result.z ;     
+                    }
+                    result.w = copysignf( result.w , nodeIdx % 2 == 0 ? -1.f : 1.f );
 
+                    ierr = csg_pop0(csg); if(ierr) break ;
+                    ierr = csg_pop0(csg); if(ierr) break ;
+                    ierr = csg_push(csg, result, nodeIdx );  if(ierr) break ;
 
+                    act = CONTINUE ;  
+                }
+                else   //   CTRL_LOOP_A/CTRL_LOOP_B
+                {                 
+                    int loopside  = ctrl == CTRL_LOOP_A ? left : right ;    
+                    int otherside = ctrl == CTRL_LOOP_A ? right : left ;  
 
-            
+                    unsigned leftIdx = 2*nodeIdx ; 
+                    unsigned rightIdx = leftIdx + 1; 
+                    unsigned otherIdx = ctrl == CTRL_LOOP_A ? rightIdx : leftIdx ; 
 
-            }
+                    float tminAdvanced = fabsf(csg.data[loopside].w) + propagate_epsilon ;
+                    float4 other = csg.data[otherside] ;  // need tmp as pop about to invalidate indices
 
+                    ierr = csg_pop0(csg);                   if(ierr) break ;
+                    ierr = csg_pop0(csg);                   if(ierr) break ;
+                    ierr = csg_push(csg, other, otherIdx ); if(ierr) break ;
 
+                    // looping is effectively backtracking, pop both and put otherside back
 
+                    unsigned endTree   = PACK4(  0,  0,  nodeIdx,  endIdx  );
+                    unsigned leftTree  = PACK4(  0,  0,  leftIdx << (elevation-1), rightIdx << (elevation-1)) ;
+                    unsigned rightTree = PACK4(  0,  0,  rightIdx << (elevation-1), nodeIdx );
 
+                    unsigned loopTree  = ctrl == CTRL_LOOP_A ? leftTree : rightTree  ;
 
+#ifdef DEBUG
+                    printf("//intersect_tree.h nodeIdx %2d height %2d depth %2d elevation %2d endTree %8x leftTree %8x rightTree %8x \n",
+                              nodeIdx,
+                              height,
+                              depth,
+                              elevation,
+                              endTree, 
+                              leftTree,
+                              rightTree);
+#endif
 
+                    ierr = tranche_push( tr, endTree, tmin );          if(ierr) break ;
+                    ierr = tranche_push( tr, loopTree, tminAdvanced ); if(ierr) break ; 
 
-
-
+                    act = BREAK  ;  
+                }                      // "return" or "recursive call" 
+                if(act == BREAK) break ; 
+            }                          // "primitive" or "operation"
             nodeIdx = POSTORDER_NEXT( nodeIdx, elevation ) ;
         }                     // node traversal 
         if(ierr) break ; 
-     }                       // subtree tranches
+    }                        // subtree tranches
 
+    ierr |= (( csg.curr !=  0)  ? ERROR_END_EMPTY : 0)  ; 
 
-
-
-    return false ; 
+#ifdef DEBUG
+    printf("//intersect_tree.h ierr %d csg.curr %d \n", ierr, csg.curr ); 
+#endif
+    if(csg.curr == 0)  
+    {
+        const float4& ret = csg.data[0] ;   
+        isect.x = ret.x ; 
+        isect.y = ret.y ; 
+        isect.z = ret.z ; 
+        isect.w = ret.w ; 
+    }
+    return isect.w > 0.f ;  // ? 
 }
 

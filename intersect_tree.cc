@@ -15,13 +15,13 @@
 int main(int argc, char** argv)
 {
     Node un = Node::Union() ; 
-    Node sp = Node::Sphere(100.f); 
     Node bx = Node::Box3(90.f, 90.f, 90.f) ; 
+    Node sp = Node::Sphere(100.f); 
 
     std::vector<Node> nds ; 
     nds.push_back(un) ;
-    nds.push_back(sp) ; 
     nds.push_back(bx) ; 
+    nds.push_back(sp) ; 
 
     const Node* node = nds.data() ; 
     int numNode = nds.size() ; 

@@ -4,6 +4,8 @@
 #include "qat4.h"
 
 #include "intersect_node.h"
+#include "intersect_tree.h"
+
 #include "Binding.h"
 #include "Params.h"
 
