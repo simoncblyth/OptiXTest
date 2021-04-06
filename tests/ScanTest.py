@@ -101,7 +101,7 @@ def plot2d(st):
 if __name__ == '__main__':
 
 
-    #solid = "sphe"
+    solid = "sphe"
     #solid = "zsph"
     #solid = "cone"
     #solid = "vcub" 
@@ -115,7 +115,7 @@ if __name__ == '__main__':
     #solid = "elli"
     #solid = "ubsp"
     #solid = "ibsp"
-    solid = "dbsp"
+    #solid = "dbsp"
 
     #scan = "circle"
     scan = "rectangle"

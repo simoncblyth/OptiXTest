@@ -3,6 +3,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <cassert>
 
@@ -155,6 +156,38 @@ bool Util::StartsWith( const char* s, const char* q)  // static
     return strlen(q) <= strlen(s) && strncmp(s, q, strlen(q)) == 0 ; 
 }
 
+void Util::DumpGrid(const std::array<int,9>& cl)
+{
+    int i0 = cl[0] ;
+    int i1 = cl[1] ;
+    int is = cl[2] ;
+    int j0 = cl[3] ;
+    int j1 = cl[4] ; 
+    int js = cl[5] ;
+    int k0 = cl[6] ;
+    int k1 = cl[7] ;
+    int ks = cl[8] ; 
+
+    unsigned num = 0 ; 
+    for(int i=i0 ; i < i1 ; i+=is ) 
+    for(int j=j0 ; j < j1 ; j+=js ) 
+    for(int k=k0 ; k < k1 ; k+=ks ) 
+    {
+        std::cout << std::setw(2) << num << " (i,j,k) " << "(" << i << "," << j << "," << k << ") " << std::endl ; 
+        num += 1 ; 
+    }
+}
+
+unsigned Util::Encode4(const char* s) // static 
+{
+    unsigned u4 = 0u ; 
+    for(unsigned i=0 ; i < std::min(4ul, strlen(s)) ; i++ )
+    {
+        unsigned u = unsigned(s[i]) ; 
+        u4 |= ( u << (i*8) ) ; 
+    }
+    return u4 ; 
+}
 
 
 template float       Util::GetEValue<float>(const char* key, float fallback); 

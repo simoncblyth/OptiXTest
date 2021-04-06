@@ -112,9 +112,9 @@ extern "C" __global__ void __raygen__rg()
     const float3 origin    = cameratype == 0u ? params.eye                     : params.eye + dxyUV    ;
     const float3 direction = cameratype == 0u ? normalize( dxyUV + params.W )  : normalize( params.W ) ;
 
-    float3   normal  = make_float3( 0.5f, 0.5f, 0.5f );
     float    t = 0.f ; 
-    float3   position = make_float3( 0.f, 0.f, 0.f );
+    float3   normal   = make_float3( 0.5f, 0.5f, 0.5f );
+    float3   position = make_float3(  0.f, 0.f, 0.f );
     unsigned identity = 0u ; 
 
     trace( 
@@ -191,6 +191,9 @@ extern "C" __global__ void __closesthit__ch()
     unsigned instance_id = optixGetInstanceId() ;        // see IAS_Builder::Build and InstanceId.h 
     unsigned prim_id  = 1u + optixGetPrimitiveIndex() ;  // see GAS_Builder::MakeCustomPrimitivesBI 
     unsigned identity = (( prim_id & 0xff ) << 24 ) | ( instance_id & 0x00ffffff ) ; 
+
+
+
  
     float3 normal = normalize( optixTransformNormalFromObjectToWorldSpace( isect_normal ) ) * 0.5f + 0.5f ;  
 

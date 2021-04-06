@@ -61,7 +61,7 @@ struct Foundry
     Node*  addNodes(const std::vector<Node>& nds );
     float4* addPlan(const float4& pl );
 
-    unsigned addTran( const Tran<double>& tr  );
+    template<typename T> unsigned addTran( const Tran<T>& tr  );
 
     Solid* make(const char* name); 
     Solid* makeLayered( const char* label, float outer_radius, unsigned layers ) ;
@@ -77,6 +77,9 @@ struct Foundry
 
     Solid* makeSphere(     const char* label="sphe", float r=100.f ); 
     Solid* makeEllipsoid(  const char* label="elli", float rx=100.f, float ry=100.f, float rz=50.f ); 
+
+    Solid* makeRotatedCylinder(const char* label="rcyl", float px=0.f, float py=0.f, float radius=100.f, float z1=-50.f, float z2=50.f, float ax=1.f, float ay=0.f, float az=0.f, float angle_deg=45.f  );
+
     Solid* makeZSphere(    const char* label="zsph", float r=100.f,  float z1=-50.f , float z2=50.f ); 
     Solid* makeCone(       const char* label="cone", float r1=300.f, float z1=-300.f, float r2=100.f,   float z2=-100.f ); 
     Solid* makeHyperboloid(const char* label="hype", float r0=100.f, float zf=50.f,   float z1=-50.f,   float z2=50.f );
@@ -89,7 +92,7 @@ struct Foundry
     Solid* makeConvexPolyhedronCube(       const char* label="vcub", float extent=100.f );
     Solid* makeConvexPolyhedronTetrahedron(const char* label="vtet", float extent=100.f);
 
-
+    static void DumpAABB(const char* msg, const float* aabb); 
 
     static float4 TriPlane( const std::vector<float3>& v, unsigned i, unsigned j, unsigned k );
 

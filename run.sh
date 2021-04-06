@@ -16,6 +16,7 @@ mkdir -p $OUTDIR/grid/0
 mkdir -p $OUTDIR/grid/1
 mkdir -p $OUTDIR/grid/2
 
+mkdir -p $OUTDIR/foundry
 
 
 echo $0 

@@ -227,6 +227,14 @@ Node Node::Disc(float px, float py, float ir, float r, float z1, float z2)
     return nd ; 
 } 
 
+/**
+Node::Make
+------------
+
+Only the first four chars of the name are used to select the type of node.
+
+**/
+
 Node Node::Make(const char* name) // static
 {
     if(strncmp(name, "sphe", 4) == 0) return Node::Sphere(100.f) ; 

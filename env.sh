@@ -18,12 +18,8 @@ tmin=0.1
 #geometry=sphere_containing_grid_of_spheres
 #geometry=layered_sphere
 #geometry=layered_zsphere
-geometry=clustered_sphere
-
-#clusterspec=-3:4:1,-3:4:1,-3:4:1
-clusterspec=-1:2:1,-1:2:1,-1:2:1
-clusterunit=500
-
+#geometry=clustered_sphere
+#
 #geometry=sphe # 0
 #geometry=zsph # 1 
 #geometry=cone # 2
@@ -39,6 +35,14 @@ clusterunit=500
 #geometry=ubsp # 12 
 #geometry=ibsp # 13 
 #geometry=dbsp # 14
+geometry=rcyl  # 15
+
+
+
+#clusterspec=-3:4:1,-3:4:1,-3:4:1
+clusterspec=-1:2:1,-1:2:1,-1:2:1
+clusterunit=500
+
 
 gridmodulo=12,13,14
 #gridmodulo=9,10

@@ -158,6 +158,14 @@ void Geo::init_clustered(const char* name, float& tminf, float& tmaxf )
 {
     float unit = Util::GetEValue<float>("CLUSTERUNIT", 200.f ); 
     std::string clusterspec = Util::GetEValue<std::string>("CLUSTERSPEC","-1:2:1,-1:2:1,-1:2:1") ; 
+
+    std::cout 
+        << "Geo::init_clustered " << name 
+        << " clusterspec " << clusterspec 
+        << " unit " << unit 
+        << std::endl
+        ; 
+
     std::array<int,9> cl ; 
     Util::ParseGridSpec(cl, clusterspec.c_str()); // string parsed into array of 9 ints 
     Solid* so = foundry->makeClustered(name, cl[0],cl[1],cl[2],cl[3],cl[4],cl[5],cl[6],cl[7],cl[8], unit ); 
@@ -217,7 +225,6 @@ const Prim*     Geo::getPrim(          unsigned primIdx) const  { return foundry
 
 
 
-
 void Geo::addGrid(const Grid* grid)
 {
     grids.push_back(grid); 
@@ -237,17 +244,17 @@ const Grid* Geo::getGrid(unsigned gridIdx) const
     return grids[gridIdx] ; 
 }
 
-
 void Geo::write(const char* dir) const 
 {
     std::cout << "Geo::write " << dir << std::endl ;  
 
-    NP spec("<u4", 4); 
+    NP spec("<u4", 5); 
     unsigned* v = spec.values<unsigned>() ; 
     *(v+0) = getNumSolid(); 
     *(v+1) = getNumGrid(); 
     *(v+2) = InstanceId::ins_bits ; 
     *(v+3) = InstanceId::gas_bits ; 
+    *(v+4) = Util::Encode4(top) ; 
     spec.save(dir, "spec.npy"); 
 
     // with foundry it makes more sense to write everything at once, not individual solids

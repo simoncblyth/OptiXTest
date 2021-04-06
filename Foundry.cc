@@ -56,6 +56,7 @@ void Foundry::makeDemoSolids()
     makeUnionBoxSphere();
     makeIntersectionBoxSphere();
     makeDifferenceBoxSphere();
+    makeRotatedCylinder();
     dump(); 
 }
 
@@ -245,10 +246,10 @@ Solid* Foundry::make(const char* name)
     else if(strcmp(name, "ubsp") == 0) so = makeUnionBoxSphere(name) ;
     else if(strcmp(name, "ibsp") == 0) so = makeIntersectionBoxSphere(name) ;
     else if(strcmp(name, "dbsp") == 0) so = makeDifferenceBoxSphere(name) ;
+    else if(strcmp(name, "rcyl") == 0) so = makeRotatedCylinder(name) ;
     assert( so ); 
     return so ;  
 }
-
 
 /**
 Foundry::addNode
@@ -281,16 +282,19 @@ float4* Foundry::addPlan(const float4& pl )
     return plan.data() + idx ; 
 }
 
-unsigned Foundry::addTran( const Tran<double>& tr  )
+template<typename T>
+unsigned Foundry::addTran( const Tran<T>& tr  )
 {
-    qat4 t(glm::value_ptr(tr.t));  // narrowing 
+    qat4 t(glm::value_ptr(tr.t));  // narrowing when T=double
     qat4 v(glm::value_ptr(tr.v)); 
 
     unsigned idx = tran.size(); 
 
+    /*
     std::cout << "Foundry::addTran idx " << idx << std::endl ; 
     std::cout << " t " << t << std::endl ; 
     std::cout << " v " << v << std::endl ; 
+    */
 
     assert( tran.size() == itra.size()) ; 
     tran.push_back(t); 
@@ -300,7 +304,8 @@ unsigned Foundry::addTran( const Tran<double>& tr  )
 }
 
 
-
+template unsigned Foundry::addTran<float>(const Tran<float>& ) ;
+template unsigned Foundry::addTran<double>(const Tran<double>& ) ;
 
 
 Node* Foundry::addNodes(const std::vector<Node>& nds )
@@ -422,11 +427,18 @@ Solid* Foundry::makeClustered(const char* name,  int i0, int i1, int is, int j0,
     for(int j=j0 ; j < j1 ; j+=js ) 
     for(int k=k0 ; k < k1 ; k+=ks ) 
     {
-        std::cout << std::setw(2) << numPrim << " (i,j,k) " << "(" << i << "," << j << "," << k << ") " << std::endl ; 
+        //std::cout << std::setw(2) << numPrim << " (i,j,k) " << "(" << i << "," << j << "," << k << ") " << std::endl ; 
         numPrim += 1 ; 
     }
        
-    std::cout << "Foundry::makeClustered numPrim " << numPrim << " extent " << extent << std::endl ;  
+    std::cout 
+        << "Foundry::makeClustered " 
+        << " name " << name  
+        << " numPrim " << numPrim 
+        << " extent " << extent 
+        << std::endl
+        ;  
+
     Solid* so = addSolid(numPrim, name);
     so->extent = float(extent) ; 
     unsigned idx = 0 ; 
@@ -446,13 +458,31 @@ Solid* Foundry::makeClustered(const char* name,  int i0, int i1, int is, int j0,
         const qat4* t = getTran(idx-1u) ; 
 
         float* aabb = n->AABB(); 
+        //DumpAABB("n->AABB() bef trans", aabb ); 
         t->transform_aabb_inplace( aabb ); 
+        //DumpAABB("n->AABB() aft trans", aabb ); 
 
         p->setSbtIndexOffset(idx) ; 
-        p->setAABB( n->AABB() ); 
+        p->setAABB( n->AABB() );
+        DumpAABB("p->AABB() aft setup", aabb ); 
+        //std::cout << std::endl ; 
+ 
         idx += 1 ; 
     }
     return so ; 
+}
+
+void Foundry::DumpAABB(const char* msg, const float* aabb) // static 
+{
+    int w = 4 ; 
+    std::cout << msg << " " ; 
+    std::cout << " | " ; 
+    for(int l=0 ; l < 3 ; l++) std::cout << std::setw(w) << *(aabb+l) << " " ; 
+    std::cout << " | " ; 
+    for(int l=0 ; l < 3 ; l++) std::cout << std::setw(w) << *(aabb+l+3) << " " ; 
+    std::cout << " | " ; 
+    for(int l=0 ; l < 3 ; l++) std::cout << std::setw(w) << *(aabb+l+3) - *(aabb+l)  << " " ; 
+    std::cout << std::endl ; 
 }
 
 
@@ -546,6 +576,20 @@ Solid* Foundry::makeEllipsoid(  const char* label, float rx, float ry, float rz 
 }
 
 
+Solid* Foundry::makeRotatedCylinder(const char* label, float px, float py, float radius, float z1, float z2, float ax, float ay, float az, float angle_deg )
+{
+    Node nd = Node::Cylinder( px, py, radius, z1, z2 ); 
+    const Tran<float>* tr = Tran<float>::make_rotate(ax, ay, az, angle_deg ); 
+    unsigned idx = 1 + addTran(*tr);      // 1-based idx, 0 meaning None
+    std::cout << "Foundry::makeRotatedCylinder " << *tr << std::endl ;
+    nd.setTransform(idx); 
+    return makeSolid11(label, nd ); 
+}
+
+
+
+
+
 
 
 Solid* Foundry::makeZSphere(const char* label, float radius, float z1, float z2)
@@ -589,6 +633,7 @@ Solid* Foundry::makeCylinder(const char* label, float px, float py, float radius
     Node nd = Node::Cylinder( px, py, radius, z1, z2 ); 
     return makeSolid11(label, nd ); 
 }
+
 
 Solid* Foundry::makeDisc(const char* label, float px, float py, float ir, float r, float z1, float z2)
 {

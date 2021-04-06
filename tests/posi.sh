@@ -1,5 +1,5 @@
 #!/bin/bash -l 
 which ipython
-source ./env.sh 
+source ../env.sh 
 ipython -i --pdb posi.py 
 

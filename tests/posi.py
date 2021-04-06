@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-import os, glob, logging
+
+import os, sys, glob, logging, codecs
+d_ = lambda _:codecs.latin_1_decode(_)[0]  
 log = logging.getLogger(__name__)
 
 from OpticksCSG import CSG_ as CSG 
@@ -107,18 +109,18 @@ class IAS(object):
     def Path(cls, iasdir):
         return "%s/grid.npy" % iasdir
     @classmethod
-    def Make(cls, iasdir, idn):
+    def Make(cls, iasdir, spec):
         path = cls.Path(iasdir)
-        return cls(path, idn) if os.path.exists(path) else None
-    def __init__(self, path, idn):
+        return cls(path, spec) if os.path.exists(path) else None
+    def __init__(self, path, spec):
         self.dir = os.path.dirname(path)
         raw = load_(path)
 
         # see Identity.h  all _idx are 0-based
         identity  = raw[:,0,3].view(np.uint32)  
 
-        ins_id = idn.ins_id(identity)
-        gas_id = idn.gas_id(identity)
+        ins_id = spec.ins_id(identity)
+        gas_id = spec.gas_id(identity)
         ins_idx = ins_id - 1 
         gas_idx = gas_id - 1 
 
@@ -137,9 +139,21 @@ class IAS(object):
     pass
 
 
+class Foundry(object):
+    qwn = "solid node prim plan itra tran".split()
+    def __init__(self, dir_):
+        self.dir = dir_
+        for qwn in self.qwn:
+            a = load_("%s/%s.npy" % (dir_,qwn))
+            setattr(self, qwn, a )
+        pass    
+    pass
 
 class GAS(object):
     def __init__(self, gasdir):
+        """
+        
+        """
         self.dir = gasdir
         self.node = load_("%s/node.npy" % gasdir)
         self.prim = load_("%s/prim.npy" % gasdir)
@@ -174,20 +188,26 @@ class GAS(object):
         return d 
 
 
-class Identity(object):
+class Spec(object):
     def __init__(self, base):
         log.info("base:%s" % base)
         spec = load_("%s/spec.npy" % base)
+        num_solid = spec[0]
+        num_grid = spec[1]
         ins_bits = spec[2]
         gas_bits = spec[3]
         ins_mask = ( 1 << ins_bits ) - 1 
         gas_mask = ( 1 << gas_bits ) - 1 
+        top = str(d_(spec[4]))[:2]   ## eg i0 i1 g0  
 
         self.spec = spec
+        self.num_solid = num_solid
+        self.num_grid = num_grid
         self.ins_bits = ins_bits
         self.gas_bits = gas_bits
         self.ins_mask = ins_mask
         self.gas_mask = gas_mask
+        self.top = top 
 
     def ins_id(self, pxid):
         ins_mask = self.ins_mask
@@ -200,60 +220,137 @@ class Identity(object):
     def prim_id(self, pxid):
         return ( pxid & 0xff000000 ) >> 24
 
+    def __repr__(self):
+        fmt = "Spec num_solid %d num_grid %d ins_bits %d ins_mask %x gas_bits %d gas_mask %x top %s" 
+        return fmt % (self.num_solid, self.num_grid, self.ins_bits, self.ins_mask, self.gas_bits, self.gas_mask, self.top )
+
+
 
 class Geo(object):
     def __init__(self, base):
         log.info("base:%s" % base)
-        idn = Identity(base)
+        spec = Spec(base)
+        log.info("spec:%r" % spec)
         ias_dirs = sorted(glob.glob("%s/grid/*" % base))
         log.info("ias_dirs:\n%s" % "\n".join(ias_dirs)) 
         ias = {}
         for ias_idx in range(len(ias_dirs)):
-            ias_ = IAS.Make(ias_dirs[ias_idx], idn)
+            ias_ = IAS.Make(ias_dirs[ias_idx], spec)
             if ias_ is None: continue
             ias[ias_idx] = ias_
         pass
+        self.spec = spec
+        self.ias = ias
+        self.fdr = Foundry(os.path.join(base, "foundry"))
 
+    def load_gas(self, base):
+        """no longer using ?"""
         gas_dirs = sorted(glob.glob("%s/shape/*" % base))
         log.info("gas_dirs:\n%s" % "\n".join(gas_dirs)) 
         gas = {}
         for gas_idx in range(len(gas_dirs)):
             gas[gas_idx] = GAS(gas_dirs[gas_idx])
         pass
-        self.idn = idn
-        self.ias = ias
-        self.gas = gas
+        return gas
 
     def ins_id(self, pxid):
-        return self.idn.ins_id(pxid)
+        return self.spec.ins_id(pxid)
     def gas_id(self, pxid):
-        return self.idn.gas_id(pxid)
+        return self.spec.gas_id(pxid)
     def prim_id(self, pxid):
-        return self.idn.prim_id(pxid)
+        return self.spec.prim_id(pxid)
+
+
+class IntersectCheck(object):
+    def __init__(self, geo):
+        self.geo = geo
+    def check(self, posi):
+        geo = self.geo
+        pxid = posi[:,:,3].view(np.uint32) # pixel identity 
+
+        ins_id = geo.ins_id(pxid)
+        gas_id = geo.gas_id(pxid)
+        prim_id = geo.prim_id(pxid)
+
+        # identities of all intersected pieces of geometry 
+        upxid, upxid_counts = np.unique(pxid, return_counts=True) 
+        
+        ires = np.zeros( (len(upxid), 4), dtype=np.int32 )
+        fres = np.zeros( (len(upxid), 4), dtype=np.float32 )
+
+        # loop over all identified pieces of geometry with intersects
+        for i in range(1,len(upxid)):   # NB zero is skipped : this assumes there are some misses 
+            zid = upxid[i] 
+            zid_count = upxid_counts[i]
+            assert zid > 0, "must skip misses at i=0"     
+
+            zins_id = geo.ins_id(zid)
+            zgas_id = geo.gas_id(zid)
+            zprim_id = geo.prim_id(zid)
+
+            zgas_idx = zgas_id - 1 
+            zinstance_idx = zins_id - 1  
+            zprimitive_idx = zprim_id - 1 
+
+            tr = geo.ias[0].trs[zinstance_idx]
+            itr = geo.ias[0].itrs[zinstance_idx]
+
+            gas_idx = geo.ias[0].gas_idx[zinstance_idx]   # lookup in the IAS the gas_idx for this instance
+            ins_idx = geo.ias[0].ins_idx[zinstance_idx]   # lookup in the IAS the ins_idx for this instance  
+
+            assert ins_idx == zinstance_idx  
+            assert gas_idx == zgas_idx 
+
+            z = np.where(pxid == zid)   
+
+            zpxid = posi[z][:,3].view(np.uint32).copy()
+            zposi = posi[z].copy()  
+            zposi[:,3] = 1.      # global 3d coords for intersect pixels, ready for transform
+            zlpos = np.dot( zposi, itr ) # transform global positions into instance local ones 
+
+            radius = geo.gas[gas_idx].radius(zprimitive_idx)  
+            d = geo.gas[gas_idx].sdf(zprimitive_idx, zlpos[:,:3] )  
+     
+            fmt = "i:%5d zid:%9d zid_count:%6d ins_idx:%4d gas_idx:%3d prim_idx:%3d  d.min:%10s d.max:%10s radius:%s  " 
+            print(fmt  % ( i, zid, zid_count, ins_idx, gas_idx, zprimitive_idx, d.min(), d.max(), radius ))
+            pass
+            fres[i] = (d.min(),d.max(), radius,0. )
+            ires[i] = ( len(zposi), ins_idx, gas_idx, zprimitive_idx )
+        pass
+        print("ires\n", ires) 
+        print("fres\n", fres) 
+        abs_dmax = np.max(np.abs(fres[:,:2]))   
+        print("abs_dmax:%s" % abs_dmax)
+    pass
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
+    if not 'OUTDIR' in os.environ:
+        print("use ./posi.sh to setup environment")
+        sys.exit(0)
+    else:
+        print("OUTDIR:%s" % os.environ['OUTDIR']) 
+    pass
     base = dir_()
     print(base)
-    geo = Geo(base)
 
-    i0 = geo.ias[0]
+    geo = Geo(base)
+    ick = IntersectCheck(geo)
 
     posi = load_("posi.npy")
-    hposi = posi[posi[:,:,3] != 0 ]  
+    pxid = posi[:,:,3].view(np.uint32) # pixel identity, 0 for miss 
+    hposi = posi[pxid > 0]  
     iposi = hposi[:,3].view(np.uint32)  
+
+    num_pixels = pxid.size
+    num_hits = np.count_nonzero(pxid)
+    hit_fraction = float(num_hits)/float(num_pixels)   
+    print("num_pixels:%d num_hits:%d hit_fraction:%8.4f " % (num_pixels, num_hits, hit_fraction ))
 
     #plot3d( hposi[:,:3] )
     #pick_id = identity( 500, 1 ) 
     #pick = pick_intersect_pixels(posi, pick_id )
-
-    pxid = posi[:,:,3].view(np.uint32)      # pixel identity 
-
-    ins_id = geo.ins_id(pxid)
-    gas_id = geo.gas_id(pxid)
-    prim_id = geo.prim_id(pxid)
-  
 
     #assert np.all( layer_id == primitive_id )
     #plot2d(shape_id) 
@@ -261,58 +358,7 @@ if __name__ == '__main__':
 
     #assert np.all( primitive_id == buildinput_id ) 
 
-    # identities of all intersected pieces of geometry 
-    upxid, upxid_counts = np.unique(pxid, return_counts=True) 
-    
-    ires = np.zeros( (len(upxid), 4), dtype=np.int32 )
-    fres = np.zeros( (len(upxid), 4), dtype=np.float32 )
-
-if 1:
-    # loop over all identified pieces of geometry with intersects
-    for i in range(1,len(upxid)):   # NB zero is skipped : this assumes there are some misses 
-        zid = upxid[i] 
-        zid_count = upxid_counts[i]
-        assert zid > 0, "must skip misses at i=0"     
-
-        zins_id = geo.ins_id(zid)
-        zgas_id = geo.gas_id(zid)
-        zprim_id = geo.prim_id(zid)
-
-        zgas_idx = zgas_id - 1 
-        zinstance_idx = zins_id - 1  
-        zprimitive_idx = zprim_id - 1 
-
-        tr = geo.ias[0].trs[zinstance_idx]
-        itr = geo.ias[0].itrs[zinstance_idx]
-
-        gas_idx = geo.ias[0].gas_idx[zinstance_idx]   # lookup in the IAS the gas_idx for this instance
-        ins_idx = geo.ias[0].ins_idx[zinstance_idx]   # lookup in the IAS the ins_idx for this instance  
-
-        assert ins_idx == zinstance_idx  
-        assert gas_idx == zgas_idx 
-
-        z = np.where(pxid == zid)   
-
-        zpxid = posi[z][:,3].view(np.uint32).copy()
-        zposi = posi[z].copy()  
-        zposi[:,3] = 1.      # global 3d coords for intersect pixels, ready for transform
-        zlpos = np.dot( zposi, itr ) # transform global positions into instance local ones 
-
-        radius = geo.gas[gas_idx].radius(zprimitive_idx)  
-        d = geo.gas[gas_idx].sdf(zprimitive_idx, zlpos[:,:3] )  
-
-         
-
-        print("i:%5d zid:%9d zid_count:%6d ins_idx:%4d gas_idx:%3d prim_idx:%3d  d.min:%10s d.max:%10s radius:%s  "  % ( i, zid, zid_count, ins_idx, gas_idx, zprimitive_idx, d.min(), d.max(), radius ))
-        pass
-        fres[i] = (d.min(),d.max(), radius,0. )
-        ires[i] = ( len(zposi), ins_idx, gas_idx, zprimitive_idx )
-    pass
-   
-    print("ires\n", ires) 
-    print("fres\n", fres) 
-    abs_dmax = np.max(np.abs(fres[:,:2]))   
-    print("abs_dmax:%s" % abs_dmax)
+    #ick.check(posi)
     print(dir_())
 
 if 0:
@@ -328,5 +374,4 @@ if 0:
         axs[2].imshow(pick) 
     pass
     fig.show()
-
-
+pass
