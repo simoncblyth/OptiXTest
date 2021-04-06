@@ -113,9 +113,14 @@ void SBT::createMiss()
 
 void SBT::updateMiss()
 {
-    miss->data.r = 0.3f ;
-    miss->data.g = 0.1f ;
-    miss->data.b = 0.5f ;
+    //glm::vec3 purple(0.3f, 0.1f, 0.5f); 
+    //glm::vec3 white( 1.0f, 1.0f, 1.0f); 
+    glm::vec3 lightgrey( 0.9f, 0.9f, 0.9f); 
+    const glm::vec3& bkg = lightgrey  ; 
+   
+    miss->data.r = bkg.x ;
+    miss->data.g = bkg.y ;
+    miss->data.b = bkg.z ;
 
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( d_miss ),

@@ -33,13 +33,13 @@ std::string Prim::desc() const
 }
 
 
-PrimSpec Prim::MakeSpec( const Prim* prim,  unsigned primIdx, unsigned numPrim ) // static 
+PrimSpec Prim::MakeSpec( const Prim* prim0,  unsigned primIdx, unsigned numPrim ) // static 
 {
-    const Prim* pr = prim + primIdx ; 
+    const Prim* prim = prim0 + primIdx ; 
 
     PrimSpec ps ; 
-    ps.aabb = pr->AABB() ; 
-    ps.sbtIndexOffset = pr->sbtIndexOffsetPtr() ;  
+    ps.aabb = prim->AABB() ; 
+    ps.sbtIndexOffset = prim->sbtIndexOffsetPtr() ;  
     ps.num_prim = numPrim ; 
     ps.stride_in_bytes = sizeof(Prim); 
     return ps ; 

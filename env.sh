@@ -18,11 +18,11 @@ tmin=0.1
 #geometry=sphere_containing_grid_of_spheres
 #geometry=layered_sphere
 #geometry=layered_zsphere
-#geometry=clustered_sphere
+geometry=clustered_sphere
 
-clusterspec=-3:4:1,-3:4:1,-3:4:1
+#clusterspec=-3:4:1,-3:4:1,-3:4:1
+clusterspec=-1:2:1,-1:2:1,-1:2:1
 clusterunit=500
-
 
 #geometry=sphe # 0
 #geometry=zsph # 1 
@@ -36,11 +36,11 @@ clusterunit=500
 #geometry=vcub # 9
 #geometry=vtet # 10
 #geometry=elli # 11
-#geometry=ubsp
-#geometry=ibsp
-geometry=dbsp
+#geometry=ubsp # 12 
+#geometry=ibsp # 13 
+#geometry=dbsp # 14
 
-gridmodulo=0,1,2,3,4,5,6,7,8,9,10,11
+gridmodulo=12,13,14
 #gridmodulo=9,10
 #gridmodulo=5,6
 #gridmodulo=10
@@ -58,11 +58,12 @@ gridspec=-10:11:2,-10:11:2,0:6:3
 gridscale=200.0
 
 
-#eye=-0.7,-0.7,0.15
+eye=-0.7,-0.7,0.15
 #eye=-0.5,0.0,0.15
 #eye=-0.5,-0.5,-0.5
 #eye=-1.0,-1.0,0.0
-eye=-1.0,-1.0,1.0
+#eye=-1.0,-1.0,1.0
+#eye=-0.8,-0.8,0.8
 
 
 

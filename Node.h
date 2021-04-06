@@ -14,6 +14,36 @@ Node (synonymous with Part)
 NB elements are used for different purposes depending on typecode, 
 eg planeIdx, planeNum are used only with CSG_CONVEXPOLYHEDRON.  Marked "cx:" below.
 
+
+sp:sphere
+   center, radius 
+
+zs:zsphere
+   center, radius, z1, z2 cuts 
+
+cy:cylinder
+   center, radius, z1, z2
+
+ds:disc
+   very flat cylinder
+
+cn:cone
+   r1, z1, r2, z2 
+
+hy:hyperboloid
+   r0 (z=0 waist), ...
+
+pl:plane (unbounded)
+   normal and distance from origin 
+
+sl:slab (unbounded)
+   normal and two distances from origin 
+
+cx:convexpolyhedron 
+   planeOffset and number of planes   
+
+
+
 * vim replace : shift-R
 
 
@@ -35,13 +65,13 @@ eg planeIdx, planeNum are used only with CSG_CONVEXPOLYHEDRON.  Marked "cx:" bel
     |    | ds:z1          | ds:z2          |                |                |                                                 |
     |    |                |                |                |                |                                                 |
     +----+----------------+----------------+----------------+----------------+-------------------------------------------------+
-    |    |                |                |                |(prev:typecode) |                                                 |
+    |    |                |                |                |                |  q2.w was previously typecode                   |
     |    |                |                |                |                |                                                 |
     | q2 |  BBMin_x       |  BBMin_y       |  BBMin_z       |  BBMax_x       |                                                 |
     |    |                |                |                |                |                                                 |
     |    |                |                |                |                |                                                 |
     +----+----------------+----------------+----------------+----------------+-------------------------------------------------+
-    |    |                |                | (typecode)     | gtransformIdx  |                                                 |
+    |    |                |                |  typecode      | gtransformIdx  |                                                 |
     |    |                |                |                | complement     |                                                 |
     | q3 |  BBMax_y       |  BBMax_z       |                |                |                                                 |
     |    |                |                |                |                |                                                 |

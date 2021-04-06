@@ -55,10 +55,10 @@ int main(int argc, char** argv)
     const char* ptx_path = Util::PTXPath( prefix, cmake_target, ptxname ) ; 
     std::cout << " ptx_path " << ptx_path << std::endl ; 
 
-    bool small = false ;  
-    unsigned width = small ? 512u : 1024u ; 
-    unsigned height = small ? 384u : 768u ; 
+    unsigned width = 1280u ; 
+    unsigned height = 720u ; 
     unsigned depth = 1u ; 
+
     unsigned cameratype = Util::GetEValue<unsigned>("CAMERATYPE", 0u ); 
 
 

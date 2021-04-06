@@ -53,6 +53,9 @@ void Foundry::makeDemoSolids()
     makeConvexPolyhedronCube(); 
     makeConvexPolyhedronTetrahedron(); 
     makeEllipsoid(); 
+    makeUnionBoxSphere();
+    makeIntersectionBoxSphere();
+    makeDifferenceBoxSphere();
     dump(); 
 }
 
