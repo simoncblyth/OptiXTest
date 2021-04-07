@@ -54,4 +54,8 @@ scan-recent(){
 #scan-all $scans
 scan-recent 
 
+
+ipython -i --pdb ScanTest.py 
+
+
 exit 0 

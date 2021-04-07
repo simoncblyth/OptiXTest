@@ -6,6 +6,7 @@
 #include "Util.h"
 #include "Grid.h"
 #include "InstanceId.h"
+#include "AABB.h"
 
 #include <glm/gtx/transform.hpp>
 
@@ -46,20 +47,26 @@ Grid::Grid( unsigned ias_idx_, unsigned num_solid_ )
     init(); 
 }
 
-float Grid::extent() const 
+const float4 Grid::center_extent() const 
 {
-    int mn(0); 
-    int mx(0); 
-    Util::GridMinMax(grid, mn, mx); 
-   
-    int iextent = std::max( std::abs(mn), std::abs(mx) );  // half side
-    return gridscale*float(iextent) ; 
+    int3 imn = make_int3( 0, 0, 0);  
+    int3 imx = make_int3( 0, 0, 0);  
+    Util::GridMinMax(grid, imn, imx); 
+
+    float3 mn = gridscale*make_float3( float(imn.x), float(imn.y), float(imn.z) ) ;
+    float3 mx = gridscale*make_float3( float(imx.x), float(imx.y), float(imx.z) ) ;
+
+    // hmm this does not accomodat the bbox of the item, just the grid 
+    AABB bb = { mn, mx }; 
+    float4 ce = bb.center_extent(); 
+
+    return ce ; 
 }
 
 std::string Grid::desc() const 
 {
     std::stringstream ss ; 
-    ss << "Grid extent " << extent() << " num_tr " << trs.size() ; 
+    ss << "Grid center_extent " << center_extent() << " num_tr " << trs.size() ; 
     std::string s = ss.str(); 
     return s; 
 }

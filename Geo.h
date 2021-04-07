@@ -46,12 +46,12 @@ struct Geo
     void addGrid(const Grid* grid) ;
 
     void write(const char* prefix) const ; 
-    void setTopExtent(float top_extent_); 
-    float getTopExtent() const ; 
+    void setCenterExtent(const float4& center_extent); 
+    float4 getCenterExtent() const ; 
 
     float tmin = 0.f ; 
     float tmax = 1e16f ; 
-    float top_extent = 100.f ; 
+    float4 center_extent = {0.f, 0.f, 0.f, 100.f} ; 
 
     Foundry*                  foundry ; 
     std::vector<const Grid*>  grids ; 

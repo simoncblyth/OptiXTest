@@ -106,6 +106,14 @@ void Util::ParseGridSpec(  std::array<int,9>& grid, const char* spec)  // static
 }
 
 
+
+void Util::GridMinMax(const std::array<int,9>& grid, int3&mn, int3& mx)  // static 
+{
+    mn.x = grid[0] ; mx.x = grid[1] ; 
+    mn.y = grid[3] ; mx.y = grid[4] ; 
+    mn.z = grid[6] ; mx.z = grid[7] ; 
+}
+
 void Util::GridMinMax(const std::array<int,9>& grid, int&mn, int& mx)  // static 
 {
     for(int a=0 ; a < 3 ; a++)

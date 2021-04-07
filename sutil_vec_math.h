@@ -2611,3 +2611,47 @@ SUTIL_INLINE SUTIL_HOSTDEVICE float4 make_float4(const float2& v0, const float2&
 /** @} */
 
 
+
+
+
+#if defined(__CUDACC__) || defined(__CUDABE__)
+#else
+
+#include <iostream>
+#include <iomanip>
+
+inline std::ostream& operator<<(std::ostream& os, const float3& v)
+{
+    int w = 10 ; 
+    os 
+       << "(" 
+       << std::setw(w) << v.x 
+       << "," 
+       << std::setw(w) << v.y
+       << "," 
+       << std::setw(w) << v.z 
+       << ") "  
+       ;
+    return os; 
+}
+
+inline std::ostream& operator<<(std::ostream& os, const float4& v)
+{
+    int w = 10 ; 
+    os 
+       << "(" 
+       << std::setw(w) << v.x 
+       << "," 
+       << std::setw(w) << v.y
+       << "," 
+       << std::setw(w) << v.z 
+       << "," 
+       << std::setw(w) << v.w 
+       << ") "  
+       ;
+    return os; 
+}
+
+
+#endif
+

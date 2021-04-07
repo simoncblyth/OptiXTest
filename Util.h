@@ -1,4 +1,6 @@
 #pragma once
+
+#include "sutil_vec_math.h"
 #include <vector>
 #include <array>
 #include <glm/glm.hpp>
@@ -10,6 +12,8 @@ struct Util
 
     static void ParseGridSpec(       std::array<int,9>& grid, const char* spec ) ;
     static void GridMinMax(    const std::array<int,9>& grid, int& mn, int& mx ) ;
+    static void GridMinMax    (const std::array<int,9>& grid, int3&mn, int3& mx) ;
+
     static void DumpGrid(      const std::array<int,9>& grid ) ;
 
     static unsigned Encode4(const char* s); 

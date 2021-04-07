@@ -9,8 +9,10 @@ struct Solid   // Composite shape
 {
     char        label[4] ; 
     int         numPrim ; 
-    int         primOffset ; 
-    float       extent ; 
+    int         primOffset ;
+    int         padding ;   // TODO: move to label[8] instead of this padding 
+
+    float4      center_extent ; 
 
 #if defined(__CUDACC__) || defined(__CUDABE__)
 #else

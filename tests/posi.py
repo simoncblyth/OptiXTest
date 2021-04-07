@@ -189,18 +189,32 @@ class GAS(object):
 
 
 class Spec(object):
+    """
+    From OptiX7Test.cu:__closesthit__ch::
+
+       unsigned instance_id = optixGetInstanceId() ; 
+       unsigned prim_id  = 1u + optixGetPrimitiveIndex() ;
+       unsigned identity = (( prim_id & 0xff ) << 24 ) | ( instance_id & 0x00ffffff ) ;
+
+    When the intersect is not on an instance the value returned in ~0u (ie -1) 
+    which "fills" whatever mask. 
+    """
     def __init__(self, base):
         log.info("base:%s" % base)
-        spec = load_("%s/spec.npy" % base)
-        num_solid = spec[0]
-        num_grid = spec[1]
-        ins_bits = spec[2]
-        gas_bits = spec[3]
+        uspec = load_("%s/uspec.npy" % base)
+        fspec = load_("%s/fspec.npy" % base)
+
+        num_solid = uspec[0]
+        num_grid = uspec[1]
+        ins_bits = uspec[2]
+        gas_bits = uspec[3]
         ins_mask = ( 1 << ins_bits ) - 1 
         gas_mask = ( 1 << gas_bits ) - 1 
-        top = str(d_(spec[4]))[:2]   ## eg i0 i1 g0  
+        top = str(d_(uspec[4]))[:2]   ## eg i0 i1 g0  
 
-        self.spec = spec
+        self.uspec = uspec
+        self.fspec = fspec
+        self.ce = fspec 
         self.num_solid = num_solid
         self.num_grid = num_grid
         self.ins_bits = ins_bits
@@ -210,6 +224,9 @@ class Spec(object):
         self.top = top 
 
     def ins_id(self, pxid):
+        """
+
+        """
         ins_mask = self.ins_mask
         gas_bits = self.gas_bits  
         return (( (ins_mask << gas_bits ) & pxid ) >> gas_bits ) 
@@ -221,8 +238,8 @@ class Spec(object):
         return ( pxid & 0xff000000 ) >> 24
 
     def __repr__(self):
-        fmt = "Spec num_solid %d num_grid %d ins_bits %d ins_mask %x gas_bits %d gas_mask %x top %s" 
-        return fmt % (self.num_solid, self.num_grid, self.ins_bits, self.ins_mask, self.gas_bits, self.gas_mask, self.top )
+        fmt = "Spec num_solid %d num_grid %d ins_bits %d ins_mask %x gas_bits %d gas_mask %x top %s ce %r " 
+        return fmt % (self.num_solid, self.num_grid, self.ins_bits, self.ins_mask, self.gas_bits, self.gas_mask, self.top, self.ce )
 
 
 
@@ -341,6 +358,11 @@ if __name__ == '__main__':
     posi = load_("posi.npy")
     pxid = posi[:,:,3].view(np.uint32) # pixel identity, 0 for miss 
     hposi = posi[pxid > 0]  
+
+    for k in range(3):
+        print("hposi[:,%d].min()/.max() %10.4f %10.4f " % (k,hposi[:,k].min(),hposi[:,k].max())) 
+    pass
+
     iposi = hposi[:,3].view(np.uint32)  
 
     num_pixels = pxid.size

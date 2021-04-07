@@ -13,6 +13,7 @@
 #include "NP.hh"
 #include "Foundry.h"
 #include "Util.h"
+#include "AABB.h"
 
 
 Foundry::Foundry()
@@ -358,7 +359,7 @@ Solid* Foundry::addSolid(unsigned num_prim, const char* label )
     memcpy( so.label, label, 4 ); 
     so.numPrim = num_prim ; 
     so.primOffset = primOffset ; 
-    so.extent = 0.f ; 
+    so.center_extent = make_float4(0.f, 0.f, 0.f, 100.f) ;  // should be overwritten 
 
     solid.push_back(so); 
     return solid.data() + idx  ; 
@@ -385,7 +386,7 @@ Solid* Foundry::makeLayered(const char* label, float outer_radius, unsigned laye
 
     unsigned numPrim = layers ; 
     Solid* so = addSolid(numPrim, label); 
-    so->extent = outer_radius ; 
+    so->center_extent = make_float4( 0.f, 0.f, 0.f, outer_radius ) ; 
 
     for(unsigned i=0 ; i < numPrim ; i++)
     {
@@ -416,11 +417,16 @@ Solid* Foundry::makeLayered(const char* label, float outer_radius, unsigned laye
 
 Solid* Foundry::makeClustered(const char* name,  int i0, int i1, int is, int j0, int j1, int js, int k0, int k1, int ks, double unit ) 
 {
+
+    /*
     std::array<int, 9> cluster = {i0,i1,is,j0,j1,js,k0,k1,ks} ; 
-    int mn(0); 
-    int mx(0); 
-    Util::GridMinMax(cluster, mn, mx);   
-    double extent = double(mx)*unit ;    // TODO: this is too small, as does not account for the AABB, better to get from all the AABB
+    int3 imn = make_int3(i0,j0,k0); 
+    int3 imx = make_int3(i1,j1,k1);
+    float3 mn = make_float3( float(imn.x), float(imn.y), float(imn.z))*float(unit) ;  
+    float3 mx = make_float3( float(imx.x), float(imx.y), float(imx.z))*float(unit) ;  
+    AABB cbb = {mn, mx } ; 
+    float4 cluster_ce = cbb.center_extent(); 
+    */
     
     unsigned numPrim = 0 ; 
     for(int i=i0 ; i < i1 ; i+=is ) 
@@ -435,13 +441,13 @@ Solid* Foundry::makeClustered(const char* name,  int i0, int i1, int is, int j0,
         << "Foundry::makeClustered " 
         << " name " << name  
         << " numPrim " << numPrim 
-        << " extent " << extent 
         << std::endl
         ;  
 
     Solid* so = addSolid(numPrim, name);
-    so->extent = float(extent) ; 
     unsigned idx = 0 ; 
+
+    AABB bb = {} ; 
  
     for(int i=i0 ; i < i1 ; i+=is ) 
     for(int j=j0 ; j < j1 ; j+=js ) 
@@ -462,6 +468,8 @@ Solid* Foundry::makeClustered(const char* name,  int i0, int i1, int is, int j0,
         t->transform_aabb_inplace( aabb ); 
         //DumpAABB("n->AABB() aft trans", aabb ); 
 
+        bb.include_aabb( aabb ); 
+
         p->setSbtIndexOffset(idx) ; 
         p->setAABB( n->AABB() );
         DumpAABB("p->AABB() aft setup", aabb ); 
@@ -469,6 +477,8 @@ Solid* Foundry::makeClustered(const char* name,  int i0, int i1, int is, int j0,
  
         idx += 1 ; 
     }
+    so->center_extent = bb.center_extent() ;   // contains AABB of all Prim 
+    std::cout << " so->center_extent " << so->center_extent << std::endl ; 
     return so ; 
 }
 
@@ -507,8 +517,9 @@ Solid* Foundry::makeSolid11(const char* label, Node nd, const std::vector<float4
         std::cout << "Foundry::makeSolid11 : FATAL : " << label << " : got zero extent " << std::endl ; 
     assert( extent > 0.f ); 
 
-    so->extent = extent  ; 
-    std::cout << "Foundry::makeSolid11 so.label " << so->label << " so.extent " << so->extent << std::endl ; 
+    AABB bb = AABB::Make( p->AABB() ); 
+    so->center_extent = bb.center_extent()  ; 
+    std::cout << "Foundry::makeSolid11 so.label " << so->label << " so.center_extent " << so->center_extent << std::endl ; 
     return so ; 
 }
 
@@ -528,13 +539,13 @@ Solid* Foundry::makeBooleanBoxSphere( const char* label, char op_, float radius,
     addNode(bx); 
     addNode(sp); 
      
-    p->setAABB( sp.AABB() );   // TODO: automate getting the bbox from boolean tree
-    
-    float extent = p->extent(); 
-    assert( extent > 0.f ); 
+    AABB bb = {} ;
+    bb.include_aabb( bx.AABB() );     // assumes any transforms have been applied to the Node AABB
+    bb.include_aabb( sp.AABB() ); 
+    p->setAABB( bb.data() );  
 
-    so->extent = extent  ; 
-    std::cout << "Foundry::makeUnionBoxSphere so.label " << so->label << " so.extent " << so->extent << std::endl ; 
+    so->center_extent = bb.center_extent()  ; 
+    std::cout << "Foundry::makeUnionBoxSphere so.label " << so->label << " so.center_extent " << so->center_extent << std::endl ; 
     return so ; 
 }
 

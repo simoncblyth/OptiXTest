@@ -18,8 +18,7 @@ tmin=0.1
 #geometry=sphere_containing_grid_of_spheres
 #geometry=layered_sphere
 #geometry=layered_zsphere
-#geometry=clustered_sphere
-#
+geometry=clustered_sphere
 #geometry=sphe # 0
 #geometry=zsph # 1 
 #geometry=cone # 2
@@ -35,7 +34,7 @@ tmin=0.1
 #geometry=ubsp # 12 
 #geometry=ibsp # 13 
 #geometry=dbsp # 14
-geometry=rcyl  # 15
+#geometry=rcyl  # 15
 
 
 

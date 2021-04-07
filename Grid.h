@@ -17,7 +17,7 @@ struct Grid
 
     Grid(unsigned ias_idx, unsigned num_solid);
 
-    float extent() const ;
+    const float4 center_extent() const ;
     std::string desc() const ;
 
     void init(); 

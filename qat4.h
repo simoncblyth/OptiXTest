@@ -125,36 +125,7 @@ struct qat4
 
 #if defined(__CUDACC__) || defined(__CUDABE__)
 #else
-inline std::ostream& operator<<(std::ostream& os, const float3& v)
-{
-    int w = 10 ; 
-    os 
-       << "(" 
-       << std::setw(w) << v.x 
-       << "," 
-       << std::setw(w) << v.y
-       << "," 
-       << std::setw(w) << v.z 
-       << ") "  
-       ;
-    return os; 
-}
-inline std::ostream& operator<<(std::ostream& os, const float4& v)
-{
-    int w = 10 ; 
-    os 
-       << "(" 
-       << std::setw(w) << v.x 
-       << "," 
-       << std::setw(w) << v.y
-       << "," 
-       << std::setw(w) << v.z 
-       << "," 
-       << std::setw(w) << v.w 
-       << ") "  
-       ;
-    return os; 
-}
+
 inline std::ostream& operator<<(std::ostream& os, const qat4& v)
 {
     os 

@@ -61,7 +61,6 @@ int main(int argc, char** argv)
 
     unsigned cameratype = Util::GetEValue<unsigned>("CAMERATYPE", 0u ); 
 
-
     Foundry foundry ; 
     Geo geo(&foundry) ;  
     geo.write(outdir);  
@@ -69,8 +68,9 @@ int main(int argc, char** argv)
     glm::vec3 eye_model ; 
     Util::GetEVec(eye_model, "EYE", "-1.0,-1.0,1.0"); 
 
-    float top_extent = geo.getTopExtent() ;  
-    glm::vec4 ce(0.f,0.f,0.f, top_extent*1.4f );   // defines the center-extent of the region to view
+
+    const float4 gce = geo.getCenterExtent() ;  
+    glm::vec4 ce(gce.x,gce.y,gce.z, gce.w*1.4f );   // defines the center-extent of the region to view
     glm::vec3 eye,U,V,W  ;
     Util::GetEyeUVW( eye_model, ce, width, height, eye, U, V, W ); 
 

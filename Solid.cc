@@ -1,3 +1,5 @@
+
+#include "sutil_vec_math.h"
 #include "Solid.h"
 
 #if defined(__CUDACC__) || defined(__CUDABE__)
@@ -16,7 +18,7 @@ std::string Solid::desc() const
        << std::setw(30) << label 
        << " numPrim " << std::setw(3) << numPrim 
        << " primOffset " << std::setw(3) << primOffset
-       << " extent " << std::setw(10) << extent
+       << " center_extent " << center_extent
        ; 
     std::string s = ss.str(); 
     return s ; 
