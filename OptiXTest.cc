@@ -23,6 +23,7 @@ OptiXTest
 #include "Geo.h"
 #include "Frame.h"
 #include "Params.h"
+#include "View.h"
 
 #if OPTIX_VERSION < 70000
 #include "Six.h"
@@ -65,17 +66,19 @@ int main(int argc, char** argv)
     Geo geo(&foundry) ;  
     geo.write(outdir);  
 
-    glm::vec3 eye_model ; 
-    Util::GetEVec(eye_model, "EYE", "-1.0,-1.0,1.0"); 
-
-
     const float4 gce = geo.getCenterExtent() ;  
     glm::vec4 ce(gce.x,gce.y,gce.z, gce.w*1.4f );   // defines the center-extent of the region to view
-    glm::vec3 eye,U,V,W  ;
-    Util::GetEyeUVW( eye_model, ce, width, height, eye, U, V, W ); 
+
+    glm::vec4 eye_model ; 
+    Util::GetEVec(eye_model, "EYE", "-1.0,-1.0,1.0,1.0"); 
+
+    View view = {} ; 
+    view.update(eye_model, ce, width, height) ; 
+    view.dump(); 
+    view.save(outdir); 
 
     Params params ; 
-    params.setView(eye, U, V, W, geo.tmin, geo.tmax, cameratype ); 
+    params.setView(view.eye, view.U, view.V, view.W, geo.tmin, geo.tmax, cameratype ); 
     params.setSize(width, height, depth); 
 
     foundry.dump(); 

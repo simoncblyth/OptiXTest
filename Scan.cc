@@ -120,12 +120,15 @@ void Scan::trace(const float t_min, const float3& ray_origin, const std::vector<
 void Scan::circle_scan()
 {
     float t_min = 0.f ;
-    float radius = 2.0f*solid->extent ; 
+    float4 ce = solid->center_extent ; 
+    float3 center = make_float3( ce ); 
+    float extent = ce.w ; 
+    float radius = 2.0f*extent ; 
 
     // M_PIf from sutil_vec_math.h
     for(float phi=0. ; phi <= M_PIf*2.0 ; phi+=M_PIf*2.0/1000.0 )
     {
-        float3 origin = make_float3( radius*sin(phi), 0.f, radius*cos(phi) ); 
+        float3 origin = center + make_float3( radius*sin(phi), 0.f, radius*cos(phi) ); 
         float3 direction = make_float3( -sin(phi),  0.f, -cos(phi) ); 
         trace(t_min, origin, direction );     
     }
@@ -168,7 +171,9 @@ void Scan::_rectangle_scan(float t_min, unsigned n, float halfside, float y )
 
 void Scan::rectangle_scan()
 {
-    float halfside = 2.0f*solid->extent ; 
+    float4 ce = solid->center_extent ; 
+    float extent = ce.w ; 
+    float halfside = 2.0f*extent ; 
     unsigned nxz = 100 ; 
     unsigned ny = 10 ; 
     float t_min = 0.f ;
@@ -183,7 +188,8 @@ void Scan::rectangle_scan()
 void Scan::axis_scan()
 {
     float t_min = 0.f ;
-    float3 origin = make_float3( 0.f, 0.f, 0.f ); 
+    float4 ce = solid->center_extent ; 
+    float3 origin = make_float3(ce); 
 
     std::vector<float3> dirs ; 
     dirs.push_back( make_float3( 1.f, 0.f, 0.f));

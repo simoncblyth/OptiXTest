@@ -167,9 +167,11 @@ void Geo::init_clustered(const char* name, float& tminf, float& tmaxf )
         << std::endl
         ; 
 
+
+    bool inbox = false ; 
     std::array<int,9> cl ; 
     Util::ParseGridSpec(cl, clusterspec.c_str()); // string parsed into array of 9 ints 
-    Solid* so = foundry->makeClustered(name, cl[0],cl[1],cl[2],cl[3],cl[4],cl[5],cl[6],cl[7],cl[8], unit ); 
+    Solid* so = foundry->makeClustered(name, cl[0],cl[1],cl[2],cl[3],cl[4],cl[5],cl[6],cl[7],cl[8], unit, inbox ); 
     std::cout << "Geo::init_layered" << name << " so.center_extent " << so->center_extent << std::endl ; 
 
     setCenterExtent(so->center_extent); 

@@ -9,6 +9,8 @@
 #include "Solid.h"
 #include "Scan.h"
 #include "Geo.h"
+#include "Util.h"
+#include "View.h"
 
 
 void test_Foundry_Scan()
@@ -40,8 +42,40 @@ int main(int argc, char** argv)
 {
     Foundry foundry ;  
     Geo geo(&foundry) ; 
-    float top_extent = geo.getTopExtent() ;
-    std::cout << "top_extent " << top_extent << std::endl ; 
+
+    unsigned width = 1280u ; 
+    unsigned height = 720u ; 
+
+    glm::vec4 eye_model ; 
+    Util::GetEVec(eye_model, "EYE", "-1.0,-1.0,1.0,1.0"); 
+
+    const float4 gce = geo.getCenterExtent() ;   
+    glm::vec4 ce(gce.x,gce.y,gce.z, gce.w*1.4f );   // defines the center-extent of the region to view
+    glm::vec3 eye,U,V,W  ;
+    Util::GetEyeUVW( eye_model, ce, width, height, eye, U, V, W );  
+
+    View view = {} ; 
+    view.update(eye_model, ce, width, height) ; 
+
+    assert( view.eye.x == eye.x );  
+    assert( view.eye.y == eye.y );  
+    assert( view.eye.z == eye.z );  
+
+    assert( view.U.x == U.x );  
+    assert( view.U.y == U.y );  
+    assert( view.U.z == U.z );  
+
+    assert( view.V.x == V.x );  
+    assert( view.V.y == V.y );  
+    assert( view.V.z == V.z );  
+
+    assert( view.W.x == W.x );  
+    assert( view.W.y == W.y );  
+    assert( view.W.z == W.z );  
+
+    view.dump("View::dump"); 
+    view.save("/tmp");  
+
 
     const char* dir = "/tmp/ScanTest_scans" ; 
 

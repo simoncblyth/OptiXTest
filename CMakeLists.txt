@@ -77,6 +77,7 @@ list(APPEND SOURCES
     Foundry.cc
     Tran.cc
     CU.cc
+    View.cc
 )
 
 if(OptiX_VERSION_ GREATER_EQUAL 70000)

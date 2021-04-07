@@ -35,6 +35,7 @@ struct NP
 
     template<typename T> static void Write(const char* dir, const char* name, const std::vector<T>& values ); 
     template<typename T> static void Write(const char* dir, const char* name, const T* data, int ni=-1, int nj=-1, int nk=-1, int nl=-1, int nm=-1 ); 
+    static void WriteNames(const char* dir, const char* name, const std::vector<std::string>& names, unsigned num_names=0 ); 
 
 
     template<typename T> T*       values() ; 
@@ -558,7 +559,6 @@ inline void NP::save_header(const char* path)
     update_headers(); 
     std::ofstream stream(path, std::ios::out|std::ios::binary);
     stream << _hdr ; 
-    if(stream.bad()) std::cout << "NP::save_header FAILED for " << path << std::endl ; 
 }
 
 inline void NP::save(const char* path)
@@ -567,7 +567,6 @@ inline void NP::save(const char* path)
     std::ofstream stream(path, std::ios::out|std::ios::binary);
     stream << _hdr ; 
     stream.write( bytes(), arr_bytes() );
-    if(stream.bad()) std::cout << "NP::save FAILED for " << path << std::endl ; 
 }
 
 inline void NP::save(const char* dir, const char* name)
@@ -785,9 +784,9 @@ template <typename T> void NP::Write(const char* dir, const char* name, const T*
     std::string dtype = descr_<T>::dtype() ; 
 
     std::cout 
-        << "NP::Write"
+        << "xNP::Write"
         << " dtype " << dtype
-        << " ni  " << std::setw(8) << ni_
+        << " ni  " << std::setw(7) << ni_
         << " nj  " << nj_
         << " nk  " << nk_
         << " nl  " << nl_
@@ -799,28 +798,23 @@ template <typename T> void NP::Write(const char* dir, const char* name, const T*
 
     NP a(dtype.c_str(), ni_,nj_,nk_,nl_,nm_) ;    
 
+    T* v = a.values<T>(); 
 
-    if(data != nullptr)
-    {
-        T* v = a.values<T>(); 
+    int ni = std::max(1,ni_); 
+    int nj = std::max(1,nj_); 
+    int nk = std::max(1,nk_); 
+    int nl = std::max(1,nl_); 
+    int nm = std::max(1,nm_); 
 
-        int ni = std::max(1,ni_); 
-        int nj = std::max(1,nj_); 
-        int nk = std::max(1,nk_); 
-        int nl = std::max(1,nl_); 
-        int nm = std::max(1,nm_); 
-
-        for(int i=0 ; i < ni ; i++ ) 
-        for(int j=0 ; j < nj ; j++ )
-        for(int k=0 ; k < nk ; k++ )
-        for(int l=0 ; l < nl ; l++ )
-        for(int m=0 ; m < nm ; m++ )
-        {   
-            int index = i*nj*nk*nl*nm + j*nk*nl*nm + k*nl*nm + l*nm + m  ;
-            *(v + index) = *(data + index ) ; 
-        }   
-    }
-
+    for(int i=0 ; i < ni ; i++ ) 
+    for(int j=0 ; j < nj ; j++ )
+    for(int k=0 ; k < nk ; k++ )
+    for(int l=0 ; l < nl ; l++ )
+    for(int m=0 ; m < nm ; m++ )
+    {   
+        int index = i*nj*nk*nl*nm + j*nk*nl*nm + k*nl*nm + l*nm + m  ;
+        *(v + index) = *(data + index ) ; 
+    }   
     a.save(dir, name); 
 }
 
@@ -840,5 +834,17 @@ template void NP::Write<float>(   const char*, const char*, const std::vector<fl
 template void NP::Write<double>(  const char*, const char*, const std::vector<double>&  ); 
 template void NP::Write<int>(     const char*, const char*, const std::vector<int>& ); 
 template void NP::Write<unsigned>(const char*, const char*, const std::vector<unsigned>& ); 
+
+inline void NP::WriteNames(const char* dir, const char* name, const std::vector<std::string>& names, unsigned num_names_ )
+{
+    unsigned num_names = num_names_ == 0 ? names.size() : num_names_ ; 
+    std::stringstream ss ; 
+    ss << dir << "/" << name ; 
+    std::string path = ss.str() ; 
+    std::ofstream stream(path.c_str(), std::ios::out|std::ios::binary);
+    assert( num_names <= names.size() ); 
+    for( unsigned i=0 ; i < num_names ; i++) stream << names[i] << std::endl ; 
+    stream.close(); 
+}
 
 

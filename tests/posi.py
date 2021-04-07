@@ -21,11 +21,11 @@ except ImportError:
     pv = None
 pass
 
-def plot3d(pos):
+def plot3d(pos, cpos=None):
     pl = pv.Plotter()
     pl.add_points(pos, color='#FFFFFF', point_size=2.0 )  
     pl.show_grid()
-    cp = pl.show()
+    cp = pl.show(cpos=cpos)
     return cp
 
 def plot2d(img):
@@ -187,6 +187,35 @@ class GAS(object):
         pass
         return d 
 
+
+
+class View(object):
+    def __init__(self, base):
+        vv = load_("%s/view.npy" % base) 
+        nn = open("%s/view.txt" % base).read().splitlines()
+        assert len(vv) == len(nn)
+        for i, n in enumerate(nn):
+            setattr( self, n, vv[i])
+        pass
+        self.vv = vv
+        self.nn = nn
+
+    def _get_cpos(self):
+        up = self.up[:3]
+        mag = np.sqrt(np.sum(up*up)) 
+        up /= mag  
+
+        e = tuple(self.eye[:3]) 
+        l = tuple(self.look[:3]) 
+        u = tuple(up) 
+
+        return [e,l,u]
+    cpos = property(_get_cpos)
+
+    pass
+    def __repr__(self):
+        return "\n".join(["%20s : %s " % (n, getattr(self,n)) for n in self.nn])
+         
 
 class Spec(object):
     """
@@ -352,12 +381,20 @@ if __name__ == '__main__':
     base = dir_()
     print(base)
 
+
+    view = View(base)
+    print(view)
+
     geo = Geo(base)
     ick = IntersectCheck(geo)
 
     posi = load_("posi.npy")
     pxid = posi[:,:,3].view(np.uint32) # pixel identity, 0 for miss 
     hposi = posi[pxid > 0]  
+    hpos = hposi[:,:3]
+
+    #plot3d( hpos, cpos=view.cpos )
+
 
     for k in range(3):
         print("hposi[:,%d].min()/.max() %10.4f %10.4f " % (k,hposi[:,k].min(),hposi[:,k].max())) 

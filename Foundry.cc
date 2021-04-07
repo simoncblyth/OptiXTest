@@ -415,7 +415,7 @@ Solid* Foundry::makeLayered(const char* label, float outer_radius, unsigned laye
     return so ; 
 }
 
-Solid* Foundry::makeClustered(const char* name,  int i0, int i1, int is, int j0, int j1, int js, int k0, int k1, int ks, double unit ) 
+Solid* Foundry::makeClustered(const char* name,  int i0, int i1, int is, int j0, int j1, int js, int k0, int k1, int ks, double unit, bool inbox ) 
 {
 
     /*
@@ -428,7 +428,7 @@ Solid* Foundry::makeClustered(const char* name,  int i0, int i1, int is, int j0,
     float4 cluster_ce = cbb.center_extent(); 
     */
     
-    unsigned numPrim = 0 ; 
+    unsigned numPrim = inbox ? 1 : 0 ; 
     for(int i=i0 ; i < i1 ; i+=is ) 
     for(int j=j0 ; j < j1 ; j+=js ) 
     for(int k=k0 ; k < k1 ; k+=ks ) 
@@ -436,11 +436,14 @@ Solid* Foundry::makeClustered(const char* name,  int i0, int i1, int is, int j0,
         //std::cout << std::setw(2) << numPrim << " (i,j,k) " << "(" << i << "," << j << "," << k << ") " << std::endl ; 
         numPrim += 1 ; 
     }
+
+
        
     std::cout 
         << "Foundry::makeClustered " 
         << " name " << name  
         << " numPrim " << numPrim 
+        << " inbox " << inbox
         << std::endl
         ;  
 
@@ -458,25 +461,47 @@ Solid* Foundry::makeClustered(const char* name,  int i0, int i1, int is, int j0,
         Node* n = addNode(Node::Make(name)) ;
     
         const Tran<double>* translate = Tran<double>::make_translate( double(i)*unit, double(j)*unit, double(k)*unit ); 
-        unsigned idx = 1 + addTran(*translate);      // 1-based idx, 0 meaning None
-        n->setTransform(idx); 
+        unsigned transform_idx = 1 + addTran(*translate);      // 1-based idx, 0 meaning None
+        n->setTransform(transform_idx); 
+        const qat4* t = getTran(transform_idx-1u) ; 
 
-        const qat4* t = getTran(idx-1u) ; 
+        t->transform_aabb_inplace( n->AABB() ); 
 
-        float* aabb = n->AABB(); 
-        //DumpAABB("n->AABB() bef trans", aabb ); 
-        t->transform_aabb_inplace( aabb ); 
-        //DumpAABB("n->AABB() aft trans", aabb ); 
-
-        bb.include_aabb( aabb ); 
+        bb.include_aabb( n->AABB() ); 
 
         p->setSbtIndexOffset(idx) ; 
         p->setAABB( n->AABB() );
-        DumpAABB("p->AABB() aft setup", aabb ); 
-        //std::cout << std::endl ; 
+
+        DumpAABB("p->AABB() aft setup", p->AABB() ); 
+        
+        std::cout << " idx " << idx << " transform_idx " << transform_idx << std::endl ; 
  
         idx += 1 ; 
     }
+
+
+    if(inbox)
+    {
+        float4 ce = bb.center_extent(); 
+        float fullside = ce.w*2.f ; 
+
+        const Tran<float>* to_center = Tran<float>::make_translate( float(ce.x), float(ce.y), float(ce.z) ); 
+        unsigned transform_idx = 1 + addTran(*to_center);  // 1-based idx, 0 meaning None
+        const qat4* t = getTran(transform_idx-1u) ; 
+
+        Prim* p = addPrim(1); 
+        Node bx = Node::Box3(fullside) ;
+        Node* n = addNode(Node::Box3(fullside)); 
+        n->setTransform(transform_idx); 
+        t->transform_aabb_inplace( n->AABB() ); 
+
+        p->setSbtIndexOffset(idx); 
+        p->setAABB( n->AABB() );
+        
+        idx += 1 ; 
+    }
+
+
     so->center_extent = bb.center_extent() ;   // contains AABB of all Prim 
     std::cout << " so->center_extent " << so->center_extent << std::endl ; 
     return so ; 
