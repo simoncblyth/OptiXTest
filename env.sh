@@ -70,8 +70,8 @@ eye=-0.8,-0.8,0.8,1.0
 
 
 
-cameratype=0
-#cameratype=1
+#cameratype=0
+cameratype=1
 
 # number of concentric layers in compound shapes
 #layers=1     
