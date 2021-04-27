@@ -193,6 +193,110 @@ NPU.hh
 
 
 
+Splitting off CSG Model into separate pkg/repo for reusability
+-----------------------------------------------------------------
+
+Point of the exercise is to end up with as little as possible 
+in the package that depends on OptiX 7 making the geomerty 
+model maximally reusable. Including the ability to test the
+intersection on CPU.
+
+
+::
+
+    ## basis types used by geometry model 
+
+    sutil_vec_math.h
+    qat4.h
+    Quad.h
+
+    ## utilities used by geometry model
+
+    CU.h
+    CUDA_CHECK.h
+    Sys.h
+
+    ## intersection underpinnings
+
+    robust_quadratic_roots.h
+    intersect_node.h
+
+    error.h
+    tranche.h
+    csg.h
+    pack.h
+    csg_classify.h
+    postorder.h
+
+    intersect_tree.h
+
+    ## main players of geometry model 
+
+    Node.h
+    Prim.h
+    PrimSpec.h
+    OpticksCSG.h
+    Solid.h
+
+    Tran.h
+    AABB.h
+    Util.h
+    Foundry.h
+
+    ## higher level geometry 
+
+    Geo.h
+    InstanceId.h
+    Grid.h
+
+    ## test machinery 
+
+    Scan.h
+
+
+    ## unused/superceeded, delete ?
+
+    history.h
+    Shape.h       # delete Shape.h after Six.cc is updated to new model
+    Identity.h
+
+    ## utilities npy/jpg/...
+
+    NP.hh
+    NPU.hh
+    SIMG.hh
+    stb_image.h
+    stb_image_write.h
+
+    ## image mechanics
+    Frame.h
+
+    ## 3D math
+    View.h
+
+    ## OptiX 7
+
+    Ctx.h
+    Properties.h
+    Params.h
+    Binding.h
+    OPTIX_CHECK.h
+    GAS.h
+    GAS_Builder.h
+    IAS.h
+    IAS_Builder.h
+    PIP.h
+    SBT.h
+    AS.h
+    BI.h
+
+    ## OptiX 6
+
+    Six.h
+
+
+
+
 
 WIP : rethink identity handling re:gas_idx 
 -----------------------------------------------------------

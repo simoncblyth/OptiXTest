@@ -3,5 +3,19 @@
 name=SolidTest 
 srcs="$name.cc ../Solid.cc"
 
-gcc $srcs -I.. -std=c++11 -lstdc++ -o /tmp/$name && /tmp/$name 
 
+gcc -g \
+   $srcs \
+   -I.. \
+   -lstdc++ -std=c++11 \
+   -I/usr/local/cuda/include \
+   -o /tmp/$name 
+
+[ $? -ne 0 ] && echo compile error && exit 1
+
+
+/tmp/$name $*
+[ $? -ne 0 ] && echo run error && exit 2
+
+
+exit 0

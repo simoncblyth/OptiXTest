@@ -80,6 +80,13 @@ list(APPEND SOURCES
     View.cc
 )
 
+
+
+
+
+
+
+
 if(OptiX_VERSION_ GREATER_EQUAL 70000)
    list(APPEND CU_SOURCES OptiX7Test.cu)
 

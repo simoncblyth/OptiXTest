@@ -60,7 +60,8 @@ void test_makeClustered()
 {
     std::cout << "[test_makeClustered" << std::endl ; 
     Foundry fd ; 
-    fd.makeClustered("sphe", -1,2,1, -1,2,1, -1,2,1, 1000. ); 
+    bool inbox = false ; 
+    fd.makeClustered("sphe", -1,2,1, -1,2,1, -1,2,1, 1000., inbox ); 
     fd.dumpPrim(0); 
     std::cout << "]test_makeClustered" << std::endl ; 
 }

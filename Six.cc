@@ -9,7 +9,8 @@
 #include "Shape.h"
 #include "Grid.h"
 #include "Six.h"
-#include "SPPM.h" 
+
+#include "SIMG.hh" 
 #include "NP.hh"
     
 Six::Six(const char* ptx_path_, const Params* params_)
@@ -251,9 +252,16 @@ void Six::launch()
 
 void Six::save(const char* outdir) 
 {
+    const unsigned char* data = (const unsigned char*)pixels_buffer->map();  
+
     int channels = 4 ; 
-    SPPM_write(outdir, "pixels.ppm",  (unsigned char*)pixels_buffer->map(), channels,  params->width, params->height, true );
+    int quality = 50 ; 
+    SIMG img(int(params->width), int(params->height), channels,  data ); 
+    img.writeJPG(outdir, "pixels.jpg", quality); 
+
     pixels_buffer->unmap(); 
+
+
 
     NP::Write(outdir, "posi.npy",  (float*)posi_buffer->map(), params->height, params->width, 4 );
     posi_buffer->unmap(); 

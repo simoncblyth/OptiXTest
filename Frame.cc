@@ -7,7 +7,6 @@
 #include "NP.hh"
 #include "Util.h"
 #include "Frame.h"
-#include "SPPM.h"
 
 #define SIMG_IMPLEMENTATION 1 
 #include "SIMG.hh"
@@ -93,19 +92,12 @@ void Frame::write(const char* outdir) const
 {
     std::cout << "Frame::write " << outdir << std::endl ; 
     bool yflip = false ; 
-    writePPM(outdir, "pixels.ppm", yflip );  
     int quality = Util::GetEValue<int>("QUALITY", 50); 
+    writePNG(outdir, "pixels.png");  
     writeJPG(outdir, "pixels.jpg", quality);  
     writeNP(  outdir, "posi.npy" );
 }
 
-void Frame::writePPM(const char* dir, const char* name, bool yflip ) const 
-{
-    std::cout << "Frame::writePPM " << dir << "/" << name << std::endl ; 
-    int channels = 4 ; 
-    const unsigned char* data = (const unsigned char*)pixels.data();  
-    SPPM_write( dir, name, data, channels, width, height, yflip );
-}
 void Frame::writePNG(const char* dir, const char* name) const 
 {
     int channels = 4 ; 

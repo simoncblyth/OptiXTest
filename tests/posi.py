@@ -21,12 +21,36 @@ except ImportError:
     pv = None
 pass
 
-def plot3d(pos, cpos=None):
+def plot3d(pos, cpos=None, full_screen=False, parallel=False, scale=1, view_isometric=False):
+    """
+    see env-;pyvista-;pyvista-vi 
+
+    * scale and view_isometric seems not doing anything ? 
+
+    Example plotting commands::
+    
+        plot3d(hpos, cpos=view.cpos, full_screen=True)
+        plot3d(hpos, cpos=view.cpos)
+        pl = plot3d(hpos, cpos=view.cpos)
+
+
+    See env/graphics/pyvista/pyvista_camera_matrix.py
+
+    """
     pl = pv.Plotter()
     pl.add_points(pos, color='#FFFFFF', point_size=2.0 )  
+    if parallel:
+        pl.enable_parallel_projection()
+    pass
+    if not scale == 1:
+        pl.set_scale(scale, scale, scale)
+    pass
+    if view_isometric:
+        pl.view_isometric()
+    pass
     pl.show_grid()
-    cp = pl.show(cpos=cpos)
-    return cp
+    cp = pl.show(cpos=cpos, full_screen=full_screen)
+    return pl
 
 def plot2d(img):
     """
@@ -393,12 +417,14 @@ if __name__ == '__main__':
     hposi = posi[pxid > 0]  
     hpos = hposi[:,:3]
 
-    #plot3d( hpos, cpos=view.cpos )
-
-
     for k in range(3):
         print("hposi[:,%d].min()/.max() %10.4f %10.4f " % (k,hposi[:,k].min(),hposi[:,k].max())) 
     pass
+
+
+    print(plot3d.__doc__)
+
+
 
     iposi = hposi[:,3].view(np.uint32)  
 
