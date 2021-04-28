@@ -33,25 +33,25 @@ fi
 
 [ $? -ne 0 ] && echo $0 : run  FAIL && exit 3
 
-ppm=$OUTDIR/pixels.ppm
+jpg=$OUTDIR/pixels.jpg
 npy=$OUTDIR/posi.npy
 
 echo BIN    : $BIN 
 echo OUTDIR : $OUTDIR
 echo spec : $spec
-echo ppm  : $ppm
+echo jpg  : $jpg
 
 if [ "$(uname)" == "Linux" ]; then 
-   dig=$(cat $ppm | md5sum)
+   dig=$(cat $jpg | md5sum)
 else
-   dig=$(cat $ppm | md5)
+   dig=$(cat $jpg | md5)
 fi 
 echo md5  : $dig
 echo npy  : $npy
-ls -l $ppm $npy 
+ls -l $jpg $npy 
 
 if [ "$(uname)" == "Darwin" ]; then
-    open $ppm
+    open $jpg
 fi
 exit 0
 

@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 find_package(CUDA REQUIRED)   
+find_package(CSG REQUIRED)
 find_package(OptiX REQUIRED)   
 
 message(STATUS "OptiX_FOUND   : ${OptiX_FOUND} ")
@@ -59,33 +60,28 @@ list(APPEND CUDA_NVCC_FLAGS "-std=c++11")
 set(SOURCES)
 set(CU_SOURCES)
 
-
-list(APPEND SOURCES
-    OptiXTest.cc
+set(OLD_SOURCES
     Sys.cc
-
     Solid.cc
     Prim.cc
     PrimSpec.cc
     Node.cc
-
     Grid.cc
     Geo.cc
     Util.cc 
-    Frame.cc 
-    Params.cc 
     Foundry.cc
     Tran.cc
     CU.cc
     View.cc
 )
 
+list(APPEND SOURCES ${OLD_SOURCES})
 
-
-
-
-
-
+list(APPEND SOURCES
+    OptiXTest.cc
+    Frame.cc 
+    Params.cc 
+)
 
 if(OptiX_VERSION_ GREATER_EQUAL 70000)
    list(APPEND CU_SOURCES OptiX7Test.cu)

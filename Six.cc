@@ -6,7 +6,15 @@
 #include "Params.h"
 #include "InstanceId.h"
 #include "Geo.h"
-#include "Shape.h"
+
+#include "sutil_vec_math.h"
+#include "Foundry.h"
+#include "Solid.h"
+#include "Prim.h"
+#include "OpticksCSG.h"
+#include "Node.h"
+
+
 #include "Grid.h"
 #include "Six.h"
 
@@ -54,11 +62,11 @@ void Six::initPipeline()
     material->setClosestHitProgram( entry_point_index, context->createProgramFromPTXFile( ptx_path, "closest_hit" ));
 }
 
-void Six::setGeo(const Geo* geo)
+void Six::setGeo(const Geo* geo)  // HMM: maybe makes more sense to get given directly the lower level Foundry ?
 {
-    unsigned num_shape = geo->getNumShape(); 
-    std::cout << "Six::setGeo num_shape " << num_shape << std::endl ;  
-    createShapes(geo); 
+    unsigned num_solid = geo->getNumSolid(); 
+    std::cout << "Six::setGeo num_solid " << num_solid << std::endl ;  
+    createSolids(geo->foundry); 
 
     //optix::GeometryGroup gg = createSimple(geo); 
     createGrids(geo); 
@@ -77,7 +85,7 @@ void Six::setGeo(const Geo* geo)
     }
     else if( c == 'g' )
     {
-        assert( idx < shapes.size() ); 
+        assert( idx < solids.size() ); 
 
         optix::GeometryGroup gg = context->createGeometryGroup();
         gg->setChildCount(1);
@@ -91,25 +99,27 @@ void Six::setGeo(const Geo* geo)
     }
 }
 
-void Six::createShapes(const Geo* geo)
+void Six::createSolids(const Foundry* foundry)
 {
-    unsigned num_shape = geo->getNumShape(); 
-    std::cout << "Six::createShapes num_shape " << num_shape << std::endl ;  
+    unsigned num_solid = foundry->getNumSolid();   // just pass thru to foundry  
+    std::cout << "Six::createShapes num_solid " << num_solid << std::endl ;  
 
-    for(unsigned i=0 ; i < num_shape ; i++)
+    for(unsigned i=0 ; i < num_solid ; i++)
     {
-        const Shape* sh = geo->getShape(i) ;    
-        optix::Geometry shape = createGeometry(sh); 
-        shapes.push_back(shape); 
+        optix::Geometry solid = createSolidGeometry(foundry, i); 
+        solids.push_back(solid); 
     }
 }
 
+/**
+**/
+
 optix::GeometryGroup Six::createSimple(const Geo* geo)
 {
-    unsigned num_shape = geo->getNumShape(); 
+    unsigned num_solid = geo->getNumSolid(); 
     optix::GeometryGroup gg = context->createGeometryGroup();
-    gg->setChildCount(num_shape);
-    for(unsigned i=0 ; i < num_shape ; i++)
+    gg->setChildCount(num_solid);
+    for(unsigned i=0 ; i < num_solid ; i++)
     {
         unsigned identity = 1u + i ;  
         optix::GeometryInstance pergi = createGeometryInstance(i, identity); 
@@ -192,57 +202,72 @@ optix::Group Six::convertGrid(const Grid* gr)
     return assembly ;
 }
 
-optix::GeometryInstance Six::createGeometryInstance(unsigned shape_idx, unsigned identity)
+optix::GeometryInstance Six::createGeometryInstance(unsigned solid_idx, unsigned identity)
 {
     std::cout 
         << "Six::createGeometryInstance"
-        << " shape_idx " << shape_idx
+        << " solid_idx " << solid_idx
         << " identity " << identity
         << " identity.hex " << std::hex <<  identity << std::dec
         << std::endl 
         ;   
 
-    optix::Geometry shape = shapes[shape_idx]; 
+    optix::Geometry solid = solids[solid_idx]; 
 
     optix::GeometryInstance pergi = context->createGeometryInstance() ;
     pergi->setMaterialCount(1);
     pergi->setMaterial(0, material );
-    pergi->setGeometry(shape);
+    pergi->setGeometry(solid);
     pergi["identity"]->setUint(identity);
 
     return pergi ; 
 }
 
-optix::Geometry Six::createGeometry(const Shape* sh)
+optix::Geometry Six::createSolidGeometry(const Foundry* foundry, unsigned solid_idx)
 {
-    optix::Geometry shape = context->createGeometry();
-    shape->setBoundingBoxProgram( context->createProgramFromPTXFile( ptx_path , "bounds" ) );
-    shape->setIntersectionProgram( context->createProgramFromPTXFile( ptx_path , "intersect" ) ) ; 
+    const Solid* solid0 = foundry->solid.data() ; 
+    const Prim* prim0 = foundry->prim.data() ; 
+    const Node* node0 = foundry->node.data() ; 
 
-    std::vector<float> shape_array ; 
+    const Solid* so = solid0 + solid_idx ; 
 
-    std::cout << "Six::createGeometry sh.num " << sh->num << " sizes: " ; 
-    for(unsigned i=0 ; i < sh->num ; i++)
-    {
-        float size = sh->get_size(i); 
-        shape_array.push_back( 0.f ); 
-        shape_array.push_back( 0.f ); 
-        shape_array.push_back( 0.f ); 
-        shape_array.push_back( size );
+    std::vector<float4> spheres ; 
 
-        std::cout << size << " " ; 
-    }
+    optix::Geometry solid = context->createGeometry();
+    solid->setBoundingBoxProgram( context->createProgramFromPTXFile( ptx_path , "bounds" ) );
+    solid->setIntersectionProgram( context->createProgramFromPTXFile( ptx_path , "intersect" ) ) ; 
+
+    std::cout << "Six::createGeometry so.numPrim " << so->numPrim << " sphere radii: " ; 
+
+    for(unsigned primIdx=so->primOffset ; primIdx < so->primOffset+so->numPrim ; primIdx++)
+    {   
+        const Prim* pr = prim0 + primIdx ; 
+
+        assert( pr->numNode() == 1 ); 
+
+        for(unsigned nodeIdx=pr->nodeOffset() ; nodeIdx < pr->nodeOffset()+pr->numNode() ; nodeIdx++)
+        {   
+            const Node* nd = node0 + nodeIdx ; 
+
+            assert( nd->typecode() == CSG_SPHERE ); 
+
+            spheres.push_back( nd->q0.f ) ;   
+
+            std::cout << nd->q0.f.w << " " ; 
+        }   
+    }   
+
     std::cout << std::endl ;  
 
-    unsigned num_prim = sh->num ; 
-    shape->setPrimitiveCount( num_prim );
+    unsigned num_prim = so->numPrim ; 
+    solid->setPrimitiveCount( num_prim );
 
-    optix::Buffer shape_buffer = context->createBuffer( RT_BUFFER_INPUT, RT_FORMAT_FLOAT4, num_prim );
-    memcpy( shape_buffer->map(), shape_array.data(), sizeof(float)*shape_array.size() ); 
-    shape_buffer->unmap() ; 
-    shape["shape_buffer"]->set( shape_buffer );
+    optix::Buffer solid_buffer = context->createBuffer( RT_BUFFER_INPUT, RT_FORMAT_FLOAT4, num_prim );
+    memcpy( solid_buffer->map(), spheres.data(), sizeof(float4)*spheres.size() ); 
+    solid_buffer->unmap() ; 
+    solid["solid_buffer"]->set( solid_buffer );
   
-    return shape ; 
+    return solid ; 
 }
 
 void Six::launch()
@@ -260,8 +285,6 @@ void Six::save(const char* outdir)
     img.writeJPG(outdir, "pixels.jpg", quality); 
 
     pixels_buffer->unmap(); 
-
-
 
     NP::Write(outdir, "posi.npy",  (float*)posi_buffer->map(), params->height, params->width, 4 );
     posi_buffer->unmap(); 

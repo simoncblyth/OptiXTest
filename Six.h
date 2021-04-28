@@ -4,8 +4,10 @@
 #include <optixu/optixpp_namespace.h>
 
 struct Geo ; 
+struct Foundry ; 
 struct Grid ; 
 struct Params ; 
+struct Solid ; 
 
 struct Six
 {
@@ -13,7 +15,7 @@ struct Six
     optix::Material material ;
     optix::Buffer pixels_buffer ; 
     optix::Buffer posi_buffer ; 
-    std::vector<optix::Geometry> shapes ; 
+    std::vector<optix::Geometry> solids ; 
     std::vector<optix::Group>    assemblies ; 
 
     const Params* params ; 
@@ -26,11 +28,11 @@ struct Six
     void initPipeline();
     void setGeo(const Geo* geo);
 
-    optix::GeometryInstance createGeometryInstance(unsigned shape_idx, unsigned identity);
-    optix::Geometry         createGeometry(const Shape* sh);
+    optix::GeometryInstance createGeometryInstance(unsigned solid_idx, unsigned identity);
+    optix::Geometry         createSolidGeometry(const Foundry* foundry, unsigned solid_idx);
     optix::GeometryGroup    createSimple(const Geo* geo);
     
-    void createShapes(const Geo* geo);
+    void createSolids(const Foundry* foundry);
     void createGrids(const Geo* geo);
     optix::Group convertGrid(const Grid* gr);
 

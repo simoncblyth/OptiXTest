@@ -17,13 +17,14 @@ OptiXTest
 #include <glm/glm.hpp>
 
 #include "sutil_vec_math.h"
-
 #include "Util.h"
 #include "Prim.h"
+#include "Foundry.h"
 #include "Geo.h"
+#include "View.h"
+
 #include "Frame.h"
 #include "Params.h"
-#include "View.h"
 
 #if OPTIX_VERSION < 70000
 #include "Six.h"
@@ -33,9 +34,8 @@ OptiXTest
 #include "OPTIX_CHECK.h"   
 #include "PIP.h"
 #include "SBT.h"
-
-#include "Foundry.h"
 #endif
+
 
 
 struct AS ; 

@@ -45,7 +45,7 @@ rtDeclareVariable(unsigned, identity,  ,);
 
 rtDeclareVariable(rtObject,      top_object, , );
 
-rtBuffer<float4> shape_buffer;
+rtBuffer<float4> solid_buffer;
 
 
 RT_PROGRAM void raygen()
@@ -70,11 +70,11 @@ RT_PROGRAM void miss()
 
 RT_PROGRAM void intersect(int primIdx)
 {
-    const float4& shape = shape_buffer[primIdx] ; 
-    const float  radius = shape.w ; 
+    const float4& solid = solid_buffer[primIdx] ; 
+    const float  radius = solid.w ; 
     const float  t_min = ray.tmin ; 
 
-    const float3 center = make_float3( shape.x, shape.y, shape.z) ;
+    const float3 center = make_float3( solid.x, solid.y, solid.z) ;
     const float3 O      = ray.origin - center;
     const float3 D      = ray.direction ; 
  
@@ -104,8 +104,8 @@ RT_PROGRAM void intersect(int primIdx)
 
 RT_PROGRAM void bounds (int primIdx, float result[6])
 {
-    const float4& shape = shape_buffer[primIdx] ; 
-    const float  radius = shape.w ; 
+    const float4& solid = solid_buffer[primIdx] ; 
+    const float  radius = solid.w ; 
     rtPrintf("// bounds primIdx %d radius %10.3f \n", primIdx, radius ); 
 
     optix::Aabb* aabb = (optix::Aabb*)result;
