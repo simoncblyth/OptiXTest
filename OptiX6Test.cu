@@ -17,7 +17,8 @@ rtDeclareVariable(float3,        U, , );
 rtDeclareVariable(float3,        V, , );
 rtDeclareVariable(float3,        W, , );
 rtDeclareVariable(float,         tmin, , );
-rtDeclareVariable(unsigned,     radiance_ray_type, , );
+rtDeclareVariable(unsigned,      radiance_ray_type, , );
+rtDeclareVariable(unsigned,      cameratype, , );
 
 rtDeclareVariable(uint2, launch_index, rtLaunchIndex, );
 rtDeclareVariable(uint2, launch_dim,   rtLaunchDim, );
@@ -67,9 +68,13 @@ RT_PROGRAM void raygen()
     prd.result = make_float3( 1.f, 0.f, 0.f ) ; 
     prd.posi = make_float4( 0.f, 0.f, 0.f, 0.f ); 
 
-    float2 d = make_float2(launch_index) / make_float2(launch_dim) * 2.f - 1.f ;
+    const float2 d = make_float2(launch_index) / make_float2(launch_dim) * 2.f - 1.f ;
+    const float3 dxyUV = d.x*U + d.y*V ; 
+    //                       cameratype     0u perspective           1u orthographic
+    const float3 origin    = cameratype == 0u ? eye                    : eye + dxyUV    ; 
+    const float3 direction = cameratype == 0u ? normalize( dxyUV + W ) : normalize( W ) ; 
 
-    optix::Ray ray = optix::make_Ray( eye, normalize(d.x*U + d.y*V + W), radiance_ray_type, tmin, RT_DEFAULT_MAX) ; 
+    optix::Ray ray = optix::make_Ray( origin, direction, radiance_ray_type, tmin, RT_DEFAULT_MAX) ; 
     rtTrace(top_object, ray, prd);
 
     pixels_buffer[launch_index] = make_color( prd.result ) ; 

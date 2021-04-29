@@ -14,11 +14,11 @@ export BIN=$(which $name)
 #tmin=0.5
 tmin=0.1
 
-#geometry=parade
+geometry=parade
 #geometry=sphere_containing_grid_of_spheres
 #geometry=layered_sphere
 #geometry=layered_zsphere
-geometry=clustered_sphere
+#geometry=clustered_sphere
 #geometry=sphe # 0
 #geometry=zsph # 1 
 #geometry=cone # 2
