@@ -21,12 +21,15 @@ struct Six
     const Params* params ; 
     const char*   ptx_path ; 
     unsigned    entry_point_index ; 
+    unsigned    optix_device_ordinal ; 
 
     Six(const char* ptx_path, const Params* params_);  
 
     void initContext();
     void initPipeline();
     void setGeo(const Geo* geo);
+
+    template<typename T> void createContextBuffer( T* d_ptr, unsigned num_item, const char* name ); 
 
     optix::GeometryInstance createGeometryInstance(unsigned solid_idx, unsigned identity);
     optix::Geometry         createSolidGeometry(const Foundry* foundry, unsigned solid_idx);

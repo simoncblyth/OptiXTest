@@ -1,9 +1,16 @@
+#include "sutil_vec_math.h"
+
+#include "qat4.h"
+#include "intersect_node.h"
+#include "intersect_tree.h"
 
 #include "Prim.h"
 #include "Node.h"
 
-#include <optix_world.h>
-using namespace optix;
+//#include <optix_world.h>
+//using namespace optix;
+
+#include <optix_device.h>
 
 rtDeclareVariable(float3,        eye, , );
 rtDeclareVariable(float3,        U, , );
@@ -22,12 +29,12 @@ rtBuffer<uchar4, 2>   pixels_buffer;
 rtBuffer<float4, 2>   posi_buffer;
 
 
-static __device__ __inline__ optix::uchar4 make_color(const optix::float3& c)
+static __device__ __inline__ uchar4 make_color(const float3& c)
 {
-    return optix::make_uchar4( static_cast<unsigned char>(__saturatef(c.x)*255.99f),  
-                               static_cast<unsigned char>(__saturatef(c.y)*255.99f),   
-                               static_cast<unsigned char>(__saturatef(c.z)*255.99f),   
-                               255u);                                                 
+    return make_uchar4( static_cast<unsigned char>(__saturatef(c.x)*255.99f),  
+                        static_cast<unsigned char>(__saturatef(c.y)*255.99f),   
+                        static_cast<unsigned char>(__saturatef(c.z)*255.99f),   
+                        255u);                                                 
 }
 
 
@@ -50,6 +57,8 @@ rtDeclareVariable(rtObject,      top_object, , );
 
 rtBuffer<Prim> prim_buffer;
 rtBuffer<Node> node_buffer;
+rtBuffer<qat4> itra_buffer;
+rtBuffer<float4> plan_buffer;
 
 
 RT_PROGRAM void raygen()
@@ -72,11 +81,42 @@ RT_PROGRAM void miss()
     prd.result = make_float3(1.f, 1.f, 1.f) ;
 }
 
+/**
+As the primIdx argument is in 0:num_prim-1 need separate prim_buffer per geometry 
+unlike nodes and itra where s context level node_buffer and itra_buffer allows 
+the pre-7 machinery to more closely match optix7
+**/
+
 RT_PROGRAM void intersect(int primIdx)
 {
-    const Node& node = node_buffer[primIdx] ; 
-    const float3 center = make_float3( node.q0.f.x, node.q0.f.y, node.q0.f.z) ;
-    const float  radius = node.q0.f.w ; 
+    const Prim* prim = &prim_buffer[primIdx] ;   
+    int nodeOffset = prim->nodeOffset() ;  
+    int numNode = prim->numNode() ; 
+    const Node* node = &node_buffer[nodeOffset] ; 
+    const float4* plan = &plan_buffer[0] ;  
+    const qat4*   itra = &itra_buffer[0] ;  
+
+    float4 isect ; 
+    if(intersect_prim(isect, numNode, node, plan, itra, ray.tmin , ray.origin, ray.direction ))
+    {
+        if(rtPotentialIntersection(isect.w))
+        {
+            position = ray.origin + isect.w*ray.direction ;   
+            shading_normal = make_float3( isect.x, isect.y, isect.z ); 
+            intersect_identity = (( (1u+primIdx) & 0xff ) << 24 ) | ( identity & 0x00ffffff ) ; 
+            rtReportIntersection(0);
+        }
+    }
+}
+
+
+
+/*
+RT_PROGRAM void intersect(int primIdx)
+{
+    const Node* node = &node_buffer[primIdx] ;   // only working because simple 1:1 Prim:Node
+    const float3 center = make_float3( node->q0.f.x, node->q0.f.y, node->q0.f.z) ;
+    const float  radius = node->q0.f.w ; 
 
     const float  t_min = ray.tmin ; 
     const float3 O     = ray.origin - center;
@@ -105,11 +145,12 @@ RT_PROGRAM void intersect(int primIdx)
         }
     }
 }
+*/
 
 RT_PROGRAM void bounds (int primIdx, float result[6])
 {
-    const Prim& prim = prim_buffer[primIdx] ; 
-    const float* aabb = prim.AABB();  
+    const Prim* prim = &prim_buffer[primIdx] ; 
+    const float* aabb = prim->AABB();  
 
     result[0] = *(aabb+0); 
     result[1] = *(aabb+1); 

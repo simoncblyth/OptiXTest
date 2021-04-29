@@ -27,7 +27,8 @@ Six::Six(const char* ptx_path_, const Params* params_)
     material(context->createMaterial()),
     params(params_),
     ptx_path(strdup(ptx_path_)),
-    entry_point_index(0u) 
+    entry_point_index(0u),
+    optix_device_ordinal(0u)
 {
     initContext();
     initPipeline(); 
@@ -62,11 +63,38 @@ void Six::initPipeline()
     material->setClosestHitProgram( entry_point_index, context->createProgramFromPTXFile( ptx_path, "closest_hit" ));
 }
 
+
+template<typename T>
+void Six::createContextBuffer( T* d_ptr, unsigned num_item, const char* name )
+{
+    std::cout << "[ Six::createContextBuffer " << name << " " << d_ptr << std::endl ; 
+    optix::Buffer buffer = context->createBuffer( RT_BUFFER_INPUT, RT_FORMAT_USER, num_item );
+    buffer->setElementSize( sizeof(T) ); 
+    if(d_ptr)
+    {
+        buffer->setDevicePointer(optix_device_ordinal, d_ptr ); 
+    }
+    context[name]->set( buffer );
+    std::cout << "] Six::createContextBuffer " << name << std::endl ; 
+}
+
+template void Six::createContextBuffer( Node*,  unsigned, const char* ) ; 
+template void Six::createContextBuffer( qat4*,  unsigned, const char* ) ; 
+template void Six::createContextBuffer( float*, unsigned, const char* ) ; 
+
+
 void Six::setGeo(const Geo* geo)  // HMM: maybe makes more sense to get given directly the lower level Foundry ?
 {
-    unsigned num_solid = geo->getNumSolid(); 
+    const Foundry* foundry = geo->foundry ; 
+    unsigned num_solid = foundry->getNumSolid(); 
     std::cout << "Six::setGeo num_solid " << num_solid << std::endl ;  
-    createSolids(geo->foundry); 
+
+    createContextBuffer<Node>(   foundry->d_node, foundry->getNumNode(), "node_buffer" ); 
+    createContextBuffer<qat4>(   foundry->d_itra, foundry->getNumItra(), "itra_buffer" ); 
+    createContextBuffer<float4>( foundry->d_plan, foundry->getNumPlan(), "plan_buffer" ); 
+    // these "global" context buffers have no offsets
+
+    createSolids(foundry); 
 
     //optix::GeometryGroup gg = createSimple(geo); 
     createGrids(geo); 
@@ -274,24 +302,15 @@ optix::Geometry Six::createSolidGeometry(const Foundry* foundry, unsigned solid_
 
     optix::Buffer prim_buffer = context->createBuffer( RT_BUFFER_INPUT, RT_FORMAT_USER, numPrim );
     prim_buffer->setElementSize( sizeof(Prim) ); 
-
-    optix::Buffer node_buffer = context->createBuffer( RT_BUFFER_INPUT, RT_FORMAT_USER, totNode );
-    node_buffer->setElementSize( sizeof(Node) ); 
-
-    int optix_device_ordinal = 0 ; 
     prim_buffer->setDevicePointer(optix_device_ordinal, foundry->d_prim + primOffset ); 
-    node_buffer->setDevicePointer(optix_device_ordinal, foundry->d_node + nodeOffset ); 
-
     solid["prim_buffer"]->set( prim_buffer );
-    solid["node_buffer"]->set( node_buffer );
-
+   
 
 /*
     memcpy( solid_buffer->map(), spheres.data(), sizeof(float4)*spheres.size() ); 
     solid_buffer->unmap() ; 
     solid["solid_buffer"]->set( solid_buffer );
 */
-
   
     return solid ; 
 }
