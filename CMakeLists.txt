@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 find_package(CUDA REQUIRED)   
-find_package(CSG REQUIRED)
+#find_package(CSG REQUIRED)
 find_package(OptiX REQUIRED)   
 
 message(STATUS "OptiX_FOUND   : ${OptiX_FOUND} ")

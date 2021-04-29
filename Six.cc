@@ -230,42 +230,68 @@ optix::Geometry Six::createSolidGeometry(const Foundry* foundry, unsigned solid_
     const Node* node0 = foundry->node.data() ; 
 
     const Solid* so = solid0 + solid_idx ; 
+    unsigned primOffset = so->primOffset ;  
+    unsigned numPrim = so->numPrim ; 
+    const Prim* pr = prim0 + primOffset ; 
+    unsigned nodeOffset = pr->nodeOffset() ; 
 
-    std::vector<float4> spheres ; 
+    std::cout 
+        << "Six::createSolidGeometry"
+        << " solid_idx " << solid_idx
+        << " primOffset " << primOffset
+        << " numPrim " << numPrim 
+        << " nodeOffset " << nodeOffset
+        << std::endl 
+        ;
+
 
     optix::Geometry solid = context->createGeometry();
+    solid->setPrimitiveCount( numPrim );
     solid->setBoundingBoxProgram( context->createProgramFromPTXFile( ptx_path , "bounds" ) );
     solid->setIntersectionProgram( context->createProgramFromPTXFile( ptx_path , "intersect" ) ) ; 
 
-    std::cout << "Six::createGeometry so.numPrim " << so->numPrim << " sphere radii: " ; 
+    std::cout << "Six::createGeometry sphere radii: " ; 
+    std::vector<float4> spheres ; 
 
+    unsigned totNode = 0 ; 
     for(unsigned primIdx=so->primOffset ; primIdx < so->primOffset+so->numPrim ; primIdx++)
     {   
         const Prim* pr = prim0 + primIdx ; 
-
-        assert( pr->numNode() == 1 ); 
+        totNode += pr->numNode() ; 
 
         for(unsigned nodeIdx=pr->nodeOffset() ; nodeIdx < pr->nodeOffset()+pr->numNode() ; nodeIdx++)
         {   
             const Node* nd = node0 + nodeIdx ; 
 
             assert( nd->typecode() == CSG_SPHERE ); 
-
             spheres.push_back( nd->q0.f ) ;   
-
             std::cout << nd->q0.f.w << " " ; 
         }   
     }   
-
     std::cout << std::endl ;  
 
-    unsigned num_prim = so->numPrim ; 
-    solid->setPrimitiveCount( num_prim );
 
-    optix::Buffer solid_buffer = context->createBuffer( RT_BUFFER_INPUT, RT_FORMAT_FLOAT4, num_prim );
+
+    optix::Buffer prim_buffer = context->createBuffer( RT_BUFFER_INPUT, RT_FORMAT_USER, numPrim );
+    prim_buffer->setElementSize( sizeof(Prim) ); 
+
+    optix::Buffer node_buffer = context->createBuffer( RT_BUFFER_INPUT, RT_FORMAT_USER, totNode );
+    node_buffer->setElementSize( sizeof(Node) ); 
+
+    int optix_device_ordinal = 0 ; 
+    prim_buffer->setDevicePointer(optix_device_ordinal, foundry->d_prim + primOffset ); 
+    node_buffer->setDevicePointer(optix_device_ordinal, foundry->d_node + nodeOffset ); 
+
+    solid["prim_buffer"]->set( prim_buffer );
+    solid["node_buffer"]->set( node_buffer );
+
+
+/*
     memcpy( solid_buffer->map(), spheres.data(), sizeof(float4)*spheres.size() ); 
     solid_buffer->unmap() ; 
     solid["solid_buffer"]->set( solid_buffer );
+*/
+
   
     return solid ; 
 }

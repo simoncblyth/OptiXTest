@@ -1,4 +1,7 @@
 
+#include "Prim.h"
+#include "Node.h"
+
 #include <optix_world.h>
 using namespace optix;
 
@@ -45,7 +48,8 @@ rtDeclareVariable(unsigned, identity,  ,);
 
 rtDeclareVariable(rtObject,      top_object, , );
 
-rtBuffer<float4> solid_buffer;
+rtBuffer<Prim> prim_buffer;
+rtBuffer<Node> node_buffer;
 
 
 RT_PROGRAM void raygen()
@@ -70,13 +74,13 @@ RT_PROGRAM void miss()
 
 RT_PROGRAM void intersect(int primIdx)
 {
-    const float4& solid = solid_buffer[primIdx] ; 
-    const float  radius = solid.w ; 
-    const float  t_min = ray.tmin ; 
+    const Node& node = node_buffer[primIdx] ; 
+    const float3 center = make_float3( node.q0.f.x, node.q0.f.y, node.q0.f.z) ;
+    const float  radius = node.q0.f.w ; 
 
-    const float3 center = make_float3( solid.x, solid.y, solid.z) ;
-    const float3 O      = ray.origin - center;
-    const float3 D      = ray.direction ; 
+    const float  t_min = ray.tmin ; 
+    const float3 O     = ray.origin - center;
+    const float3 D     = ray.direction ; 
  
     float b = dot(O, D);
     float c = dot(O, O)-radius*radius;
@@ -104,14 +108,20 @@ RT_PROGRAM void intersect(int primIdx)
 
 RT_PROGRAM void bounds (int primIdx, float result[6])
 {
-    const float4& solid = solid_buffer[primIdx] ; 
-    const float  radius = solid.w ; 
-    rtPrintf("// bounds primIdx %d radius %10.3f \n", primIdx, radius ); 
+    const Prim& prim = prim_buffer[primIdx] ; 
+    const float* aabb = prim.AABB();  
 
-    optix::Aabb* aabb = (optix::Aabb*)result;
-    float3 mn = make_float3( -radius, -radius, -radius ); 
-    float3 mx = make_float3(  radius,  radius,  radius ); 
-    aabb->set(mn, mx);
+    result[0] = *(aabb+0); 
+    result[1] = *(aabb+1); 
+    result[2] = *(aabb+2); 
+    result[3] = *(aabb+3); 
+    result[4] = *(aabb+4); 
+    result[5] = *(aabb+5); 
+
+    rtPrintf("// bounds primIdx %d aabb %10.3f %10.3f %10.3f   %10.3f %10.3f %10.3f  \n", primIdx, 
+         result[0], result[1], result[2],  
+         result[3], result[4], result[5] 
+        ); 
 }
 
 RT_PROGRAM void closest_hit()
@@ -120,6 +130,5 @@ RT_PROGRAM void closest_hit()
     float3 isect = ray.origin + t*ray.direction ;
     prd.posi = make_float4( isect, __uint_as_float(intersect_identity) );
 }
-
 
 

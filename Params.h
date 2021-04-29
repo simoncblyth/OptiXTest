@@ -1,6 +1,8 @@
 #pragma once
 
 #include <optix.h>
+// TODO: avoid need for optix.h just for the handle 
+
 #include <vector_types.h>
 
 #ifndef __CUDACC__

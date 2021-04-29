@@ -78,12 +78,16 @@ std::string Foundry::getBashMap()
 
 void Foundry::dump() const 
 {
-    for(unsigned idx=0 ; idx < solid.size() ; idx++) dumpSolid(idx); 
+    for(unsigned idx=0 ; idx < solid.size() ; idx++) 
+    {
+        dumpPrim(idx); 
+        dumpNode(idx); 
+    }
 }
 
 void Foundry::dumpSolid(unsigned solidIdx) const 
 {
-    std::cout << "Foundry::dumpSolid " << solidIdx << std::endl ; 
+    std::cout << "Foundry::dumpSolid solidIdx:" << solidIdx << std::endl ; 
 
     const Solid* so = solid.data() + solidIdx ; 
     std::cout << so->desc() << std::endl ; 
@@ -107,7 +111,7 @@ void Foundry::dumpSolid(unsigned solidIdx) const
 
 void Foundry::dumpPrim(unsigned solidIdx) const 
 {
-    std::cout << "Foundry::dumpPrim" << solidIdx << std::endl ; 
+    std::cout << "Foundry::dumpPrim solidIdx:" << solidIdx << std::endl ; 
     const Solid* so = solid.data() + solidIdx ; 
     std::cout << so->desc() << std::endl ; 
     for(unsigned primIdx=so->primOffset ; primIdx < so->primOffset+so->numPrim ; primIdx++)
@@ -123,7 +127,7 @@ void Foundry::dumpPrim(unsigned solidIdx) const
 
 void Foundry::dumpNode(unsigned solidIdx) const 
 {
-    std::cout << "Foundry::dumpNode" << solidIdx << std::endl ; 
+    std::cout << "Foundry::dumpNode solidIdx:" << solidIdx << std::endl ; 
     const Solid* so = solid.data() + solidIdx ; 
     std::cout << so->desc() << std::endl ; 
     for(unsigned primIdx=so->primOffset ; primIdx < so->primOffset+so->numPrim ; primIdx++)

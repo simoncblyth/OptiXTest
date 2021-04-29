@@ -168,7 +168,7 @@ prim extent is used.
 
 **/
 
-void SBT::createGAS(const Geo* geo)
+void SBT::createGAS(const Geo* geo)   // just pass-thru to Foundry 
 {
     unsigned num_solid = geo->getNumSolid(); 
     for(unsigned solidIdx=0 ; solidIdx < num_solid ; solidIdx++)

@@ -21,7 +21,7 @@ std::string Prim::desc() const
       << "Prim"
       << " mn " << mn() 
       << " mx " << mx() 
-      << " sbtIndexOffset " << sbtIndexOffset() 
+      << " sbtIndexOffset " << std::setw(3) << sbtIndexOffset() 
       << " numNode "    << std::setw(3) << numNode() 
       << " nodeOffset " << std::setw(3) << nodeOffset()
       << " tranOffset " << std::setw(3) << tranOffset()
