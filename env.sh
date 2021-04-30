@@ -14,11 +14,11 @@ export BIN=$(which $name)
 #tmin=0.5
 tmin=0.1
 
-geometry=parade
+#geometry=parade
 #geometry=sphere_containing_grid_of_spheres
 #geometry=layered_sphere
 #geometry=layered_zsphere
-#geometry=clustered_sphere
+geometry=clustered_sphere
 #geometry=sphe # 0
 #geometry=zsph # 1 
 #geometry=cone # 2
@@ -61,17 +61,17 @@ gridspec=-10:11:2,-10:11:2,0:6:3
 gridscale=200.0
 
 
-#eye=-0.7,-0.7,0.15,1.0
+eye=-0.7,-0.7,0.15,1.0
 #eye=-0.5,0.0,0.15,1.0
 #eye=-0.5,-0.5,-0.5,1.0
 #eye=-1.0,-1.0,0.0,1.0
 #eye=-1.0,-1.0,1.0,1.0
-eye=-0.8,-0.8,0.8,1.0
+#eye=-0.8,-0.8,0.8,1.0
 
 
 
-#cameratype=0
-cameratype=1
+cameratype=0
+#cameratype=1
 
 # number of concentric layers in compound shapes
 #layers=1     

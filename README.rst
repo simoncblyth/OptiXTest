@@ -7,7 +7,16 @@ OptiXTest
 Overview
 ----------
 
-This repo is used as a playground for learning/investigating OptiX 7 techniques needed by Opticks.
+Cutting edge has moved to the below two repos with the CSG model 
+and rendering of that with OptiX moved into separate packages.
+
+* https://github.com/simoncblyth/CSGOptiX
+* https://github.com/simoncblyth/CSG
+
+History
+----------
+
+This repo was used as a playground for learning/investigating OptiX 7 techniques needed by Opticks.
 Hopefully also some of the OptiX 7 interface classes will subsequenly become part of Opticks. 
 This started from the Opticks example:
 
